@@ -7,7 +7,9 @@
 -- montées trop raides et les pentes qui ne se prennent qu'en descendant sont
 -- contournés, et un pas d'un étage nomme la surface où il arrive. Les
 -- ascenseurs relient le haut et le bas d'un même endroit.
--- Le chemin préfère les routes et évite l'eau (on y nage, plus lentement).
+-- Le chemin va au plus court (une route ne fait pas aller plus vite) : à
+-- longueur presque égale, il prend la route (réglage « Suivre les routes ») ;
+-- il évite l'eau (on y nage, plus lentement).
 --   Nav.Available()                    la grille peut-elle servir ?
 --   Nav.Find(cont, from, to, speed, done)
 --       cherche en tâche de fond (quelques milliers de nœuds par image), puis
@@ -30,7 +32,8 @@ ns.TravelNav = Nav
 local TILE = 1600 / 3
 local SQRT2 = math.sqrt(2)
 local SWIM = 4.72            -- yd/s à la nage
-local ROAD = 0.7             -- un yard de route compte pour 0,7 (la préférence pour les routes)
+local ROAD = 0.97            -- un yard de route compte pour 0,97 : la route ne départage que des
+                             -- chemins presque aussi courts (plus fort, elle faisait faire des crochets)
 local WEIGHT = 1.35          -- A* pondéré : un peu moins court, bien plus rapide
 local BUDGET = 2500          -- nœuds examinés par image (moins en combat)
 local MAX_CELLS = 250000     -- au-delà, on abandonne (l'estimation reste)
@@ -446,7 +449,7 @@ end
 
 -- La recherche (une coroutine, reprise à chaque image)
 local function Search(job)
-    local m, speed = job.m, job.speed
+    local m, speed, road = job.m, job.speed, job.road
     local GY, cs = m.GY, m.cs
     local fx, fy = CellOf(m, job.from.x, job.from.y)
     local gx0, gy0 = CellOf(m, job.to.x, job.to.y)
@@ -465,7 +468,7 @@ local function Search(job)
     local function H(gx, gy)
         local dx, dy = abs(gx - tx), abs(gy - ty)
         local lo, hi = math.min(dx, dy), math.max(dx, dy)
-        return (hi - lo + lo * SQRT2) * cs * ROAD * WEIGHT
+        return (hi - lo + lo * SQRT2) * cs * road * WEIGHT
     end
     -- (le départ : la surface supposée, et les autres de la case un peu plus cher)
     local h0 = H(sx, sy)
@@ -532,9 +535,9 @@ local function Search(job)
                     if secs then
                         d = secs * speed
                     else
-                        local kind, road = Info(m, nid)
+                        local kind, onRoad = Info(m, nid)
                         d = ND[j]
-                        if kind == 2 then d = d * water elseif road then d = d * ROAD end
+                        if kind == 2 then d = d * water elseif onRoad then d = d * road end
                     end
                     local g = g0 + d
                     local old = gcost[nid]
@@ -628,7 +631,9 @@ function Nav.Find(cont, from, to, speed, done)
         done(nil, "nodata")
         return function() end
     end
-    local job = { m = m, from = from, to = to, speed = speed or 7, done = done }
+    -- (« Suivre les routes » désactivé : aucune préférence)
+    local road = (ns.db and ns.db.options.travelRoads == false) and 1 or ROAD
+    local job = { m = m, from = from, to = to, speed = speed or 7, road = road, done = done }
     job.co = coroutine.create(Search)
     jobs[job] = true
     driver:Show()
