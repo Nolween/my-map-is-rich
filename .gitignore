@@ -1,0 +1,6 @@
+.vscode/
+*.zip
+dist/
+tools/roads/out/
+__pycache__/
+.venv/

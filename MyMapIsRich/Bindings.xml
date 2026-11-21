@@ -1,0 +1,10 @@
+<!-- Key bindings: the game's Keybindings > My Map Is Rich. Each runs an action of the map's menu
+     (Panel.lua's MyMapIsRich_Binding), opening the map first if it's closed; their names are set there. -->
+<Bindings>
+	<Binding name="MYMAPISRICH_FIND" category="My Map Is Rich">MyMapIsRich_Binding("find")</Binding>
+	<Binding name="MYMAPISRICH_PIN" category="My Map Is Rich">MyMapIsRich_Binding("pin")</Binding>
+	<Binding name="MYMAPISRICH_PINS" category="My Map Is Rich">MyMapIsRich_Binding("pins")</Binding>
+	<Binding name="MYMAPISRICH_QUILL" category="My Map Is Rich">MyMapIsRich_Binding("quill")</Binding>
+	<Binding name="MYMAPISRICH_QUESTLOG" category="My Map Is Rich">MyMapIsRich_Binding("questlog")</Binding>
+	<Binding name="MYMAPISRICH_MENU" category="My Map Is Rich">MyMapIsRich_Binding("menu")</Binding>
+</Bindings>

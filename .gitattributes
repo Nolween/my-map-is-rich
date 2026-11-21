@@ -1,0 +1,8 @@
+# Le texte en LF dans le dépôt ; les images et polices en binaire
+* text=auto
+*.tga binary
+*.png binary
+*.blp binary
+*.jpg binary
+*.ttf binary
+*.zip binary
