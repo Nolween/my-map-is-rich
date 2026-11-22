@@ -37,6 +37,8 @@ local YOU_X, YOU_Y = 90, 80  -- px : le repère « Toi », loin des bords (les b
 local chrome                 -- le cadre de l'habillage, sur la vue
 local zone, goTo, buttons, pills, you
 local quests, locate, follow, menu, closeButton
+local legend                 -- (à la manette : les boutons à presser, sous les carrés)
+local LEGEND_H, LEGEND_GLYPH = 30, 22
 local wait = 0
 
 local function Plain(v)
@@ -269,18 +271,24 @@ local function BuildButtons()
         if ns.QuestPanel then ns.QuestPanel.Toggle() end
     end, true)
     quests:SetPoint("LEFT", 4, 0)
-    quests.glyph = UI.CreateGlyph(quests, 16)
-    quests.glyph:SetPoint("BOTTOMRIGHT", 4, -4)
-    quests.glyph:SetKey("PADFORWARD")
     quests.key = UI.Text(quests, "GameFontHighlightSmall", "L")
     quests.key:SetPoint("BOTTOMRIGHT", -3, 3)
     locate = Square("Interface\\Icons\\Ability_Hunter_SniperShot", L.MAP_LOCATE, L.MAP_LOCATE_TIP, C.Locate)
     locate:SetPoint("LEFT", quests, "RIGHT", 4, 0)
     follow = Square("Interface\\Icons\\Ability_Tracking", L.MAP_FOLLOW, L.MAP_FOLLOW_TIP, C.ToggleFollow, true)
     follow:SetPoint("LEFT", locate, "RIGHT", 4, 0)
-    follow.glyph = UI.CreateGlyph(follow, 16)
-    follow.glyph:SetPoint("BOTTOMRIGHT", 4, -4)
-    follow.glyph:SetKey("PADRSHOULDER")
+    -- (à la manette : sous les carrés, une bande avec le bouton à presser sous
+    -- chacun, en grand : RT les quêtes, RB me suivre, B fermer la carte)
+    legend = UI.Overlay(chrome)
+    legend:SetSize(buttons:GetWidth(), LEGEND_H)
+    legend:SetPoint("TOPRIGHT", buttons, "BOTTOMRIGHT", 0, -2)
+    legend:EnableMouse(false)
+    for slot, key in pairs({ [1] = "PADRTRIGGER", [3] = "PADRSHOULDER", [5] = "PAD2" }) do
+        local g = UI.CreateGlyph(legend, LEGEND_GLYPH)
+        g:SetPoint("CENTER", legend, "LEFT", 4 + (slot - 1) * (SQUARE + 4) + SQUARE / 2, 0)
+        g:SetKey(key)
+    end
+    legend:Hide()
     menu = Square("Interface\\Icons\\INV_Misc_Gear_01", L.MAP_SETTINGS, L.MAP_MENU_TIP, C.OpenMenu)
     menu:SetPoint("LEFT", follow, "RIGHT", 4, 0)
     Roots(buttons)
@@ -403,10 +411,14 @@ local function UpdateButtons()
     local M = ns.MapNav
     follow:SetOn(M and M.Following() and true or nil)
     local pad = ns.PadUI()
-    follow.glyph:SetShown(pad)
+    -- (la manette branchée ou débranchée, carte ouverte : la bande, et le panneau des quêtes dessous)
+    if pad ~= legend:IsShown() and ns.QuestPanel then
+        legend:SetShown(pad)
+        ns.QuestPanel.Place()
+    end
+    legend:SetShown(pad)
     goTo.glyph:SetShown(pad)
     goTo.keys:SetShown(not pad)
-    quests.glyph:SetShown(pad)
     quests.key:SetShown(not pad)
     quests:SetOn((ns.QuestPanel and ns.QuestPanel.Shown()) and true or nil)
 end
@@ -541,6 +553,15 @@ end
 
 -- Le cadre de l'habillage (nil : pas encore fait, ou la carte classique)
 function C.Frame() return chrome end
+
+-- Le bas des boutons du haut à droite, depuis le haut de l'écran (px) : la
+-- bande des boutons de la manette comprise quand elle est là (le panneau des
+-- quêtes se pose dessous : UI/QuestPanel.lua)
+function C.ButtonsBottom()
+    local bottom = EDGE + SQUARE + 8
+    if ns.PadUI() then bottom = bottom + 2 + LEGEND_H end
+    return bottom
+end
 C.EDGE, C.LEVEL = EDGE, LEVEL
 
 local function OnShow()

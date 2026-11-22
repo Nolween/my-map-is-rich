@@ -171,7 +171,6 @@ ns.AddLocale("zhTW", {
     -- La barre d'aide
     HINT_GOTO = "前往…",
     HINT_LAYERS = "圖層",
-    HINT_ICON_PREV_NEXT = "上一個 / 下一個圖示",
     HINT_TOGGLE = "顯示 / 隱藏",
     HINT_LAYER_DETAILS = "圖層詳細",
     HINT_BACK_MAP = "返回地圖",
@@ -252,13 +251,26 @@ ns.AddLocale("zhTW", {
     QUESTS_TRACK = "追蹤",
     QUESTS_UNTRACK = "取消追蹤",
     QUESTS_SHARE = "與隊伍分享",
-    QUESTS_TEXT = "任務內容",
-    QUESTS_OBJECTIVES = "目標",
-    QUESTS_BUTTON_TIP = "地圖上的任務，開啟地圖時顯示：鍵盤和滑鼠用 L 或此按鈕，手把用 Menu（B 返回地圖）。",
+    QUESTS_OBJECTIVES_HEAD = "任務目標",
+    QUESTS_STORY = "描述",
+    QUESTS_REWARDS = "獎勵",
+    QUESTS_CHOOSE = "你可以從這些獎勵中選擇一個：",
+    QUESTS_RECEIVE = "你將得到：",
+    QUESTS_ALSO = "你還將得到：",
+    QUESTS_XP = "%s 點經驗值",
+    QUESTS_BUTTON_TIP = "地圖上的任務，開啟地圖時顯示：鍵盤和滑鼠用 L 或此按鈕，手把用 RT（B 返回地圖）。",
     HINT_QUESTS = "任務",
-    HINT_QUESTS_ENTER = "進入任務",
     HINT_QUESTS_CLOSE = "關閉任務",
     HINT_QUESTS_SORT = "依區域 / 最近的",
+    HINT_QUESTS_OPEN = "查看任務",
+    HINT_QUESTS_LIST = "返回列表",
+    HINT_REWARDS = "獎勵",
     HINT_ROUTE_NOW = "立即規劃路線",
-    WHATSNEW_MMIR_0_4_0 = "• |cffffd100全螢幕地圖上的任務|r：在右側，地圖一開啟就顯示。L 或右上角新的「任務」按鈕可顯示或隱藏；手把用 Menu 進入任務（B 返回地圖，再按 Menu 關閉）。關閉後，下次仍保持關閉。依區域或最近排序、搜尋、所選任務的目標和從你出發的時間；地圖會滑到那裡並顯示其區域。路線（Y）、加入佇列（X）、追蹤、分享、任務內容。\n• |cffffd100在全螢幕地圖上，你的角色不再移動|r：移動鍵會滑動地圖，跳躍和自動奔跑無效（戰鬥中會恢復移動）。右搖桿在那裡不再轉動鏡頭。\n• |cffffd100圖層列移到左側|r，位於區域名稱下方；地點資訊卡、路線預覽和路線面板放在它的右側。",
+    WHATSNEW_MMIR_0_4_0 = "• |cffffd100全螢幕地圖上的任務|r：在右側，地圖一開啟就顯示。L 或右上角新的「任務」按鈕可顯示或隱藏；手把用 RT 進入列表（若已隱藏則先顯示）：地圖游標消失，十字鍵逐個切換任務，地圖隨之滑到每個任務；B 返回地圖及其游標（LT 現在逐個跳轉圖示）。關閉後，下次仍保持關閉。依區域或最近排序、搜尋、所選任務的目標和從你出發的時間；地圖會滑到那裡並顯示其區域。路線（Y）、加入佇列（X）、追蹤、分享。按 A 或點擊可像遊戲任務日誌一樣開啟任務頁面：目標、故事、獎勵（物品、金錢、經驗）；B 返回列表。\n• |cffffd100在全螢幕地圖上，你的角色不再移動|r：移動鍵會滑動地圖，跳躍和自動奔跑無效（戰鬥中會恢復移動）。右搖桿在那裡不再轉動鏡頭。\n• |cffffd100圖層列移到左側|r，位於區域名稱下方；地點資訊卡、路線預覽和路線面板放在它的右側。",
+})
+
+-- /mmir focus ouverture (Diag.lua)
+ns.AddLocale("zhTW", {
+    FOCUS_HEAD = "地圖上手把的歸屬：",
+    FOCUS_ARMED = "下次開啟地圖時，插件會在這裡寫出手把的歸屬（兩次）。什麼都不要輸入：直接開啟地圖。",
 })

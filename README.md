@@ -13,7 +13,7 @@ Depuis la 0.2.0, M (ou le bouton carte de la manette) ouvre la carte **en plein 
 - en haut au milieu, **Aller à…** (LB, Ctrl+F) ;
 - en haut à droite, Quêtes, Me localiser, Me suivre, le menu de la carte et Fermer ;
 - à gauche, sous la zone, **le rail des calques** (donjons, maîtres de vol, bateaux et zeppelins, quêtes, citadins, groupe, épingles, dessins) : un clic affiche ou cache un calque, un clic droit (ou Y, ou « ··· ») ouvre le panneau des calques et leurs détails ;
-- à droite, **tes quêtes**, affichées de base (L ou le bouton Quêtes les cachent ou les rouvrent ; à la manette, Menu y entre, B revient à la carte) : par zone ou les plus proches, la quête choisie et ses objectifs, l'itinéraire, la file, suivre, partager ;
+- à droite, **tes quêtes**, affichées de base (L ou le bouton Quêtes les cachent ou les rouvrent ; à la manette, RT entre dans la liste, où la croix va de quête en quête, et B revient à la carte) : par zone ou les plus proches, la fiche d'une quête (A ou un clic : ses objectifs, son histoire, ses récompenses, comme dans le journal du jeu), l'itinéraire, la file, suivre, partager ;
 - en bas à droite, tes coordonnées et celles du curseur ; au bord, « Toi » quand ta flèche sort de la vue ;
 - en bas, la barre d'aide : les boutons de la manette, ou les clics et les touches à la souris.
 
@@ -34,7 +34,7 @@ La carte du jeu reste ouverte dessous, invisible : c'est elle que M, Échap et B
 | Carte | LB | Aller à… (carte plein écran) ou Lieux : parcourir, rechercher au clavier (lieux, PNJ et objets de Questie), récents, la file |
 | Carte | Y | Le panneau des calques (carte plein écran) |
 | Carte | View | La roue, autour du curseur : ajouter à la file, envoyer au groupe, poser une épingle, épingles, plume, menu de la carte (stick droit pour choisir, A pour valider, View pour fermer) |
-| Carte | LT / RT | Icône précédente / suivante autour du curseur |
+| Carte | LT / RT | Carte plein écran : LT l'icône suivante autour du curseur, RT entre dans la liste des quêtes (la croix y va de quête en quête). Carte classique : icône précédente / suivante |
 | Carte | Stick gauche, A, X, B, croix, L3, stick droit | Ceux du jeu et de la carte : curseur (sur tout l'écran, carte plein écran), appuyer / zoomer, dézoomer, fermer, Carte standard, marqueur, zoom |
 | Liste des quêtes (carte réduite) | R3 | Itinéraire jusqu'à la quête qui a le focus ; stick droit : tourner la caméra |
 | Fenêtre | Croix, A / X / B, LB / RB | D'un élément à l'autre, valider / clic droit / retour, onglets |

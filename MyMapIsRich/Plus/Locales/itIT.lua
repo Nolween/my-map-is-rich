@@ -171,7 +171,6 @@ ns.AddLocale("itIT", {
     -- La barre d'aide
     HINT_GOTO = "Vai a…",
     HINT_LAYERS = "Livelli",
-    HINT_ICON_PREV_NEXT = "Icona precedente / successiva",
     HINT_TOGGLE = "Mostra / nascondi",
     HINT_LAYER_DETAILS = "Dettagli del livello",
     HINT_BACK_MAP = "Torna alla mappa",
@@ -252,13 +251,26 @@ ns.AddLocale("itIT", {
     QUESTS_TRACK = "Segui",
     QUESTS_UNTRACK = "Non seguire",
     QUESTS_SHARE = "Condividi col gruppo",
-    QUESTS_TEXT = "Testo della missione",
-    QUESTS_OBJECTIVES = "Obiettivi",
-    QUESTS_BUTTON_TIP = "Le tue missioni sulla mappa, mostrate all'apertura: L o questo pulsante con tastiera e mouse, Menu con il controller (B torna alla mappa).",
+    QUESTS_OBJECTIVES_HEAD = "Obiettivi della missione",
+    QUESTS_STORY = "Descrizione",
+    QUESTS_REWARDS = "Ricompense",
+    QUESTS_CHOOSE = "Potrai scegliere una di queste ricompense:",
+    QUESTS_RECEIVE = "Riceverai:",
+    QUESTS_ALSO = "Riceverai anche:",
+    QUESTS_XP = "%s punti esperienza",
+    QUESTS_BUTTON_TIP = "Le tue missioni sulla mappa, mostrate all'apertura: L o questo pulsante con tastiera e mouse, RT con il controller (B torna alla mappa).",
     HINT_QUESTS = "Missioni",
-    HINT_QUESTS_ENTER = "Entra nelle missioni",
     HINT_QUESTS_CLOSE = "Chiudi le missioni",
     HINT_QUESTS_SORT = "Per zona / le più vicine",
+    HINT_QUESTS_OPEN = "Vedi la missione",
+    HINT_QUESTS_LIST = "Torna alla lista",
+    HINT_REWARDS = "Ricompense",
     HINT_ROUTE_NOW = "Percorso subito",
-    WHATSNEW_MMIR_0_4_0 = "• |cffffd100Le tue missioni sulla mappa a schermo intero|r, a destra, mostrate appena la mappa si apre. L o il nuovo pulsante Missioni (in alto a destra) le mostra o le nasconde; con il controller, Menu ci entra (B torna alla mappa, Menu di nuovo le chiude). Chiuse, restano chiuse la volta dopo. Per zona o le più vicine, una ricerca, gli obiettivi della missione scelta e il tempo da te; la mappa ci scorre e ne mostra la zona. Percorso (Y), Aggiungi alla coda (X), Segui, Condividi, Testo della missione.\n• |cffffd100Sulla mappa a schermo intero il tuo personaggio non si muove più|r: i tasti di movimento fanno scorrere la mappa, saltare e la corsa automatica non fanno nulla (in combattimento ti muovi di nuovo). Lo stick destro lì non gira più la telecamera.\n• |cffffd100La barra dei livelli passa a sinistra|r, sotto la zona; la scheda di un punto, l'anteprima e il pannello del percorso stanno alla sua destra.",
+    WHATSNEW_MMIR_0_4_0 = "• |cffffd100Le tue missioni sulla mappa a schermo intero|r, a destra, mostrate appena la mappa si apre. L o il nuovo pulsante Missioni (in alto a destra) le mostra o le nasconde; con il controller, RT entra nella lista (e la mostra se era nascosta): il cursore della mappa sparisce, la croce va da una missione all'altra e la mappa scorre fino a ciascuna; B torna alla mappa e al suo cursore (LT ora salta da un'icona all'altra). Chiuse, restano chiuse la volta dopo. Per zona o le più vicine, una ricerca, gli obiettivi della missione scelta e il tempo da te; la mappa ci scorre e ne mostra la zona. Percorso (Y), Aggiungi alla coda (X), Segui, Condividi. A o un clic apre la scheda di una missione, come nel registro del gioco: obiettivi, storia, ricompense (oggetti, denaro, esperienza); B torna alla lista.\n• |cffffd100Sulla mappa a schermo intero il tuo personaggio non si muove più|r: i tasti di movimento fanno scorrere la mappa, saltare e la corsa automatica non fanno nulla (in combattimento ti muovi di nuovo). Lo stick destro lì non gira più la telecamera.\n• |cffffd100La barra dei livelli passa a sinistra|r, sotto la zona; la scheda di un punto, l'anteprima e il pannello del percorso stanno alla sua destra.",
+})
+
+-- /mmir focus ouverture (Diag.lua)
+ns.AddLocale("itIT", {
+    FOCUS_HEAD = "Chi ha il controller sulla mappa:",
+    FOCUS_ARMED = "Alla prossima apertura della mappa, l'addon scriverà qui chi ha il controller (due volte). Non scrivere nulla: apri la mappa.",
 })

@@ -503,7 +503,6 @@ ns.AddLocale("enUS", {
     -- La barre d'aide
     HINT_GOTO = "Go to…",
     HINT_LAYERS = "Layers",
-    HINT_ICON_PREV_NEXT = "Previous / next icon",
     HINT_TOGGLE = "Show / hide",
     HINT_LAYER_DETAILS = "Layer's details",
     HINT_BACK_MAP = "Back to the map",
@@ -555,13 +554,25 @@ ns.AddLocale("enUS", {
     QUESTS_TRACK = "Track",
     QUESTS_UNTRACK = "Untrack",
     QUESTS_SHARE = "Share with group",
-    QUESTS_TEXT = "Quest text",
-    QUESTS_OBJECTIVES = "Objectives",
-    QUESTS_BUTTON_TIP = "Your quests on the map, shown when it opens: L or this button with the keyboard and mouse, Menu with a controller (B goes back to the map).",
+    QUESTS_OBJECTIVES_HEAD = "Quest Objectives",
+    QUESTS_STORY = "Description",
+    QUESTS_REWARDS = "Rewards",
+    QUESTS_CHOOSE = "You will be able to choose one of these rewards:",
+    QUESTS_RECEIVE = "You will receive:",
+    QUESTS_ALSO = "You will also receive:",
+    QUESTS_XP = "%s experience",
+    QUESTS_BUTTON_TIP = "Your quests on the map, shown when it opens: L or this button with the keyboard and mouse, RT with a controller (B goes back to the map).",
     HINT_QUESTS = "Quests",
-    HINT_QUESTS_ENTER = "Into the quests",
     HINT_QUESTS_CLOSE = "Close the quests",
     HINT_QUESTS_SORT = "By zone / nearest",
+    HINT_QUESTS_OPEN = "See the quest",
+    HINT_QUESTS_LIST = "Back to the list",
+    HINT_REWARDS = "Rewards",
     HINT_ROUTE_NOW = "Route at once",
-    WHATSNEW_MMIR_0_4_0 = "• |cffffd100Your quests on the full-screen map|r, on the right, shown when the map opens. L or the new Quests button (top right) shows or hides them; with a controller, Menu goes into them (B back to the map, Menu again closes them). Closed, they stay closed the next time. By zone or nearest, a search, the chosen quest's objectives and time from you; the map glides to it and shows its area. Route (Y), Add to queue (X), Track, Share, Quest text.\n• |cffffd100On the full-screen map, your character no longer moves|r: the movement keys glide the map, jump and autorun do nothing (in combat, you move again). The right stick no longer turns the camera there.\n• |cffffd100The layers' rail moves to the left|r, under the zone; the card of a point, the route preview and the route panel sit to its right.",
+    WHATSNEW_MMIR_0_4_0 = "• |cffffd100Your quests on the full-screen map|r, on the right, shown when the map opens. L or the new Quests button (top right) shows or hides them; with a controller, RT goes into the list (and shows it if hidden): the map cursor gives way, the D-pad moves from quest to quest and the map glides to each one; B goes back to the map and its cursor (LT now jumps from icon to icon). Closed, they stay closed the next time. By zone or nearest, a search, the chosen quest's objectives and time from you; the map glides to it and shows its area. Route (Y), Add to queue (X), Track, Share. A or a click opens a quest's page, as in the game's log: its objectives, its story, its rewards (items, money, experience); B goes back to the list.\n• |cffffd100On the full-screen map, your character no longer moves|r: the movement keys glide the map, jump and autorun do nothing (in combat, you move again). The right stick no longer turns the camera there.\n• |cffffd100The layers' rail moves to the left|r, under the zone; the card of a point, the route preview and the route panel sit to its right.",
+})
+
+-- /mmir focus ouverture (Diag.lua)
+ns.AddLocale("enUS", {
+    FOCUS_ARMED = "The next time the map opens, who has the controller will be written here (twice). Don't type anything: open the map.",
 })

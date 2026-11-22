@@ -6,12 +6,14 @@
 
 - **Affichées de base** quand la carte plein écran s'ouvre. Si tu les fermes, elles restent fermées les fois suivantes.
   - Au clavier et à la souris, **L** ou le nouveau bouton **Quêtes** (le premier en haut à droite) les affiche ou les cache.
-  - À la manette, **Menu** entre dans les quêtes, **B** revient à la carte, et Menu de nouveau les ferme. Tant que tu n'y es pas entré, la carte garde la manette et son curseur.
+  - À la manette, **RT** entre dans la liste (et l'affiche si elle était cachée ; Start reste au menu en cercle). Dans la liste, le curseur de la carte s'efface : **la croix** va de quête en quête, et la carte glisse vers chacune. LT y change le tri, RT ferme les quêtes, **B** revient à la carte, qui retrouve son curseur. À l'ouverture de la carte, la liste affichée reste au repos : la carte garde son curseur, et **A** sur une quête, au curseur, entre aussi dans la liste.
+  - Sur la carte plein écran, **LT** saute d'icône en icône autour du curseur (c'était RT).
 - **Le panneau, à droite**, sur toute la hauteur :
-  - tes quêtes par zone ou les plus proches (LT / RT), avec une recherche ;
+  - tes quêtes par zone ou les plus proches (LT à la manette), avec une recherche ;
   - chacune avec son niveau en couleur, sa progression et sa distance ;
-  - en bas, la quête choisie : ses objectifs (ou son texte) et le temps pour y aller depuis toi.
-- **Choisir une quête** fait glisser la carte jusqu'à elle et montre sa zone. Itinéraire (Y) ouvre l'aperçu du trajet, Ajouter à la file (X), Suivre, Partager au groupe, Texte de la quête. À la souris : Maj+clic sur une quête part tout de suite, clic droit l'ajoute à la file.
+  - **A, ou un clic, ouvre la fiche d'une quête** à la place de la liste, comme dans le journal du jeu : ses objectifs, son histoire, ses récompenses (les objets au choix ou donnés, avec leur info-bulle, l'argent, l'expérience) et le temps pour y aller depuis toi. **B** (ou Retour) revient à la liste ;
+  - à la manette, dans la fiche : la croix haut / bas fait défiler, gauche / droite va de récompense en récompense, A suit la quête, Y l'itinéraire, X la file, LT la partage.
+- **Choisir une quête** fait glisser la carte jusqu'à elle et montre sa zone. Itinéraire (Y) ouvre l'aperçu du trajet, Ajouter à la file (X), Suivre, Partager au groupe. À la souris : Maj+clic sur une quête part tout de suite, clic droit l'ajoute à la file.
 - **Le rail des calques passe à gauche**, sous la zone. La fiche d'un point, l'aperçu d'un itinéraire et le panneau de trajet se posent à sa droite.
 - **Sur la carte plein écran, ton personnage ne bouge plus.** Les touches de déplacement font glisser la carte ; le saut, la course automatique et s'asseoir ne font rien. En combat, tout redevient normal. À la manette, le stick droit n'y tourne plus la caméra.
 

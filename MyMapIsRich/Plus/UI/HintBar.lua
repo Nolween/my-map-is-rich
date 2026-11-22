@@ -108,9 +108,15 @@ local MOUSE_HINTS = {
         { { "ESC" }, "HINT_CLOSE_MAP", true },
     },
     quests = {
-        { { "clickL" }, "HINT_SELECT" },
+        { { "clickL" }, "HINT_QUESTS_OPEN" },
         { { "SHIFT", "+", "clickL" }, "HINT_ROUTE_NOW" },
         { { "clickR" }, "ACT_QUEUE" },
+        { { "L" }, "HINT_QUESTS_CLOSE", true },
+        { { "ESC" }, "HINT_CLOSE_MAP", true },
+    },
+    -- (la fiche d'une quête : UI/QuestPanel.lua)
+    questpage = {
+        { { "wheel" }, "HINT_SCROLL" },
         { { "L" }, "HINT_QUESTS_CLOSE", true },
         { { "ESC" }, "HINT_CLOSE_MAP", true },
     },
@@ -205,7 +211,9 @@ function H.Refresh()
         for i = 1, #items do items[i]:Hide() end
         local ctx = "map"
         if ns.Layers and ns.Layers.PanelShown() then ctx = "rail"
-        elseif ns.QuestPanel and ns.QuestPanel.Shown() then ctx = "quests" end
+        elseif ns.QuestPanel and ns.QuestPanel.Shown() then
+            ctx = ns.QuestPanel.View() == "quest" and "questpage" or "quests"
+        end
         local set = MouseSet(ctx)
         set:Show()
         bar:SetWidth(set.width)

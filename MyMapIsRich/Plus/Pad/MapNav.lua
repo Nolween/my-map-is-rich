@@ -414,8 +414,8 @@ end
 -- (Pad/Bindings.lua, mode « read »). La croix, A, X, B et les sticks
 -- restent les siens et ceux d'OpenMap.
 -- La barre d'aide, comme la maquette de la carte plein écran : A Choisir,
--- R3, LB, RB, Y (les calques : UI/Layers.lua), Menu (les quêtes :
--- UI/QuestPanel.lua), View, LT / RT, puis X et B (du jeu, en gris).
+-- R3, LB, RB, Y (les calques : UI/Layers.lua), View, LT (l'icône
+-- suivante), RT (les quêtes : UI/QuestPanel.lua), puis X et B (du jeu, en gris).
 P.DefineContext("map", 10, CanvasFocus, nil, "read")
 P.SetPassive("map", "PAD1", function()
     local mod = ns.mod
@@ -445,14 +445,21 @@ P.SetAction("map", "PAD4", function()
     if ns.FullMap() and ns.Layers then ns.Layers.TogglePanel() end
 end, function() return ns.FullMap() and "HINT_LAYERS" or nil end)
 P.SetAction("map", "PADBACK", Actions, "HINT_ACTIONS")
-P.SetAction("map", "PADLTRIGGER", function() M.Cycle(-1) end)
-P.SetAction("map", "PADRTRIGGER", function() M.Cycle(1) end, "HINT_ICON_PREV_NEXT")
--- (Menu, libre sur la carte : les quêtes de la carte plein écran, UI/QuestPanel.lua)
-P.SetAction("map", "PADFORWARD", function()
-    if ns.FullMap() and ns.QuestPanel then ns.QuestPanel.PadMenu() end
+-- (sur la carte plein écran, LT : l'icône suivante autour du curseur ; RT :
+-- les quêtes, UI/QuestPanel.lua — Start est au menu en cercle. Sur la carte
+-- classique, LT / RT : l'icône précédente / suivante, comme avant)
+P.SetAction("map", "PADLTRIGGER", function()
+    if ns.FullMap() then M.Cycle(1) else M.Cycle(-1) end
 end, function()
+    return ns.FullMap() and "HINT_JUMP" or nil
+end)
+P.SetAction("map", "PADRTRIGGER", function()
+    if ns.FullMap() and ns.QuestPanel then ns.QuestPanel.PadMenu() else M.Cycle(1) end
+end, function()
+    -- (la manette sur la carte : RT affiche la liste ou y entre ; dedans, c'est
+    -- le contexte « quests » de UI/QuestPanel.lua qui dit « Fermer les quêtes »)
     if not ns.FullMap() then return nil end
-    return (ns.QuestPanel and ns.QuestPanel.Shown()) and "HINT_QUESTS_ENTER" or "HINT_QUESTS"
+    return "HINT_QUESTS"
 end)
 P.SetPassive("map", "PAD3", function() return ns.FullMap() and "HINT_ZOOM_OUT" or nil end)
 P.SetPassive("map", "PAD2", function() return ns.FullMap() and "HINT_CLOSE_MAP" or nil end)

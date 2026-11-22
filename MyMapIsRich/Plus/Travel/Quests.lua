@@ -178,6 +178,15 @@ local function Detect()
 end
 
 P.DefineContext("questlog", 20, Detect)
+-- (RT : les quêtes de la carte plein écran, comme sur la carte seule — le
+-- jeu met souvent la manette dans son journal, caché sous la carte plein
+-- écran, en l'ouvrant : UI/QuestPanel.lua)
+P.SetAction("questlog", "PADRTRIGGER", function()
+    if ns.FullMap() and ns.QuestPanel then ns.QuestPanel.PadMenu() end
+end, function()
+    if not ns.FullMap() then return nil end
+    return "HINT_QUESTS"
+end)
 P.SetAction("questlog", "PADRSTICK", function()
     local questID = Q.Focused()
     if questID and ns.Travel then ns.Travel.AtQuest(questID) end

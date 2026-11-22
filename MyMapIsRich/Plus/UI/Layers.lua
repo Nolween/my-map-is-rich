@@ -286,7 +286,7 @@ local function BuildRail(chrome)
     rail:EnableMouse(true)
     local title = UI.Label(rail, L.LAYERS_TITLE)
     title:SetPoint("TOP", rail, "TOP", -6, -8)
-    rail.glyph = UI.CreateGlyph(rail, 14)
+    rail.glyph = UI.CreateGlyph(rail, 18)
     rail.glyph:SetPoint("LEFT", title, "RIGHT", 3, 0)
     rail.glyph:SetKey("PAD4")
     toggles = {}

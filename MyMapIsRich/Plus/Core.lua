@@ -313,6 +313,8 @@ SlashCmdList.MYMAPISRICH = function(msg)
         if ns.Diag then ns.Diag.Probe() end
     elseif cmd == "test" then
         if ns.Diag then ns.Diag.Test() end
+    elseif cmd == "focus ouverture" or cmd == "focus open" then
+        if ns.Diag then ns.Diag.ArmOpenFocus() end
     elseif cmd == "focus" or cmd == "focus api" then
         if ns.Diag then ns.Diag.Focus(cmd == "focus api") end
     elseif cmd == "off" or cmd == "on" then

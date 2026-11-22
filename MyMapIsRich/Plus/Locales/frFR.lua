@@ -503,7 +503,6 @@ ns.AddLocale("frFR", {
     -- La barre d'aide
     HINT_GOTO = "Aller à…",
     HINT_LAYERS = "Calques",
-    HINT_ICON_PREV_NEXT = "Icône précédente / suivante",
     HINT_TOGGLE = "Afficher / cacher",
     HINT_LAYER_DETAILS = "Détails du calque",
     HINT_BACK_MAP = "Retour à la carte",
@@ -555,13 +554,25 @@ ns.AddLocale("frFR", {
     QUESTS_TRACK = "Suivre",
     QUESTS_UNTRACK = "Ne plus suivre",
     QUESTS_SHARE = "Partager au groupe",
-    QUESTS_TEXT = "Texte de la quête",
-    QUESTS_OBJECTIVES = "Objectifs",
-    QUESTS_BUTTON_TIP = "Tes quêtes sur la carte, affichées à son ouverture : L ou ce bouton au clavier et à la souris, Menu à la manette (B revient à la carte).",
+    QUESTS_OBJECTIVES_HEAD = "Objectifs de la quête",
+    QUESTS_STORY = "Description",
+    QUESTS_REWARDS = "Récompenses",
+    QUESTS_CHOOSE = "Tu pourras choisir une de ces récompenses :",
+    QUESTS_RECEIVE = "Tu recevras :",
+    QUESTS_ALSO = "Tu recevras aussi :",
+    QUESTS_XP = "%s points d'expérience",
+    QUESTS_BUTTON_TIP = "Tes quêtes sur la carte, affichées à son ouverture : L ou ce bouton au clavier et à la souris, RT à la manette (B revient à la carte).",
     HINT_QUESTS = "Quêtes",
-    HINT_QUESTS_ENTER = "Entrer dans les quêtes",
     HINT_QUESTS_CLOSE = "Fermer les quêtes",
     HINT_QUESTS_SORT = "Par zone / les plus proches",
+    HINT_QUESTS_OPEN = "Voir la quête",
+    HINT_QUESTS_LIST = "Retour à la liste",
+    HINT_REWARDS = "Récompenses",
     HINT_ROUTE_NOW = "Itinéraire tout de suite",
-    WHATSNEW_MMIR_0_4_0 = "• |cffffd100Tes quêtes sur la carte plein écran|r, à droite, affichées dès que la carte s'ouvre. L ou le nouveau bouton Quêtes (en haut à droite) les affiche ou les cache ; à la manette, Menu y entre (B revient à la carte, Menu de nouveau les ferme). Fermées, elles le restent la fois suivante. Par zone ou les plus proches, une recherche, les objectifs de la quête choisie et le temps depuis toi ; la carte y glisse et montre sa zone. Itinéraire (Y), Ajouter à la file (X), Suivre, Partager, Texte de la quête.\n• |cffffd100Sur la carte plein écran, ton personnage ne bouge plus|r : les touches de déplacement font glisser la carte, le saut et la course automatique ne font rien (en combat, tu te déplaces de nouveau). Le stick droit n'y tourne plus la caméra.\n• |cffffd100Le rail des calques passe à gauche|r, sous la zone ; la fiche d'un point, l'aperçu et le panneau de trajet se posent à sa droite.",
+    WHATSNEW_MMIR_0_4_0 = "• |cffffd100Tes quêtes sur la carte plein écran|r, à droite, affichées dès que la carte s'ouvre. L ou le nouveau bouton Quêtes (en haut à droite) les affiche ou les cache ; à la manette, RT entre dans la liste (et l'affiche si elle était cachée) : le curseur de la carte s'efface, la croix va de quête en quête et la carte glisse vers chacune ; B revient à la carte et à son curseur (LT saute désormais d'icône en icône). Fermées, elles le restent la fois suivante. Par zone ou les plus proches, une recherche, les objectifs de la quête choisie et le temps depuis toi ; la carte y glisse et montre sa zone. Itinéraire (Y), Ajouter à la file (X), Suivre, Partager. A ou un clic ouvre la fiche d'une quête, comme dans le journal du jeu : ses objectifs, son histoire, ses récompenses (objets, argent, expérience) ; B revient à la liste.\n• |cffffd100Sur la carte plein écran, ton personnage ne bouge plus|r : les touches de déplacement font glisser la carte, le saut et la course automatique ne font rien (en combat, tu te déplaces de nouveau). Le stick droit n'y tourne plus la caméra.\n• |cffffd100Le rail des calques passe à gauche|r, sous la zone ; la fiche d'un point, l'aperçu et le panneau de trajet se posent à sa droite.",
+})
+
+-- /mmir focus ouverture (Diag.lua)
+ns.AddLocale("frFR", {
+    FOCUS_ARMED = "À la prochaine ouverture de la carte, l'addon écrira ici à qui est la manette (deux fois). Ne tape rien : ouvre la carte.",
 })

@@ -171,7 +171,6 @@ ns.AddLocale("deDE", {
     -- La barre d'aide
     HINT_GOTO = "Gehe zu…",
     HINT_LAYERS = "Ebenen",
-    HINT_ICON_PREV_NEXT = "Vorheriges / nächstes Symbol",
     HINT_TOGGLE = "Anzeigen / ausblenden",
     HINT_LAYER_DETAILS = "Ebenendetails",
     HINT_BACK_MAP = "Zurück zur Karte",
@@ -252,13 +251,26 @@ ns.AddLocale("deDE", {
     QUESTS_TRACK = "Verfolgen",
     QUESTS_UNTRACK = "Nicht verfolgen",
     QUESTS_SHARE = "Mit Gruppe teilen",
-    QUESTS_TEXT = "Questtext",
-    QUESTS_OBJECTIVES = "Ziele",
-    QUESTS_BUTTON_TIP = "Deine Quests auf der Karte, beim Öffnen angezeigt: L oder diese Schaltfläche mit Tastatur und Maus, Menu mit dem Controller (B zurück zur Karte).",
+    QUESTS_OBJECTIVES_HEAD = "Questziele",
+    QUESTS_STORY = "Beschreibung",
+    QUESTS_REWARDS = "Belohnungen",
+    QUESTS_CHOOSE = "Du kannst eine dieser Belohnungen wählen:",
+    QUESTS_RECEIVE = "Du bekommst:",
+    QUESTS_ALSO = "Du bekommst außerdem:",
+    QUESTS_XP = "%s Erfahrung",
+    QUESTS_BUTTON_TIP = "Deine Quests auf der Karte, beim Öffnen angezeigt: L oder diese Schaltfläche mit Tastatur und Maus, RT mit dem Controller (B zurück zur Karte).",
     HINT_QUESTS = "Quests",
-    HINT_QUESTS_ENTER = "In die Quests",
     HINT_QUESTS_CLOSE = "Quests schließen",
     HINT_QUESTS_SORT = "Nach Gebiet / die nächsten",
+    HINT_QUESTS_OPEN = "Quest ansehen",
+    HINT_QUESTS_LIST = "Zurück zur Liste",
+    HINT_REWARDS = "Belohnungen",
     HINT_ROUTE_NOW = "Sofort losgehen",
-    WHATSNEW_MMIR_0_4_0 = "• |cffffd100Deine Quests auf der Vollbildkarte|r, rechts, sobald die Karte sich öffnet. L oder die neue Schaltfläche Quests (oben rechts) zeigt oder verbirgt sie; mit dem Controller geht Menu hinein (B zurück zur Karte, Menu erneut schließt sie). Geschlossen bleiben sie es beim nächsten Mal. Nach Gebiet oder die nächsten, eine Suche, die Ziele der gewählten Quest und die Zeit von dir aus; die Karte gleitet dorthin und zeigt ihr Gebiet. Route (Y), Zur Liste hinzufügen (X), Verfolgen, Teilen, Questtext.\n• |cffffd100Auf der Vollbildkarte bewegt sich deine Figur nicht mehr|r: die Bewegungstasten verschieben die Karte, Springen und automatisches Laufen tun nichts (im Kampf bewegst du dich wieder). Der rechte Stick dreht dort nicht mehr die Kamera.\n• |cffffd100Die Ebenenleiste wandert nach links|r, unter das Gebiet; die Karte eines Punkts, die Routenvorschau und die Routenanzeige stehen rechts daneben.",
+    WHATSNEW_MMIR_0_4_0 = "• |cffffd100Deine Quests auf der Vollbildkarte|r, rechts, sobald die Karte sich öffnet. L oder die neue Schaltfläche Quests (oben rechts) zeigt oder verbirgt sie; mit dem Controller geht RT in die Liste (und zeigt sie, wenn sie verborgen war): der Kartencursor verschwindet, das Steuerkreuz geht von Quest zu Quest und die Karte gleitet zu jeder; B führt zurück zur Karte und ihrem Cursor (LT springt jetzt von Symbol zu Symbol). Geschlossen bleiben sie es beim nächsten Mal. Nach Gebiet oder die nächsten, eine Suche, die Ziele der gewählten Quest und die Zeit von dir aus; die Karte gleitet dorthin und zeigt ihr Gebiet. Route (Y), Zur Liste hinzufügen (X), Verfolgen, Teilen. A oder ein Klick öffnet die Seite einer Quest wie im Questlog des Spiels: Ziele, Geschichte, Belohnungen (Gegenstände, Geld, Erfahrung); B führt zurück zur Liste.\n• |cffffd100Auf der Vollbildkarte bewegt sich deine Figur nicht mehr|r: die Bewegungstasten verschieben die Karte, Springen und automatisches Laufen tun nichts (im Kampf bewegst du dich wieder). Der rechte Stick dreht dort nicht mehr die Kamera.\n• |cffffd100Die Ebenenleiste wandert nach links|r, unter das Gebiet; die Karte eines Punkts, die Routenvorschau und die Routenanzeige stehen rechts daneben.",
+})
+
+-- /mmir focus ouverture (Diag.lua)
+ns.AddLocale("deDE", {
+    FOCUS_HEAD = "Wer den Controller auf der Karte hat:",
+    FOCUS_ARMED = "Beim nächsten Öffnen der Karte schreibt das Addon hier (zweimal), wer den Controller hat. Tippe nichts: öffne die Karte.",
 })

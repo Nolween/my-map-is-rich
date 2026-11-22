@@ -171,7 +171,6 @@ ns.AddLocale("ptBR", {
     -- La barre d'aide
     HINT_GOTO = "Ir para…",
     HINT_LAYERS = "Camadas",
-    HINT_ICON_PREV_NEXT = "Ícone anterior / seguinte",
     HINT_TOGGLE = "Mostrar / ocultar",
     HINT_LAYER_DETAILS = "Detalhes da camada",
     HINT_BACK_MAP = "Voltar ao mapa",
@@ -252,13 +251,26 @@ ns.AddLocale("ptBR", {
     QUESTS_TRACK = "Seguir",
     QUESTS_UNTRACK = "Parar de seguir",
     QUESTS_SHARE = "Compartilhar com o grupo",
-    QUESTS_TEXT = "Texto da missão",
-    QUESTS_OBJECTIVES = "Objetivos",
-    QUESTS_BUTTON_TIP = "Suas missões no mapa, mostradas ao abri-lo: L ou este botão com teclado e mouse, Menu no controle (B volta ao mapa).",
+    QUESTS_OBJECTIVES_HEAD = "Objetivos da missão",
+    QUESTS_STORY = "Descrição",
+    QUESTS_REWARDS = "Recompensas",
+    QUESTS_CHOOSE = "Você poderá escolher uma destas recompensas:",
+    QUESTS_RECEIVE = "Você receberá:",
+    QUESTS_ALSO = "Você também receberá:",
+    QUESTS_XP = "%s de experiência",
+    QUESTS_BUTTON_TIP = "Suas missões no mapa, mostradas ao abri-lo: L ou este botão com teclado e mouse, RT no controle (B volta ao mapa).",
     HINT_QUESTS = "Missões",
-    HINT_QUESTS_ENTER = "Entrar nas missões",
     HINT_QUESTS_CLOSE = "Fechar as missões",
     HINT_QUESTS_SORT = "Por zona / as mais próximas",
+    HINT_QUESTS_OPEN = "Ver a missão",
+    HINT_QUESTS_LIST = "Voltar à lista",
+    HINT_REWARDS = "Recompensas",
     HINT_ROUTE_NOW = "Rota na hora",
-    WHATSNEW_MMIR_0_4_0 = "• |cffffd100Suas missões no mapa em tela cheia|r, à direita, mostradas assim que o mapa abre. L ou o novo botão Missões (canto superior direito) as mostra ou esconde; no controle, Menu entra nelas (B volta ao mapa, Menu de novo as fecha). Fechadas, continuam fechadas na vez seguinte. Por zona ou as mais próximas, uma busca, os objetivos da missão escolhida e o tempo a partir de você; o mapa desliza até ela e mostra a sua zona. Rota (Y), Adicionar à fila (X), Seguir, Compartilhar, Texto da missão.\n• |cffffd100No mapa em tela cheia, seu personagem não se move mais|r: as teclas de movimento deslizam o mapa, pular e correr automaticamente não fazem nada (em combate, você volta a se mover). O analógico direito não gira mais a câmera ali.\n• |cffffd100A barra de camadas passa para a esquerda|r, sob a zona; a ficha de um ponto, a prévia e o painel da rota ficam à direita dela.",
+    WHATSNEW_MMIR_0_4_0 = "• |cffffd100Suas missões no mapa em tela cheia|r, à direita, mostradas assim que o mapa abre. L ou o novo botão Missões (canto superior direito) as mostra ou esconde; no controle, RT entra na lista (e a mostra se estava escondida): o cursor do mapa some, o direcional vai de missão em missão e o mapa desliza até cada uma; B volta ao mapa e ao seu cursor (LT agora pula de ícone em ícone). Fechadas, continuam fechadas na vez seguinte. Por zona ou as mais próximas, uma busca, os objetivos da missão escolhida e o tempo a partir de você; o mapa desliza até ela e mostra a sua zona. Rota (Y), Adicionar à fila (X), Seguir, Compartilhar. A ou um clique abre a ficha de uma missão, como no registro do jogo: objetivos, história, recompensas (itens, dinheiro, experiência); B volta à lista.\n• |cffffd100No mapa em tela cheia, seu personagem não se move mais|r: as teclas de movimento deslizam o mapa, pular e correr automaticamente não fazem nada (em combate, você volta a se mover). O analógico direito não gira mais a câmera ali.\n• |cffffd100A barra de camadas passa para a esquerda|r, sob a zona; a ficha de um ponto, a prévia e o painel da rota ficam à direita dela.",
+})
+
+-- /mmir focus ouverture (Diag.lua)
+ns.AddLocale("ptBR", {
+    FOCUS_HEAD = "Quem tem o controle no mapa:",
+    FOCUS_ARMED = "Na próxima vez que o mapa abrir, o addon escreverá aqui quem tem o controle (duas vezes). Não digite nada: abra o mapa.",
 })

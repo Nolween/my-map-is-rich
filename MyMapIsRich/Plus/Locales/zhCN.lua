@@ -171,7 +171,6 @@ ns.AddLocale("zhCN", {
     -- La barre d'aide
     HINT_GOTO = "前往…",
     HINT_LAYERS = "图层",
-    HINT_ICON_PREV_NEXT = "上一个 / 下一个图标",
     HINT_TOGGLE = "显示 / 隐藏",
     HINT_LAYER_DETAILS = "图层详细",
     HINT_BACK_MAP = "返回地图",
@@ -252,13 +251,26 @@ ns.AddLocale("zhCN", {
     QUESTS_TRACK = "追踪",
     QUESTS_UNTRACK = "取消追踪",
     QUESTS_SHARE = "与队伍共享",
-    QUESTS_TEXT = "任务文本",
-    QUESTS_OBJECTIVES = "目标",
-    QUESTS_BUTTON_TIP = "地图上的任务，打开地图时显示：键盘和鼠标用 L 或此按钮，手柄用 Menu（B 返回地图）。",
+    QUESTS_OBJECTIVES_HEAD = "任务目标",
+    QUESTS_STORY = "描述",
+    QUESTS_REWARDS = "奖励",
+    QUESTS_CHOOSE = "你可以从这些奖励中选择一个：",
+    QUESTS_RECEIVE = "你将得到：",
+    QUESTS_ALSO = "你还将得到：",
+    QUESTS_XP = "%s 点经验值",
+    QUESTS_BUTTON_TIP = "地图上的任务，打开地图时显示：键盘和鼠标用 L 或此按钮，手柄用 RT（B 返回地图）。",
     HINT_QUESTS = "任务",
-    HINT_QUESTS_ENTER = "进入任务",
     HINT_QUESTS_CLOSE = "关闭任务",
     HINT_QUESTS_SORT = "按区域 / 最近的",
+    HINT_QUESTS_OPEN = "查看任务",
+    HINT_QUESTS_LIST = "返回列表",
+    HINT_REWARDS = "奖励",
     HINT_ROUTE_NOW = "立即规划路线",
-    WHATSNEW_MMIR_0_4_0 = "• |cffffd100全屏地图上的任务|r：在右侧，地图一打开就显示。L 或右上角新的“任务”按钮可显示或隐藏；手柄用 Menu 进入任务（B 返回地图，再按 Menu 关闭）。关闭后，下次仍保持关闭。按区域或最近排序、搜索、所选任务的目标和从你出发的时间；地图会滑到那里并显示其区域。路线（Y）、加入队列（X）、追踪、共享、任务文本。\n• |cffffd100在全屏地图上，你的角色不再移动|r：移动键会滑动地图，跳跃和自动奔跑无效（战斗中会恢复移动）。右摇杆在那里不再转动镜头。\n• |cffffd100图层栏移到左侧|r，位于区域名称下方；地点信息卡、路线预览和路线面板放在它的右侧。",
+    WHATSNEW_MMIR_0_4_0 = "• |cffffd100全屏地图上的任务|r：在右侧，地图一打开就显示。L 或右上角新的“任务”按钮可显示或隐藏；手柄用 RT 进入列表（若已隐藏则先显示）：地图光标消失，十字键逐个切换任务，地图随之滑到每个任务；B 返回地图及其光标（LT 现在逐个跳转图标）。关闭后，下次仍保持关闭。按区域或最近排序、搜索、所选任务的目标和从你出发的时间；地图会滑到那里并显示其区域。路线（Y）、加入队列（X）、追踪、共享。按 A 或点击可像游戏任务日志一样打开任务页面：目标、故事、奖励（物品、金钱、经验）；B 返回列表。\n• |cffffd100在全屏地图上，你的角色不再移动|r：移动键会滑动地图，跳跃和自动奔跑无效（战斗中会恢复移动）。右摇杆在那里不再转动镜头。\n• |cffffd100图层栏移到左侧|r，位于区域名称下方；地点信息卡、路线预览和路线面板放在它的右侧。",
+})
+
+-- /mmir focus ouverture (Diag.lua)
+ns.AddLocale("zhCN", {
+    FOCUS_HEAD = "地图上手柄的归属：",
+    FOCUS_ARMED = "下次打开地图时，插件会在这里写出手柄的归属（两次）。什么都不要输入：直接打开地图。",
 })

@@ -99,6 +99,15 @@ function Diag.Focus(withApi)
         tostring(ns.ViewOn()), P.current or L.NONE, P.gaveUp and " (abandon)" or "")
     ns.Print("  SoftCursor : %s · affiché : %s", tostring(soft ~= nil), tostring(soft and soft:IsShown() or false))
     ns.Print("  carte IsCanvasGamepadFocus : %s", Try(map, "IsCanvasGamepadFocus"))
+    -- (où la carte du jeu met la manette : la carte ou son journal ; le journal ouvert ou non)
+    ns.Print("  carte IsMapFocused : %s · IsQuestFocused : %s · IsSidePanelShown : %s", Try(map, "IsMapFocused"),
+        Try(map, "IsQuestFocused"), Try(map, "IsSidePanelShown"))
+    -- (la fiche d'une quête : les fonctions de lecture du journal trouvées, et
+    -- ce qu'elles disent de la quête choisie, UI/QuestPanel.lua)
+    if ns.QuestPanel and ns.QuestPanel.Probe then
+        local ok, line = pcall(ns.QuestPanel.Probe)
+        ns.Print("  journal : %s", ok and line or tostring(line))
+    end
     ns.Print("  InputBindingManager : %s · IsOnlyCoreBindingSetActive : %s", tostring(manager ~= nil),
         Try(manager, "IsOnlyCoreBindingSetActive"))
     local mod = ns.mod
@@ -134,6 +143,23 @@ function Diag.Focus(withApi)
         ns.Print("  pied de la carte : %s", Names(footer))
     end
 end
+
+-- /mmir focus ouverture : le même relevé, pris tout seul à la prochaine
+-- ouverture de la carte (une demi-seconde, puis deux secondes après), sans
+-- rien taper : taper la commande met la manette dans la discussion
+local armed = false
+
+function Diag.ArmOpenFocus()
+    armed = true
+    ns.Print(L.FOCUS_ARMED)
+end
+
+ns.On("MAP_SHOW", function()
+    if not armed then return end
+    armed = false
+    C_Timer.After(0.5, function() Diag.Focus(true) end)
+    C_Timer.After(2, function() Diag.Focus(false) end)
+end)
 
 -- Les boutons de la manette sur la carte : l'action du jeu (ou d'un addon)
 local PROBE_KEYS = {
