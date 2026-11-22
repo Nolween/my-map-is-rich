@@ -48,7 +48,7 @@ local DEFAULTS = {
     theme = "brown",
     travel = true,         -- R3 sur la carte : un itinéraire jusqu'au curseur
     travelSpeed = "auto",  -- la vitesse de marche : auto, walk, slow, fast
-    travelRoads = true,    -- la marche suit les routes du jeu (sinon : en ligne droite)
+    travelPath = "mixed",  -- le chemin à pied : roads (routes au maximum), mixed (routes si possible), fields (à travers champs)
     travelTerrain = true,  -- les chemins à pied contournent les obstacles (Travel/Nav.lua)
     travelMinimap = true,  -- l'itinéraire aussi sur la minimap
     travelHud = true,      -- le panneau de trajet (UI/RouteHud.lua)
@@ -338,6 +338,11 @@ events:SetScript("OnEvent", function(_, event, arg)
         MyMapIsRichPlusDB = MyMapIsRichPlusDB or {}
         ns.db = MyMapIsRichPlusDB
         ns.db.options = ns.db.options or {}
+        -- (l'ancienne case « Suivre les routes » décochée : à travers champs)
+        if ns.db.options.travelRoads ~= nil then
+            if ns.db.options.travelRoads == false and ns.db.options.travelPath == nil then ns.db.options.travelPath = "fields" end
+            ns.db.options.travelRoads = nil
+        end
         Fill(ns.db.options, DEFAULTS)
         ns.db.recent = ns.db.recent or {}
         if ns.UI and ns.UI.SetTheme then ns.UI.SetTheme(ns.db.options.theme, true) end

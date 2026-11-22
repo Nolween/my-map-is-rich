@@ -67,6 +67,7 @@ MyMapIsRich/                le dossier de l'addon
     Init.lua Core.lua Diag.lua Locales/ Pad/ Travel/ UI/ Data/
   LICENSE  LICENSES/ (OpenMap.txt, Ace3.txt)
 tools/                      roads/ et nav/ : les données de marche (voir plus bas) ;
+                            hazards/ : les villes de l'autre faction (voir plus bas) ;
                             media/Arrow.ps1 : la flèche GPS (Media/Arrow.tga)
 ```
 
@@ -86,6 +87,12 @@ python -m venv .venv
 .venv\Scripts\pip install -r tools\roads\requirements.txt
 .venv\Scripts\python tools\roads\build_roads.py ["K:\World of Warcraft\_forever_\Interface\AddOns\ShortestPathForever"]
 .venv\Scripts\python tools\nav\build_nav.py ["K:\World of Warcraft\_forever_\Interface\AddOns\ShortestPathForever"]
+```
+
+`Hazards.lua` (les villes et capitales de l'autre faction, que les chemins à pied contournent) est écrit par `tools/hazards/build_hazards.ps1`, à partir des mêmes données de Shortest Path Forever, sans Python :
+
+```
+powershell -ExecutionPolicy Bypass -File tools\hazards\build_hazards.ps1 ["K:\World of Warcraft\_forever_\Interface\AddOns\ShortestPathForever"]
 ```
 
 Les données de la carte (`MyMapIsRich/Data/Forever/`) viennent des outils d'OpenMap, dans son dépôt.

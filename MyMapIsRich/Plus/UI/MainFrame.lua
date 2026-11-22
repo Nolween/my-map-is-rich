@@ -276,7 +276,14 @@ local function BuildTravel(page)
     y = y - 62
     Option(left, "travelTerrain", L.OPT_TRAVEL_TERRAIN, L.OPT_TRAVEL_TERRAIN_TIP, y, Next)
     y = y - 62
-    Option(left, "travelRoads", L.OPT_TRAVEL_ROADS, L.OPT_TRAVEL_ROADS_TIP, y, Next)
+    -- (le chemin à pied : routes au maximum, routes si possible, à travers champs)
+    Cycle(left, "travelPath", L.OPT_TRAVEL_PATH, {
+        { "roads", L.OPT_PATH_ROADS }, { "mixed", L.OPT_PATH_MIXED }, { "fields", L.OPT_PATH_FIELDS },
+    }, y, Next)
+    local pathHelp = UI.DimText(left, L.OPT_TRAVEL_PATH_TIP)
+    pathHelp:SetPoint("TOPLEFT", 20, y - 30)
+    pathHelp:SetPoint("RIGHT", left, "RIGHT", -16, 0)
+    pathHelp:SetJustifyH("LEFT")
     y = y - 62
     Option(left, "travelCorpse", L.OPT_TRAVEL_CORPSE, L.OPT_TRAVEL_CORPSE_TIP, y, function(on)
         if on and ns.Travel then ns.Travel.CheckGhost() end

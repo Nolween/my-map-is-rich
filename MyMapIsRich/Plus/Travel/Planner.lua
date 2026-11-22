@@ -7,9 +7,10 @@
 --   (des nœuds : { cont, x, y, name }), secs, paths (les sauts d'un vol),
 --   route (le nom d'une ligne de bateau), points (le tracé d'une marche :
 --   { {x, y}, ... }) }
--- La marche suit les routes du jeu (Travel/Roads.lua), et va en ligne
--- droite, avec un détour, entre une route et un point qui n'est pas dessus
--- (réglage « Suivre les routes » désactivé : toujours en ligne droite).
+-- La marche peut suivre les routes du jeu (Travel/Roads.lua) et va en ligne
+-- droite, avec un détour, entre une route et un point qui n'est pas dessus.
+-- Le réglage « Chemin à pied » (Pl.PathProfile) dit combien un yard hors
+-- route compte : à travers champs, autant qu'un yard de route.
 -- Elle ne relie que deux points d'un même continent.
 -- Dijkstra sur le temps, sur les nœuds du réseau (Travel/Graph.lua), le
 -- départ, l'arrivée et les carrefours des routes.
@@ -154,6 +155,24 @@ function Pl.Speed()
 end
 
 ---------------------------------------------------------------------------
+-- Le réglage « Chemin à pied » (travelPath) : ce que compte un yard hors
+-- route pour choisir le chemin (un yard de route compte 1), et ce que coûte
+-- le fait de monter sur une route (yd), pour qu'un chemin ne fasse pas un
+-- crochet vers un petit bout de route. Lu aussi par la grille (Travel/Nav.lua).
+-- Le temps annoncé reste le temps réel.
+---------------------------------------------------------------------------
+local PROFILES = {
+    roads = { off = 2.0, join = 24 },    -- routes au maximum
+    mixed = { off = 1.3, join = 16 },    -- routes si possible
+    fields = { off = 1.0, join = 0 },    -- à travers champs : au plus court
+}
+
+function Pl.PathProfile()
+    local mode = ns.db and ns.db.options.travelPath
+    return PROFILES[mode] or PROFILES.mixed, PROFILES[mode] and mode or "mixed"
+end
+
+---------------------------------------------------------------------------
 -- Le calcul
 ---------------------------------------------------------------------------
 -- La marche suit les routes (Travel/Roads.lua) : chaque point clé (départ,
@@ -161,13 +180,13 @@ end
 -- « accès » (le point de la route le plus proche, sur chacun des tronçons
 -- voisins), on suit les tronçons de carrefour en carrefour, et on en sort
 -- par l'accès d'un autre point clé. La ligne droite reste possible entre
--- deux points clés, mais un yard hors route compte pour OFFROAD : c'est la
--- préférence pour les routes (le temps annoncé, lui, reste le temps réel).
--- (sans données du terrain, une longue ligne droite traverse montagnes et
--- forêts : au-delà de OFFROAD_NEAR, chaque yard hors route compte bien plus)
-local OFFROAD = 1.5          -- un yard hors route en vaut 1,5 pour choisir le chemin...
-local OFFROAD_NEAR = 300     -- yd : ... jusque-là ;
-local OFFROAD_FAR = 3        -- ... au-delà, 3 (2 quand la grille de marche précise ensuite le chemin)
+-- deux points clés, mais un yard hors route compte selon le réglage (le
+-- temps annoncé, lui, reste le temps réel).
+-- (sans la grille de marche pour préciser ensuite le chemin, une longue
+-- ligne droite traverse montagnes et forêts : au-delà de OFFROAD_NEAR,
+-- chaque yard hors route compte au moins OFFROAD_BLIND)
+local OFFROAD_NEAR = 300     -- yd
+local OFFROAD_BLIND = 1.5    -- au-delà, sans la grille de marche
 local ACCESS_K = 4           -- les routes voisines d'un point clé
 local ACCESS_NEAR = 600      -- yd : les routes cherchées autour d'un point clé
 local ACCESS_FAR = 2000      -- yd : ... ou la plus proche, si aucune n'est si près
@@ -175,9 +194,9 @@ local ROAD_ID = 100000       -- un nœud de route : continent * ROAD_ID + numér
 
 local Heap = G.Heap          -- (un tas binaire : Travel/Graph.lua)
 
--- opts : { walkOnly (la marche seule, sans vols ni bateaux), far (le coût d'un yard
--- hors route au-delà de OFFROAD_NEAR), speed (yd/s : la vitesse de marche,
--- celle d'un fantôme par exemple) } ; rien : un itinéraire complet
+-- opts : { walkOnly (la marche seule, sans vols ni bateaux), blind (pas de
+-- grille de marche pour préciser le chemin ensuite), speed (yd/s : la vitesse
+-- de marche, celle d'un fantôme par exemple) } ; rien : un itinéraire complet
 function Pl.Find(from, to, opts)
     local g = opts and opts.walkOnly and { nodes = {}, edges = {}, known = 0 } or G.Build()
     local nodes, edges = g.nodes, g.edges
@@ -188,15 +207,18 @@ function Pl.Find(from, to, opts)
     nodes.start, nodes.goal = from, to
     local speed = opts and opts.speed or Pl.Speed()
     local Roads = ns.TravelRoads
-    local useRoads = Roads and not (ns.db and ns.db.options.travelRoads == false)
+    local profile = Pl.PathProfile()
+    -- (à travers champs : les routes ne servent à rien, tout va en ligne droite)
+    local useRoads = Roads and profile.off > 1
     -- (le coût d'une marche hors route de d yards, pour choisir le chemin)
     local Nav = ns.TravelNav
-    local far = opts and opts.far
-        or (ns.db and ns.db.options.travelTerrain ~= false and Nav and Nav.Has(from.cont)) and 2 or OFFROAD_FAR
+    local blind = opts and opts.blind
+        or not (ns.db and ns.db.options.travelTerrain ~= false and Nav and Nav.Available() and Nav.Has(from.cont))
+    local far = blind and math.max(profile.off, OFFROAD_BLIND) or profile.off
     local function Offroad(d)
         if not useRoads then return d * DETOUR end
-        if d <= OFFROAD_NEAR then return d * OFFROAD end
-        return OFFROAD_NEAR * OFFROAD + (d - OFFROAD_NEAR) * far
+        if d <= OFFROAD_NEAR then return d * profile.off end
+        return OFFROAD_NEAR * profile.off + (d - OFFROAD_NEAR) * far
     end
 
     -- (les accès aux routes de chaque point clé)
@@ -361,12 +383,13 @@ function Pl.Find(from, to, opts)
     return { legs = legs, secs = total, speed = speed, known = g.known, roads = useRoads and true or false }, g
 end
 
--- La marche seule d'un point à un autre par les routes, la ligne droite
--- bien plus chère (OFFROAD_FAR) : le secours d'une marche que la grille n'a
--- pas pu préciser. Rend son étape de marche, ou nil.
+-- La marche seule d'un point à un autre, selon le réglage, sans la grille
+-- (une longue ligne droite y compte au moins OFFROAD_BLIND) : le secours
+-- d'une marche que la grille n'a pas pu préciser. Rend son étape de marche,
+-- ou nil.
 function Pl.WalkEstimate(from, to)
     local plan = Pl.Find({ cont = from.cont, x = from.x, y = from.y }, { cont = to.cont, x = to.x, y = to.y },
-        { walkOnly = true, far = OFFROAD_FAR })
+        { walkOnly = true, blind = true })
     local leg = plan and plan.legs[1]
     if leg and leg.kind == "walk" and #plan.legs == 1 then return leg end
 end

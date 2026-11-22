@@ -137,6 +137,7 @@ Plus\Data\Roads.lua
 Plus\Data\Nav0.lua
 Plus\Data\Nav1.lua
 Plus\Data\Passages.lua
+Plus\Data\Hazards.lua
 Plus\Travel\Graph.lua
 Plus\Travel\Roads.lua
 Plus\Travel\Nav.lua

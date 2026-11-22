@@ -24,7 +24,7 @@ Le [README.md](README.md) décrit les fonctions et la structure, la [CHARTE.md](
 
 - Plus atteint la carte par `ns.OM` (= `root`), jamais par un global. Plus ne touche jamais `ns.L` / `ns.db` de la carte, et inversement.
 - **L'ordre de chargement est celui du `.toc`** ([MyMapIsRich/MyMapIsRich.toc](MyMapIsRich/MyMapIsRich.toc)). Tout fichier ajouté s'y inscrit à sa place (une nouvelle langue avant `Plus\Locales\Init.lua`, un écran après `UI\Widgets.lua`…). Un fichier ajouté demande de **relancer le jeu** : `/reload` ne le charge pas.
-- Ne pas modifier : `Libs/` (Ace3), `Data/Forever/` (généré par les outils d'OpenMap), `Plus/Data/` (généré par `tools/roads` et `tools/nav`, voir le README). On régénère, on n'édite pas à la main.
+- Ne pas modifier : `Libs/` (Ace3), `Data/Forever/` (généré par les outils d'OpenMap), `Plus/Data/` (généré par `tools/roads`, `tools/nav` et `tools/hazards`, voir le README). On régénère, on n'édite pas à la main.
 
 ## Traduction : les 10 langues, toujours
 
