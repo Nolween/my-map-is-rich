@@ -295,16 +295,31 @@ local function FlightLeft()
     return math.max(0, total - (GetTime() - taxi.start)), total
 end
 
+-- Les marches au pas du moment : le plan suppose une vitesse (la monture dès
+-- le niveau qui la permet) ; à pied, en monture ou en forme de voyage, le
+-- temps des marches suit la vitesse qu'on a vraiment (réglage « auto » seulement)
+local function WalkScale()
+    local planned = state.plan.speed
+    if not (planned and planned > 0 and Pl.AutoSpeed()) then return 1 end
+    local live = Pl.LiveSpeed()
+    if not live then return 1 end
+    return planned / live
+end
+
 -- Le temps qu'il reste : l'étape en cours (une marche : la part qu'il en
 -- reste ; un vol en l'air : le temps de vol qui reste), puis les suivantes
 local function Remaining()
     local legs = state.plan.legs
+    local scale = WalkScale()
     local total = 0
-    for i = state.index, #legs do total = total + legs[i].secs end
+    for i = state.index, #legs do
+        total = total + (legs[i].kind == "walk" and legs[i].secs * scale or legs[i].secs)
+    end
     local leg, p = legs[state.index], state.proj
     if leg and leg.kind == "walk" and leg.points and p then
         local len = LegLength(leg)
-        if len > 0 then total = total - leg.secs + leg.secs * math.min(1, WalkLeft(leg, p) / len) end
+        local secs = leg.secs * scale
+        if len > 0 then total = total - secs + secs * math.min(1, WalkLeft(leg, p) / len) end
     elseif leg and leg.kind == "flight" and state.taxi then
         local left = FlightLeft()
         if left then total = total - leg.secs + left end

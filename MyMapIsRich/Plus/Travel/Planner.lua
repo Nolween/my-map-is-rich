@@ -143,15 +143,36 @@ end
 
 ---------------------------------------------------------------------------
 -- La vitesse de marche (yd/s) : le réglage, sinon d'après le niveau (une
--- monture supposée dès qu'on peut l'avoir)
+-- monture supposée dès qu'on peut l'avoir), ou la vitesse du moment si elle
+-- est plus grande (déjà en monture, en forme de voyage...)
 ---------------------------------------------------------------------------
+-- La vitesse de course du moment (yd/s), même à l'arrêt : à pied, en
+-- monture, en forme de voyage, en fantôme... ; nil si le jeu ne la dit pas
+function Pl.LiveSpeed()
+    if not GetUnitSpeed then return end
+    local ok, _, run = pcall(GetUnitSpeed, "player")
+    run = ok and Plain(run) or nil
+    if type(run) ~= "number" or run <= 0 then return end
+    return run
+end
+
+-- Le réglage suit-il la vitesse du moment ? (« auto » ; sinon le joueur a
+-- choisi sa vitesse)
+function Pl.AutoSpeed()
+    local mode = ns.db and ns.db.options.travelSpeed or "auto"
+    return not SPEEDS[mode]
+end
+
 function Pl.Speed()
     local mode = ns.db and ns.db.options.travelSpeed or "auto"
     if SPEEDS[mode] then return SPEEDS[mode] end
     local level = UnitLevel and UnitLevel("player") or 1
-    if level >= 60 then return SPEEDS.fast end
-    if level >= 40 then return SPEEDS.slow end
-    return SPEEDS.walk
+    local guess = SPEEDS.walk
+    if level >= 60 then guess = SPEEDS.fast
+    elseif level >= 40 then guess = SPEEDS.slow end
+    local live = Pl.LiveSpeed()
+    if live and live > guess then return live end
+    return guess
 end
 
 ---------------------------------------------------------------------------

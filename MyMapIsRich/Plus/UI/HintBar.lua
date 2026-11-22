@@ -114,7 +114,7 @@ local MOUSE_HINTS = {
     quests = {
         { { "clickL" }, "HINT_QUESTS_OPEN" },
         { { "SHIFT", "+", "clickL" }, "HINT_ROUTE_NOW" },
-        { { "clickR" }, "ACT_QUEUE" },
+        { { "clickR" }, "HINT_QUESTS_MENU" },
         { { "ESC" }, "HINT_CLOSE_MAP", true },
     },
     -- (la fiche d'une quête)

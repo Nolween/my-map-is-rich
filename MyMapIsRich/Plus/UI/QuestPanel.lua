@@ -22,8 +22,11 @@
 -- Itinéraire (Y : part tout de suite), Ajouter à la file (X), Suivre (A), Partager
 -- (LT), Abandonner (View, deux appuis). B revient à la liste. La carte glisse
 -- jusqu'à la quête.
+-- Le menu d'une quête : Y dans la liste, ou un clic droit, ouvre toutes ses
+-- actions sans passer par la fiche (voir la quête, itinéraire, file, suivre,
+-- partager, lien dans la discussion, abandonner après confirmation).
 -- À la souris : clic la fiche, Maj+clic l'itinéraire tout de suite, clic
--- droit ajouter à la file.
+-- droit le menu.
 local _, root = ...
 local ns = root.Plus
 local L = ns.L
@@ -54,6 +57,8 @@ local readCache = {}         -- questID → ce que le journal dit de la quête (
 local openedAt, userAt = -10, -10
 local focused = false        -- la manette dans le panneau (QP.Focus)
 local armed                  -- le questID dont l'abandon attend sa confirmation (AbandonPress)
+local menuFrame              -- le cadre du menu d'une quête (UI.ShowMenu)
+local menuQuest              -- le questID du menu ouvert (nil : pas de menu à nous)
 local SetFocused             -- (plus bas)
 
 local function Plain(v)
@@ -405,6 +410,19 @@ local function Selected()
     end
 end
 
+-- (une quête du journal par son questID, telle que relue en dernier)
+local function Fresh(questID)
+    for _, q in ipairs(entries) do
+        if q.questID == questID then return q end
+    end
+end
+
+-- (le menu d'une quête fermé, s'il est ouvert)
+local function CloseQuestMenu()
+    if menuQuest and UI.MenuShown() then UI.HideMenu() end
+    menuQuest = nil
+end
+
 local FillPage           -- (plus bas)
 local function FillRow(row, it)
     row.item = it
@@ -481,6 +499,8 @@ local ShowView               -- (plus bas)
 function QP.Refresh()
     if not (panel and panel:IsShown()) then return end
     Read()
+    -- (la quête du menu rendue ou abandonnée : le menu se ferme)
+    if menuQuest and not Fresh(menuQuest) then CloseQuestMenu() end
     if selected and not Selected() then
         selected = nil
         -- (la quête de la fiche rendue ou abandonnée : retour à la liste)
@@ -753,6 +773,7 @@ end
 -- La liste ou la fiche, à la même place
 function ShowView(v)
     view = v
+    CloseQuestMenu()
     local isList = v == "list"
     panel.title:SetShown(isList)
     panel.count:SetShown(isList)
@@ -913,6 +934,139 @@ local function Sort(key)
 end
 
 ---------------------------------------------------------------------------
+-- Le menu d'une quête (Y à la manette, ou un clic droit, dans la liste) :
+-- toutes ses actions sans ouvrir sa fiche. C'est le menu de l'addon
+-- (UI.ShowMenu, celui d'Alt+clic sur la carte), posé à gauche de la ligne de
+-- la quête, sur la carte. À la manette, c'est la fenêtre du dessus
+-- (Pad/Focus.lua) : la croix va de ligne en ligne, A choisit, B ou Y le
+-- ferment (le contexte « questmenu », plus bas).
+---------------------------------------------------------------------------
+local ShowQuestMenu          -- (plus bas)
+
+-- (la ligne d'une quête, si la liste la montre)
+local function RowOf(questID)
+    if not list then return end
+    for _, row in ipairs(list.rows) do
+        if row:IsShown() and row.item and row.item.quest and row.item.quest.questID == questID then return row end
+    end
+end
+
+-- Le lien d'une quête, celui que le jeu met dans la discussion : par son
+-- questID (l'API de Forever), sinon par sa place dans le journal (celle de
+-- Classic) ; gardé seulement s'il désigne bien cette quête
+local function QuestLink(q)
+    if type(_G.GetQuestLink) ~= "function" or not q.questID then return nil end
+    local mark = "quest:" .. q.questID .. "[:|]"
+    local function Try(arg)
+        local link = Plain(Call(_G.GetQuestLink, arg))
+        if type(link) == "string" and link:find(mark) then return link end
+    end
+    local index = q.index
+    if C_QuestLog and C_QuestLog.GetLogIndexForQuestID then
+        local i = Plain(Call(C_QuestLog.GetLogIndexForQuestID, q.questID))
+        if type(i) == "number" and i > 0 then index = i end
+    end
+    return Try(q.questID) or (index and Try(index)) or nil
+end
+
+-- Le lien dans la saisie de la discussion déjà ouverte, sinon la discussion
+-- ouverte avec lui
+local function LinkInChat(q)
+    local link = QuestLink(q)
+    if not link then return end
+    local done = type(_G.ChatEdit_InsertLink) == "function" and Call(_G.ChatEdit_InsertLink, link)
+    if not done and type(_G.ChatFrame_OpenChat) == "function" then Call(_G.ChatFrame_OpenChat, link) end
+end
+
+-- (une action du menu : sur la quête telle que relue au moment du choix)
+local function OnQuest(questID, fn)
+    return function()
+        local q = Fresh(questID)
+        if q then fn(q) end
+    end
+end
+
+-- Le menu ouvert : à gauche de la ligne de la quête (la liste est au bord
+-- droit), sinon au curseur ; à la manette, sa première ligne choisie
+local function OpenMenu(items, q, row)
+    local x, y = GetCursorPosition()
+    menuFrame = UI.ShowMenu(items, x, y, q.title)
+    if not menuFrame then return end
+    if not menuFrame.questHooked then
+        menuFrame.questHooked = true
+        -- (notre propre cadre : fermé par un choix, un clic ailleurs, B)
+        menuFrame:HookScript("OnHide", function()
+            menuQuest = nil
+            P.Dirty()
+        end)
+    end
+    menuQuest = q.questID
+    row = row or RowOf(q.questID)
+    if row then
+        menuFrame:ClearAllPoints()
+        menuFrame:SetPoint("TOPRIGHT", row, "TOPLEFT", -6, 0)
+    end
+    if ns.PadUI() and F.SetCurrent and menuFrame.rows and menuFrame.rows[1] then F.SetCurrent(menuFrame.rows[1]) end
+    P.Dirty()
+end
+
+-- Abandonner, confirmé dans le même menu : Annuler d'abord (A deux fois de
+-- suite n'abandonne rien), puis « Vraiment abandonner ? » en rouge. (Le trait
+-- entre les deux donne au menu les 90 px qui en font une fenêtre pour la
+-- manette : Pad/Focus.lua, IsWindow.)
+local function ShowAbandonMenu(q, row)
+    local id = q.questID
+    OpenMenu({
+        { GameText("CANCEL", "HINT_BACK"), OnQuest(id, function(cur) ShowQuestMenu(cur, RowOf(id)) end) },
+        { UI.Hex("bad") .. L.QUESTS_ABANDON_SURE .. "|r", OnQuest(id, function(cur)
+            if Abandon(cur) then
+                readCache[id] = nil
+            else
+                ns.Print(L.QUESTS_ABANDON_FAILED)
+            end
+        end), sep = true },
+    }, q, row)
+end
+
+function ShowQuestMenu(q, row)
+    if not q then return end
+    local id = q.questID
+    local pad = ns.PadUI()
+    local shift = ns.MapChrome and ns.MapChrome.KeyName and ns.MapChrome.KeyName("SHIFT_KEY_TEXT", "Shift") or "Shift"
+    local travel = ns.db and ns.db.options.travel
+    local goal = T() and T().Goal()
+    local going = goal and goal.questID == id
+    local items = {}
+    items[#items + 1] = { L.HINT_QUESTS_OPEN, OnQuest(id, function(cur)
+        OpenQuest(cur)
+        if ns.PadUI() and not focused then QP.Focus() end
+    end), key = pad and "A" or nil }
+    -- (l'itinéraire tout de suite, comme R3 et Maj+clic : sur la quête du
+    -- trajet en cours, il l'annule)
+    if travel and (q.point or going) then
+        items[#items + 1] = { going and L.HINT_TRAVEL_CANCEL or L.FICHE_ROUTE, OnQuest(id, function(cur)
+            Select(cur, false)
+            if T() then T().AtQuest(cur.questID) end
+        end), key = pad and "R3" or L.MENU_CLICK:format(shift) }
+    end
+    if travel and q.point then
+        items[#items + 1] = { L.ACT_QUEUE, OnQuest(id, function(cur)
+            Select(cur, false)
+            Queue()
+        end), key = pad and "X" or nil }
+    end
+    items[#items + 1] = { Watched(q) and L.QUESTS_UNTRACK or L.QUESTS_TRACK, OnQuest(id, function(cur)
+        ToggleWatch(cur)
+        FillList()
+        if view == "quest" then FillPage(false) end
+    end), sep = true }
+    items[#items + 1] = { L.QUESTS_SHARE, OnQuest(id, Share) }
+    if QuestLink(q) then items[#items + 1] = { L.QUESTS_LINK, OnQuest(id, LinkInChat) } end
+    items[#items + 1] = { L.QUESTS_ABANDON .. "…", OnQuest(id, function(cur) ShowAbandonMenu(cur, RowOf(id)) end), sep = true }
+    OpenMenu(items, q, row)
+end
+
+---------------------------------------------------------------------------
 -- La construction
 ---------------------------------------------------------------------------
 local function Button(parent, text, w, h, style, key)
@@ -998,7 +1152,7 @@ local function Row(i)
         local q = it.quest
         if button == "RightButton" then
             Select(q, false)
-            Queue()
+            ShowQuestMenu(q, self)
         elseif IsShiftKeyDown() then
             if T() then T().AtQuest(q.questID) end
         else
@@ -1224,6 +1378,7 @@ end
 
 function QP.Hide()
     if not panel then return end
+    CloseQuestMenu()
     SetFocused(false)
     if not panel:IsShown() then return end
     -- (rouvert, le panneau montre la liste)
@@ -1373,7 +1528,7 @@ end)
 
 ---------------------------------------------------------------------------
 -- La manette dans la liste : la croix (la carte glisse jusqu'à la quête), A
--- sa fiche, Y l'aperçu de l'itinéraire, R3 l'itinéraire tout de suite, X la
+-- sa fiche, Y le menu de la quête, R3 l'itinéraire tout de suite, X la
 -- file, LT le tri ; B, RT ou la croix gauche reviennent à la carte
 ---------------------------------------------------------------------------
 local function Current()
@@ -1393,11 +1548,13 @@ P.SetAction("quests", "PAD1", function()
     local q = Current()
     if q then OpenQuest(q) else F.Activate("LeftButton") end
 end, "HINT_QUESTS_OPEN")
+-- (Y : le menu de la quête, à gauche de sa ligne)
 P.SetAction("quests", "PAD4", function()
     local q = Current()
-    if q then Select(q, false) end
-    Route()
-end, "FICHE_ROUTE")
+    if not q then return end
+    Select(q, false)
+    ShowQuestMenu(q, F.Current())
+end, "HINT_QUESTS_MENU")
 -- (R3 : l'itinéraire tout de suite, sans aperçu, comme R3 sur la carte et
 -- Maj+clic ; R3 sur la quête du trajet en cours l'annule)
 P.SetAction("quests", "PADRSTICK", function()
@@ -1424,6 +1581,17 @@ P.SetAction("quests", "PADLTRIGGER", function() Sort(sortBy == "zone" and "dist"
 P.SetAction("quests", "PADRTRIGGER", function() QP.PadMenu() end, "HINT_BACK_MAP")
 P.SetAction("quests", "PAD2", function() QP.Blur() end, "HINT_BACK_MAP")
 F.WINDOW_CONTEXTS.quests = true
+
+-- Le menu d'une quête ouvert : la croix et A, ceux des fenêtres ; B ou Y le
+-- ferment (la manette revient sur la quête, Pad/Focus.lua s'en souvient)
+P.DefineContext("questmenu", 52.7, function()
+    return menuQuest ~= nil and menuFrame ~= nil and UI.MenuShown() and F.Top() == menuFrame
+end, "window")
+P.SetAction("questmenu", "PAD2", function() CloseQuestMenu() end, "HINT_MENU_CLOSE")
+P.SetAction("questmenu", "PAD4", function() CloseQuestMenu() end)
+-- (pas de clic droit dans un menu)
+P.SetAction("questmenu", "PAD3", function() end)
+F.WINDOW_CONTEXTS.questmenu = true
 
 ---------------------------------------------------------------------------
 -- La manette dans la fiche : la croix haut / bas fait défiler, gauche /
@@ -1552,9 +1720,15 @@ local function StickY()
 end
 
 -- Un « appui » du stick : dans la liste, la quête d'au-dessus ou d'en
--- dessous ; dans la fiche, elle défile ; hors de la liste, il y ramène
+-- dessous ; dans le menu d'une quête, la ligne d'au-dessus ou d'en dessous ;
+-- dans la fiche, elle défile ; hors de la liste, il y ramène
 local function StickStep(dir)
     if QP.Focused() then
+        if menuQuest and menuFrame and F.Top() == menuFrame then
+            F.Move(0, dir)
+            P.Dirty()
+            return
+        end
         if F.Top() ~= panel then return end
         if view == "list" then F.Move(0, dir) else PageScroll(-dir) end
         P.Dirty()
