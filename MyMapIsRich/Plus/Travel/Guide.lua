@@ -233,10 +233,8 @@ local function Aim(say)
     local target = Target(leg, Pl.PlayerPoint())
     state.target = target
     local mapID, mx, my = Pl.MapPoint(target)
-    local mod = ns.mod
-    if mapID and mod and mod.TrackPoint then
-        local ok = ns.Call(mod.TrackPoint, mapID, mx, my, T.LegText(leg))
-        if ok then lastWaypoint = { mapID, mx, my } end
+    if mapID and ns.Map.Waypoint.Track(mapID, mx, my, T.LegText(leg)) then
+        lastWaypoint = { mapID, mx, my }
     end
 end
 
@@ -377,12 +375,11 @@ function T.Target()
     return state.target or (leg and leg.to)
 end
 
--- Le waypoint d'OpenMap est-il toujours le nôtre ? (sinon il n'est pas effacé)
+-- Le point de destination de la carte est-il toujours le nôtre ? (sinon il n'est pas effacé)
 local function OurWaypoint()
-    local mod = ns.mod
-    if not (lastWaypoint and mod and mod.WaypointPoint) then return false end
-    local ok, mapID, x, y = pcall(mod.WaypointPoint)
-    if not ok or mapID ~= lastWaypoint[1] or not x then return false end
+    if not lastWaypoint then return false end
+    local mapID, x, y = ns.Map.Waypoint.Point()
+    if mapID ~= lastWaypoint[1] or not x then return false end
     return math.abs(x - lastWaypoint[2]) < 0.002 and math.abs(y - lastWaypoint[3]) < 0.002
 end
 
@@ -531,7 +528,7 @@ end
 function T.Cancel(say)
     StopSearch()
     local was = state and state.goal
-    if state and OurWaypoint() and ns.mod and ns.mod.ClearPin then ns.Call(ns.mod.ClearPin) end
+    if state and OurWaypoint() then ns.Map.Waypoint.Clear() end
     state, lastWaypoint, aimPending = nil, nil, false
     R.Clear()
     -- (le trajet vers le corps annulé : la destination d'avant reste gardée)

@@ -3,6 +3,7 @@
 -- dans la barre de titre, barre d'état en bas ; chaque écran a sa phrase
 -- d'accueil à côté du portrait, puis ses panneaux.
 --   Réglages : la manette sur la carte, l'apparence
+--   Carte     : les réglages de la carte elle-même (UI/MapPage.lua)
 --   Trajets  : le calcul des itinéraires, le guidage, le groupe
 --   Aide     : les boutons, carte par carte, et les commandes
 --   Découvrir : UI/DonateTab.lua (mes projets ; don PayPal)
@@ -18,9 +19,10 @@ local TITLE_MID = -21           -- (le milieu de la barre de titre)
 local STATUS_H = 24             -- (la barre d'état, en bas)
 local TAB_H, TAB_GAP = 26, 4
 local GAP = UI.PAGE_GAP
-local TAB_ORDER = { "settings", "travel", "help", "donate" }
+local TAB_ORDER = { "settings", "map", "travel", "help", "donate" }
 local ICONS = {
     settings = "Interface\\Icons\\Trade_Engineering",
+    map = "Interface\\Icons\\INV_Misc_Spyglass_02",
     travel = "Interface\\Icons\\INV_Misc_Map_01",
     help = "Interface\\Icons\\INV_Misc_Book_08",
     -- (un coffre au trésor : UI/DonateTab.lua, chargé avant)
@@ -185,14 +187,8 @@ local function Cycle(parent, key, label, choices, y, onChange)
 end
 
 local function BuildSettings(page)
-    UI.PageIntro(page, L.SETTINGS_DESC, 196)
-    -- (les réglages de la carte elle-même : la fenêtre de la carte, Init.lua)
-    local mapSettings = UI.PageButton(page, L.MAP_SETTINGS, 180)
-    mapSettings:SetScript("OnClick", function()
-        local root = ns.OM
-        if root and root.OpenSettingsWindow then root.OpenSettingsWindow() end
-    end)
-    UI.Tip(mapSettings, L.MAP_SETTINGS, L.MAP_SETTINGS_TIP)
+    UI.PageIntro(page, L.SETTINGS_DESC)
+    -- (les réglages de la carte elle-même : l'onglet Carte, UI/MapPage.lua)
     local half = math.floor((WIDTH - 16 - 8 - GAP) / 2)
     local left = Panel(page, 0, UI.PAGE_TOP, half)
     local right = Panel(page, half + GAP, UI.PAGE_TOP)
@@ -200,12 +196,6 @@ local function BuildSettings(page)
     UI.Section(left, L.SET_MAP, 16, -14)
     local y = -46
     Option(left, "enabled", L.OPT_ENABLED, L.OPT_ENABLED_TIP, y)
-    y = y - 70
-    -- (la carte plein écran ou la carte classique : au lancement de la carte, donc après un /reload ;
-    -- la vue manette de la carte classique reste allumée, réglage padView)
-    Option(left, "classicMap", L.OPT_CLASSIC_MAP, L.OPT_CLASSIC_MAP_TIP, y, function()
-        ns.Print(L.CLASSIC_MAP_RELOAD)
-    end)
     y = y - 70
     Option(left, "magnet", L.OPT_MAGNET, L.OPT_MAGNET_TIP, y)
     y = y - 62
@@ -343,9 +333,12 @@ local function HelpPanel(parent, x, y, w, h, title, text)
 end
 
 local function BuildHelp(page)
-    UI.PageIntro(page, L.HELP_INTRO, 176)
-    -- (les nouveautés des dernières versions : UI/WhatsNew.lua)
-    local news = UI.PageButton(page, L.WHATSNEW_BUTTON, 160)
+    UI.PageIntro(page, L.HELP_INTRO, 300)
+    -- (les nouveautés des dernières versions : UI/WhatsNew.lua ; les crédits : UI/Credits.lua)
+    local credits = UI.PageButton(page, L.CREDITS_BUTTON, 130)
+    credits:SetScript("OnClick", function() if ns.Credits then ns.Credits.Open(page) end end)
+    UI.Tip(credits, L.CREDITS_BUTTON, L.CREDITS_BUTTON_TIP)
+    local news = UI.PageButton(page, L.WHATSNEW_BUTTON, 160, credits)
     news:SetScript("OnClick", function() if ns.WhatsNew then ns.WhatsNew.Open() end end)
     UI.Tip(news, L.WHATSNEW_BUTTON, L.WHATSNEW_BUTTON_TIP)
     local w = math.floor((WIDTH - 16 - 8 - GAP) / 2)
@@ -364,7 +357,9 @@ local function Build()
     frame = f
     f:SetSize(WIDTH, HEIGHT)
     f:SetPoint("CENTER")
-    f:SetFrameStrata("HIGH")
+    -- (au-dessus de la carte plein écran, qui est en HIGH : l'onglet Carte
+    -- s'ouvre aussi depuis la carte)
+    f:SetFrameStrata("DIALOG")
     f:SetToplevel(true)
     f:SetClampedToScreen(true)
     f:EnableMouse(true)
@@ -387,7 +382,7 @@ local function Build()
     c:SetPoint("TOPLEFT", f, "TOPLEFT", 4, -TITLE_H)
     c:SetPoint("BOTTOMRIGHT", f, "BOTTOMRIGHT", -4, 4)
 
-    local labels = { settings = L.TAB_SETTINGS, travel = L.TAB_TRAVEL, help = L.TAB_HELP, donate = L.TAB_DONATE }
+    local labels = { settings = L.TAB_SETTINGS, map = L.TAB_MAP, travel = L.TAB_TRAVEL, help = L.TAB_HELP, donate = L.TAB_DONATE }
     for _, key in ipairs(TAB_ORDER) do tabs[key] = CategoryTab(f, key, labels[key]) end
     LayoutTabs()
     for _, key in ipairs(TAB_ORDER) do
@@ -411,6 +406,7 @@ local function Build()
     statusRight:SetPoint("BOTTOMRIGHT", -12, 7)
 
     BuildSettings(pages.settings)
+    UI.BuildMapPage(pages.map, WIDTH - 24, function(fn) refreshers[#refreshers + 1] = fn end)
     BuildTravel(pages.travel)
     BuildHelp(pages.help)
     UI.BuildDonatePage(pages.donate)
@@ -422,6 +418,18 @@ local function Build()
         RefreshAll()
     end)
     f:Hide()
+    -- (carte ouverte, la manette la mène comme les autres fenêtres : la croix,
+    -- A, B la ferme, LB / RB changent d'onglet ; Pad/Focus.lua)
+    if ns.Focus and ns.Focus.RegisterWindow then
+        ns.Focus.RegisterWindow(f, {
+            onBack = function() f:Hide() end,
+            onTab = function(dir)
+                local at = 1
+                for i, key in ipairs(TAB_ORDER) do if key == currentTab then at = i end end
+                SelectTab(TAB_ORDER[(at - 1 + dir) % #TAB_ORDER + 1])
+            end,
+        })
+    end
 end
 
 function UI.Show(tab)
@@ -436,6 +444,12 @@ end
 
 function UI.Hide()
     if frame then frame:Hide() end
+end
+
+-- La fenêtre est-elle ouverte (sur cet onglet) ?
+function UI.Shown(tab)
+    if not (frame and frame:IsShown()) then return false end
+    return tab == nil or tab == currentTab
 end
 
 function UI.Toggle(tab)

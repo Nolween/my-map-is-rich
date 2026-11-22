@@ -159,6 +159,42 @@ function MB.Init()
     end
 end
 
+-- L'info-bulle : celle du bouton, ou celle qu'un afficheur LibDataBroker
+-- (Titan Panel...) nous donne, déjà placée
+local function Tip(owner)
+    local broker = owner and type(owner.AddLine) == "function"
+    local tip = broker and owner or GameTooltip
+    if not broker then tip:SetOwner(owner or UIParent, "ANCHOR_LEFT") end
+    tip:AddLine(L.TITLE, 1, 0.82, 0)
+    tip:AddLine(L.MINIMAP_LEFT, 1, 1, 1)
+    tip:AddLine(ns.db and ns.db.options.enabled and L.MINIMAP_RIGHT_OFF or L.MINIMAP_RIGHT_ON, 1, 1, 1)
+    if not broker then tip:Show() end
+end
+
+-- Le menu des addons de la minimap (les AddonCompartmentFunc* du .toc) : le
+-- jeu cherche ces globaux par leur nom (repris de Map/Launcher.lua en 0.6.0)
+_G.MyMapIsRich_OnAddonCompartmentClick = function(_, mouse) if ns.db then Click(nil, mouse) end end
+_G.MyMapIsRich_OnAddonCompartmentEnter = function(_, owner) if ns.db then Tip(owner) end end
+_G.MyMapIsRich_OnAddonCompartmentLeave = function() GameTooltip:Hide() end
+
+-- Titan Panel et les autres afficheurs LibDataBroker, quand un addon fournit
+-- la bibliothèque (l'addon n'en livre aucune)
+local function RegisterBroker()
+    local ldb = LibStub and LibStub("LibDataBroker-1.1", true)
+    if not ldb or MB.broker then return end
+    MB.broker = ldb:NewDataObject("My Map Is Rich", {
+        type = "launcher",
+        label = "My Map Is Rich",
+        icon = ICON,
+        OnClick = function(_, mouse) Click(nil, mouse) end,
+        OnTooltipShow = Tip,
+    })
+end
+
 local events = CreateFrame("Frame")
 events:RegisterEvent("PLAYER_LOGIN")
-events:SetScript("OnEvent", function() if ns.db then MB.Init() end end)
+events:SetScript("OnEvent", function()
+    if not ns.db or root.dormant then return end
+    MB.Init()
+    pcall(RegisterBroker)
+end)

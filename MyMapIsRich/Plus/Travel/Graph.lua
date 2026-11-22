@@ -32,9 +32,7 @@ local KINDS = { boat = true, zeppelin = true }
 local CONTINENTS = { [0] = true, [1] = true }
 
 local function Data()
-    local om = ns.OM
-    if type(om) ~= "table" then return end
-    local F, P = om.MapFlights, om.MapPlaces
+    local F, P = ns.Map.Data.Flights(), ns.Map.Data.Places()
     if type(F) ~= "table" or type(F.nodes) ~= "table" or type(F.paths) ~= "table" then F = nil end
     if type(P) ~= "table" or type(P.transports) ~= "table" then P = nil end
     return F, P
@@ -63,7 +61,7 @@ end
 local function GameNodes()
     local names, seen, hidden = {}, {}, 0
     if not (C_TaxiMap and C_TaxiMap.GetTaxiNodesForMap) then return names, seen, hidden end
-    local world = ns.OM.MapWorld
+    local world = ns.Map.Data.World()
     local continents = world and world.continents or { 1414, 1415 }
     for _, mapID in ipairs(continents) do
         local ok, list = pcall(C_TaxiMap.GetTaxiNodesForMap, mapID)
@@ -91,8 +89,7 @@ end
 -- pas été ouverte (ReadFound les renomme) : on compare aux deux.
 local function KnownSet(F)
     local known = {}
-    local mod = ns.mod
-    local learned = mod and mod.char and mod.char.flightsKnown
+    local learned = ns.Map.Flights.Known()
     local names, seen, hidden = GameNodes()
     if type(learned) == "table" and next(learned) then
         for id, n in pairs(F.nodes) do
@@ -128,8 +125,7 @@ G.Dist = Dist
 -- Le temps d'un vol (un saut) : mesuré, sinon estimé d'après sa longueur
 local function FlightSecs(F, path)
     local a, b = F.nodes[path[1]], F.nodes[path[2]]
-    local mod = ns.mod
-    local times = mod and mod.db and mod.db.flightTimes
+    local times = ns.Map.Flights.Times()
     local t = type(times) == "table" and a and b and times[a[1] .. "|" .. b[1]]
     if type(t) == "number" and t > 0 then return t, true end
     return (path[3] or 0) / FLY_SPEED, false

@@ -22,13 +22,6 @@ local P = ns.Pad
 local F = {}
 ns.Focus = F
 
--- Les fenêtres d'OpenMap qui ont un nom
-local NAMED = {
-    "MyMapIsRichMenu", "MyMapIsRichPins", "MyMapIsRichPinEditor", "MyMapIsRichPinsCode",
-    "MyMapIsRichDungeonChooser", "MyMapIsRichReport", "MyMapIsRichNews",
-    "MyMapIsRichNoteEditor", "MyMapIsRichNotesExport",
-}
-
 -- Les fenêtres de l'addon : cadre -> { onBack = fn, onTab = fn(dir) }
 local own = {}
 function F.RegisterWindow(frame, opts)
@@ -39,7 +32,7 @@ end
 local STRATA = { BACKGROUND = 1, LOW = 2, MEDIUM = 3, HIGH = 4, DIALOG = 5, FULLSCREEN = 6, FULLSCREEN_DIALOG = 7, TOOLTIP = 8 }
 local function Height(f) return (STRATA[f:GetFrameStrata()] or 3) * 100000 + f:GetFrameLevel() end
 
--- Une des fenêtres d'OpenMap données au curseur de la manette (mod.padRoots) :
+-- Une des fenêtres données au curseur de la manette (ns.Map.Cursor.Roots) :
 -- assez grande pour être une fenêtre (pas un bouton du bord de la carte ni
 -- une barre d'outils), ni la carte d'un donjon (Pad/Dungeon.lua), ni le
 -- plateau de la plume (Pad/MapNav.lua)
@@ -49,7 +42,7 @@ local function IsWindow(f)
     -- (un panneau au repos, ouvert sans prendre la manette : le panneau des
     -- quêtes, UI/QuestPanel.lua ; le curseur peut quand même y presser une ligne)
     if f.padPassive then return false end
-    if f == _G.MyMapIsRichDungeonView then return false end
+    if f == ns.Map.Dungeons.Frame() then return false end
     if f.tools and f.head then return false end
     local w, h = f:GetSize()
     return w and h and w >= 150 and h >= 90 or false
@@ -64,11 +57,8 @@ local function Windows()
         end
     end
     for f in pairs(own) do Add(f) end
-    for _, name in ipairs(NAMED) do Add(_G[name]) end
-    local roots = ns.mod and ns.mod.padRoots
-    if type(roots) == "table" then
-        for _, f in ipairs(roots) do Add(f) end
-    end
+    for _, f in ipairs(ns.Map.Windows()) do Add(f) end
+    for _, f in ipairs(ns.Map.Cursor.Roots() or {}) do Add(f) end
     return out
 end
 
@@ -384,17 +374,14 @@ end
 
 function F.Close(f)
     if not f then return end
-    local mod = ns.mod
     local opts = own[f]
     if f == forced then
         forced = nil
         P.Dirty()
     elseif opts and opts.onBack then
         opts.onBack()
-    elseif f == _G.MyMapIsRichMenu and mod and mod.CloseMenu then
-        ns.Call(mod.CloseMenu)
-    elseif f == _G.MyMapIsRichPins and mod and mod.TogglePins then
-        ns.Call(mod.TogglePins, mod, false)
+    elseif f == ns.Map.MyPins.Frame() then
+        ns.Map.MyPins.Toggle(false)
     else
         local close = FindClose(f)
         if close then pcall(close.Click, close) else f:Hide() end
@@ -406,7 +393,7 @@ function F.Back()
     F.Close(F.Top())
 end
 
--- LB / RB : les onglets du menu d'OpenMap (ou d'une de nos fenêtres)
+-- LB / RB : les onglets du menu de la carte (ou d'une de nos fenêtres)
 local function CycleTabs(tabs, currentKey, dir)
     if type(tabs) ~= "table" or #tabs == 0 then return false end
     local at = 1
@@ -432,16 +419,12 @@ function F.Tab(dir)
         SetCurrent(nil)
         return
     end
-    if top == _G.MyMapIsRichMenu and ns.mod and ns.mod.db then
-        CycleTabs(top.tabs, ns.mod.db.menuTab, dir)
-    end
 end
 
--- Y : le menu d'OpenMap ouvert ou fermé
+-- Y : les réglages de la carte (l'onglet Carte de /mmir) ouverts ou fermés
 function F.ToggleMenu()
-    local mod = ns.mod
-    if not mod then return end
-    if mod.MenuShown() then ns.Call(mod.CloseMenu) else ns.Call(mod.OpenMenu, mod) end
+    if not ns.Ready() then return end
+    ns.Map.Menu.Toggle()
     SetCurrent(nil)
 end
 
@@ -456,14 +439,12 @@ follower:SetScript("OnUpdate", function(_, elapsed)
     wait = wait - elapsed
     if wait > 0 then return end
     wait = 0.08
-    local mod = ns.mod
-    if not (mod and mod.PadCursorXY and mod.PadControlAt) then return end
-    local ok, x, y = pcall(mod.PadCursorXY)
-    if not ok or not x then return end
+    local x, y = ns.Map.Cursor.XY()
+    if not x then return end
     if lastX and math.abs(x - lastX) + math.abs(y - lastY) < 4 then return end
     lastX, lastY = x, y
-    local okC, ctl = pcall(mod.PadControlAt, x, y)
-    if not okC or not ctl or ctl == current then return end
+    local ctl = ns.Map.Cursor.ControlAt(x, y)
+    if not ctl or ctl == current then return end
     for _, f in ipairs(F.Elements()) do
         if f == ctl then
             SetCurrent(ctl)
@@ -486,10 +467,10 @@ P.SetAction("window", "PAD2", F.Back, "HINT_BACK")
 P.SetAction("window", "PADLSHOULDER", function() F.Tab(-1) end)
 P.SetAction("window", "PADRSHOULDER", function() F.Tab(1) end, function()
     local top = F.Top()
-    if top == _G.MyMapIsRichMenu or (top and own[top] and own[top].onTab) then return "HINT_TABS" end
+    if top and own[top] and own[top].onTab then return "HINT_TABS" end
 end)
 P.SetAction("window", "PAD4", F.ToggleMenu, function()
-    return F.Top() == _G.MyMapIsRichMenu and "HINT_MENU_CLOSE" or nil
+    return ns.Map.Menu.Shown() and "HINT_MENU_CLOSE" or nil
 end)
 P.SetPassive("window", "RSTICK", "HINT_SCROLL")
 

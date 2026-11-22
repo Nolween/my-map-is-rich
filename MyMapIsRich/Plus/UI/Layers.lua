@@ -9,7 +9,7 @@
 -- Le clic droit sur un calque, et Y à la manette, ouvrent le panneau des
 -- calques : chaque calque avec sa case, ses détails dessous, et « Réglages
 -- de la carte… ».
--- Les calques sont les réglages de la carte (mod.db, ceux de son menu et de sa
+-- Les calques sont les réglages de la carte (ns.Map.Settings, ceux de son menu et de sa
 -- fenêtre de réglages) : rien n'est gardé à part, sauf, pour un calque qui en
 -- couvre plusieurs (bateaux et zeppelins, citadins, groupe), lesquels étaient
 -- allumés quand on l'a éteint (ns.db.options.layerMemory) : rallumé, il les
@@ -48,8 +48,8 @@ local LAYERS = {
             { "LAYER_D_LEVELS", "dungeonLevels" },
             { "LAYER_D_BOSSES", "dungeonBosses" },
             { "LAYER_D_DQUESTS", "dungeonQuests" },
-            { "LAYER_D_DMAPS", get = function(mod) return mod.DungeonMapsOn and mod.DungeonMapsOn() end,
-                set = function(mod, v) if mod.SetDungeonMaps then mod.SetDungeonMaps(v) end end },
+            { "LAYER_D_DMAPS", get = function() return ns.Map.Dungeons.MapsOn() end,
+                set = function(v) ns.Map.Dungeons.SetMaps(v) end },
         } },
     { id = "flights", label = "LAYER_FLIGHTS", texture = "Interface\\TaxiFrame\\UI-Taxi-Icon-Green",
         atlasFn = function() return Faction() == "Horde" and "TaxiNode_Horde" or "TaxiNode_Alliance" end,
@@ -74,12 +74,8 @@ local LAYERS = {
             { "LAYER_D_TRAINERS", folk = { "classTrainer", "profTrainer" } },
         } },
     { id = "group", label = "LAYER_GROUP", texture = Icon("Spell_Holy_PrayerOfFortitude"),
-        keys = { "group", "friends", "guild" },
-        details = {
-            { "LAYER_D_PARTY", "group" },
-            { "LAYER_D_FRIENDS", "friends" },
-            { "LAYER_D_GUILD", "guild" },
-        } },
+        keys = { "group" },
+        details = {} },
     { id = "pins", label = "LAYER_PINS", texture = Icon("INV_Misc_Map_01"), pins = true,
         details = { { "LAYER_D_INSTANCE_PINS", "hideWorldPinsInInstances" } } },
     { id = "drawings", label = "LAYER_DRAWINGS", texture = Icon("INV_Feather_04"),
@@ -90,17 +86,9 @@ local LAYERS = {
 ---------------------------------------------------------------------------
 -- L'état des calques (les réglages de la carte)
 ---------------------------------------------------------------------------
-local function DB()
-    local mod = ns.mod
-    return mod and mod.db
-end
+local function DB() return ns.Map.Settings.Table() end
 
-local function HasFolk()
-    local mod = ns.mod
-    if not (mod and mod.HasTownsfolk) then return false end
-    local ok, has = pcall(mod.HasTownsfolk)
-    return ok and has and true or false
-end
+local function HasFolk() return ns.Map.Townsfolk.Has() end
 
 local function QuestieProfile()
     return _G.Questie and Questie.db and Questie.db.profile or nil
@@ -132,9 +120,7 @@ end
 
 -- Après un changement : la carte (son menu, sa fenêtre de réglages) suit
 local function Changed()
-    local mod = ns.mod
-    ns.Call(mod.Refresh, mod)
-    if ns.OM and ns.OM.NotifyOptions then pcall(ns.OM.NotifyOptions) end
+    ns.Map.Settings.Refresh()
     LY.Refresh()
 end
 
@@ -148,9 +134,8 @@ end
 function LY.Set(layer, on)
     local db = DB()
     if not db then return end
-    local mod = ns.mod
     if layer.pins then
-        ns.Call(mod.SetPinsHidden, not on)
+        ns.Map.MyPins.SetHidden(not on)
         Changed()
         return
     end
@@ -172,7 +157,7 @@ function LY.Set(layer, on)
             end
             memory[layer.id] = kept
         end
-        if mod.RefreshTownsfolk then ns.Call(mod.RefreshTownsfolk, mod) end
+        ns.Map.Townsfolk.Refresh()
         Changed()
         return
     end
@@ -206,14 +191,13 @@ end
 -- Un détail : allumé ?
 local function DetailOn(d)
     local db = DB()
-    local mod = ns.mod
     if not db then return false end
     if d.questie then
         local p = QuestieProfile()
         return p and p.enableMapIcons and true or false
     end
     if d.get then
-        local ok, v = pcall(d.get, mod)
+        local ok, v = pcall(d.get)
         return ok and v and true or false
     end
     if d.folk then
@@ -233,7 +217,6 @@ end
 
 local function SetDetail(d, on)
     local db = DB()
-    local mod = ns.mod
     if not db then return end
     if d.questie then
         local p = QuestieProfile()
@@ -243,11 +226,11 @@ local function SetDetail(d, on)
         p.enableMapIcons = on
         pcall(quests.ToggleNotes, quests, on)
     elseif d.set then
-        pcall(d.set, mod, on)
+        pcall(d.set, on)
     elseif d.folk then
         db.townsfolk = db.townsfolk or {}
         for _, k in ipairs(d.folk) do db.townsfolk[k] = on and true or false end
-        if mod.RefreshTownsfolk then ns.Call(mod.RefreshTownsfolk, mod) end
+        ns.Map.Townsfolk.Refresh()
     else
         db[d[2]] = on and true or false
     end
@@ -262,10 +245,7 @@ local FOUND = LAYERS[2].details[1]   -- (les maîtres de vol : seulement les lie
 local panel, rows, detailBox, detailTitle, detailEmpty, detailChecks, allSettings
 local chosen = LAYERS[2]     -- (le calque dont le panneau montre les détails)
 
-local function Roots(f)
-    local roots = ns.mod and ns.mod.padRoots
-    if type(roots) == "table" then table.insert(roots, f) end
-end
+local function Roots(f) ns.Map.Cursor.AddRoot(f) end
 
 local function LayerTip(self)
     local layer = self.layer
@@ -334,7 +314,7 @@ local function BuildRail(chrome)
     -- (… et la fenêtre de réglages de la carte)
     settings = UI.IconToggle(rail, TOGGLE, Icon("Trade_Engineering"))
     settings:SetScript("OnClick", function()
-        if ns.OM and ns.OM.OpenSettingsWindow then ns.OM.OpenSettingsWindow() end
+        ns.Map.Settings.OpenPage()
     end)
     UI.Tip(settings, L.MAP_SETTINGS, L.MAP_SETTINGS_TIP)
     Roots(rail)
@@ -501,7 +481,7 @@ local function BuildPanel(chrome)
     allSettings = UI.Button(panel, L.MAP_SETTINGS, PANEL_W - 20, 24, "grey")
     allSettings:SetPoint("BOTTOMLEFT", panel, "BOTTOMLEFT", 10, 12)
     allSettings:SetScript("OnClick", function()
-        if ns.OM and ns.OM.OpenSettingsWindow then ns.OM.OpenSettingsWindow() end
+        ns.Map.Settings.OpenPage()
     end)
     UI.Tip(allSettings, L.MAP_SETTINGS, L.MAP_SETTINGS_TIP)
     panel:Hide()
@@ -557,12 +537,7 @@ ns.On("MAP_SIZE", LY.Refresh)
 ns.On("OPTIONS", LY.Refresh)
 
 -- (un réglage changé ailleurs : le menu de la carte, sa fenêtre de réglages)
-ns.On("READY", function()
-    local mod = ns.mod
-    if mod and type(mod.Refresh) == "function" then
-        hooksecurefunc(mod, "Refresh", function() if rail and rail:IsVisible() then LY.Refresh() end end)
-    end
-end)
+ns.On("MAP_REFRESH", function() if rail and rail:IsVisible() then LY.Refresh() end end)
 
 ---------------------------------------------------------------------------
 -- Le panneau à la manette : la croix, A allume ou éteint, X montre les

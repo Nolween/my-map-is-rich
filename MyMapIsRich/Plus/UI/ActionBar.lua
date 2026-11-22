@@ -37,8 +37,6 @@ local frame, tiles = nil, {}
 local selected               -- la case choisie
 local point                  -- le point sous le curseur
 
-local function Mod() return ns.mod end
-
 local function NeedPoint(fn)
     return function()
         if not point then
@@ -57,18 +55,9 @@ local ACTIONS = {
     { "ACT_SHARE", "ACT_SHARE_TIP", "Interface\\Icons\\INV_Misc_GroupNeedMore", NeedPoint(function(p)
         if ns.TravelShare then ns.TravelShare.Propose(p) end
     end) },
-    { "ACT_PIN", "ACT_PIN_TIP", "Interface\\Icons\\INV_Misc_Map_01", function()
-        local mod = Mod()
-        ns.Call(mod.SetPinMode, true)
-    end },
-    { "ACT_PINS", "ACT_PINS_TIP", "Interface\\Icons\\INV_Misc_Book_09", function()
-        local mod = Mod()
-        ns.Call(mod.TogglePins, mod, true)
-    end },
-    { "ACT_QUILL", "ACT_QUILL_TIP", "Interface\\Icons\\INV_Inscription_Tradeskill01", function()
-        local mod = Mod()
-        if mod.ToggleSketch then ns.Call(mod.ToggleSketch, mod, true) end
-    end },
+    { "ACT_PIN", "ACT_PIN_TIP", "Interface\\Icons\\INV_Misc_Map_01", function() ns.Map.MyPins.SetMode(true) end },
+    { "ACT_PINS", "ACT_PINS_TIP", "Interface\\Icons\\INV_Misc_Book_09", function() ns.Map.MyPins.Toggle(true) end },
+    { "ACT_QUILL", "ACT_QUILL_TIP", "Interface\\Icons\\INV_Inscription_Tradeskill01", function() ns.Map.Sketch.Toggle(true) end },
     { "ACT_MENU", "ACT_MENU_TIP", "Interface\\Icons\\INV_Misc_Gear_01", function() F.ToggleMenu() end },
 }
 
@@ -172,14 +161,11 @@ local function Build()
     f:SetScript("OnUpdate", function()
         -- (la roue suit le curseur de la manette : il reste sur son moyeu, où
         -- OpenMap ne zoome pas au stick droit et où A ne presse rien)
-        local mod = ns.mod
-        if mod and mod.PadCursorXY then
-            local ok, cx, cy = pcall(mod.PadCursorXY)
-            if ok and cx then
-                local es = f:GetEffectiveScale()
-                f:ClearAllPoints()
-                f:SetPoint("CENTER", UIParent, "BOTTOMLEFT", cx / es, cy / es)
-            end
+        local cx, cy = ns.Map.Cursor.XY()
+        if cx then
+            local es = f:GetEffectiveScale()
+            f:ClearAllPoints()
+            f:SetPoint("CENTER", UIParent, "BOTTOMLEFT", cx / es, cy / es)
         end
         -- (au stick droit : la case dans sa direction)
         local stick = ns.MapCamera and ns.MapCamera.Stick
@@ -192,7 +178,7 @@ local function Build()
     f:Hide()
     -- (dans les cadres que le curseur de la manette d'OpenMap survole : sur la
     -- roue, sa vue ne zoome pas et ne glisse pas)
-    if ns.mod and type(ns.mod.padRoots) == "table" then table.insert(ns.mod.padRoots, f) end
+    ns.Map.Cursor.AddRoot(f)
 end
 
 -- L'action choisie (au stick, ou la souris dessus) : sa pastille s'allume

@@ -1132,7 +1132,7 @@ function UI.ShowMenu(items, x, y, title)
         menu:SetScript("OnHide", function(self) self:UnregisterEvent("GLOBAL_MOUSE_DOWN") end)
         menu:SetScript("OnEvent", function(self) if not self:IsMouseOver() then self:Hide() end end)
         menu:Hide()
-        if ns.mod and type(ns.mod.padRoots) == "table" then table.insert(ns.mod.padRoots, menu) end
+        if ns.Map then ns.Map.Cursor.AddRoot(menu) end
     end
     menu.title:SetText(title or "")
     local top = title and -24 or -4
@@ -1181,7 +1181,7 @@ function UI.MenuShown() return menu and menu:IsShown() or false end
 -- virtuel) : le cadre de la charte, barre de titre, croix rouge ; ni
 -- portrait, ni liste d'Échap (voir l'en-tête). Elle est posée au-dessus de
 -- la carte du jeu (strate FULLSCREEN_DIALOG) et ajoutée aux cadres que le
--- curseur de la manette d'OpenMap sait survoler et presser (mod.padRoots).
+-- curseur de la manette d'OpenMap sait survoler et presser (ns.Map.Cursor.AddRoot).
 -- Rend f : f.title, f.close, f.content (sous la barre de titre).
 ---------------------------------------------------------------------------
 function UI.MapWindow(name, w, h, title, titleH, level)
@@ -1205,9 +1205,7 @@ function UI.MapWindow(name, w, h, title, titleH, level)
     c:SetPoint("BOTTOMRIGHT", f, "BOTTOMRIGHT", -6, 6)
     f.content = c
     f:Hide()
-    if ns.mod and type(ns.mod.padRoots) == "table" then
-        table.insert(ns.mod.padRoots, f)
-    end
+    if ns.Map then ns.Map.Cursor.AddRoot(f) end
     return f
 end
 

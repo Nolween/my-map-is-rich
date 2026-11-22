@@ -16,7 +16,7 @@
 -- départ, l'arrivée et les carrefours des routes.
 --
 -- Les positions : celle du joueur (sa carte et sa place dessus), celle du
--- curseur sur la carte d'OpenMap, et le passage d'un point du monde à une
+-- curseur sur la carte, et le passage d'un point du monde à une
 -- carte du jeu (pour le waypoint).
 local _, root = ...
 local ns = root.Plus
@@ -67,30 +67,26 @@ function Pl.PlayerPoint()
     return Pl.WorldOf(mapID, x, y)
 end
 
--- La carte (zone ou ville) sous un point du monde d'OpenMap (u, v)
+-- La carte (zone ou ville) sous un point du monde (u, v)
 local function MapAt(u, v)
-    local S, mod = ns.S, ns.mod
-    if not (S and S.ChainAt and mod and mod.FromWorld) then return end
-    local ok, chain = pcall(S.ChainAt, u, v)
-    if not ok or type(chain) ~= "table" then return end
+    local K = ns.Map.Coords
+    local chain = K.ChainAt(u, v)
     local mapID = chain[#chain]
-    if not mapID or mapID == S.WORLD then return end
-    local okXY, mx, my = pcall(mod.FromWorld, mapID, u, v)
-    if not okXY or not mx then return end
+    if not mapID or mapID == K.World() then return end
+    local mx, my = K.FromWorld(mapID, u, v)
+    if not mx then return end
     return mapID, mx, my
 end
 
--- Le point du monde d'OpenMap sous le curseur (u, v), et les unités du
+-- Le point du monde sous le curseur (u, v), et les unités du
 -- monde par pixel (pour comparer des distances à l'écran)
 function Pl.CursorUV()
-    local mod = ns.mod
-    if not (mod and mod.CursorWorld) then return end
-    local ok, u, v, pu, pv = pcall(mod.CursorWorld)
-    if not ok or not u then return end
+    local u, v, pu, pv = ns.Map.Cursor.World()
+    if not u then return end
     return u, v, pu, pv
 end
 
--- Le point sous le curseur, sur la carte d'OpenMap ; et Pl.CursorUV()
+-- Le point sous le curseur, sur la carte ; et Pl.CursorUV()
 function Pl.CursorPoint()
     local u, v, pu, pv = Pl.CursorUV()
     if not u then return end
@@ -111,13 +107,11 @@ function Pl.PointAtUV(u, v)
     return point
 end
 
--- Un point du monde (yards) sur la carte d'OpenMap (u, v)
+-- Un point du monde (yards) sur la carte (u, v)
 function Pl.UV(point)
     if point.u and point.v then return point.u, point.v end
-    local S = ns.S
-    if not (S and S.FromYards) then return end
-    local ok, u, v = pcall(S.FromYards, point.cont, point.x, point.y)
-    if ok and u then
+    local u, v = ns.Map.Coords.FromYards(point.cont, point.x, point.y)
+    if u then
         point.u, point.v = u, v
         return u, v
     end
@@ -222,7 +216,7 @@ function Pl.Find(from, to, opts)
     local g = opts and opts.walkOnly and { nodes = {}, edges = {}, known = 0 } or G.Build()
     local nodes, edges = g.nodes, g.edges
     -- (le départ et l'arrivée sont les points donnés, qui gardent leur carte
-    -- et leur place sur la carte d'OpenMap)
+    -- et leur place sur la carte)
     from.id, from.kind = "start", "start"
     to.id, to.kind = "goal", "goal"
     nodes.start, nodes.goal = from, to

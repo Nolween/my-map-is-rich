@@ -517,23 +517,21 @@ end
 -- La quête choisie : le détail, et la carte qui y glisse
 ---------------------------------------------------------------------------
 local function ShowOnMap(q)
-    local mod = ns.mod
+    local mv = ns.Map.View
     if not (q and q.point) then
-        if mod.PadQuestArea then ns.Call(mod.PadQuestArea, nil) end
+        mv.QuestArea(nil)
         return
     end
     local u, v = Pl().UV(q.point)
     if not u then return end
     if ns.MapNav then ns.MapNav.SetFollow(false) end
-    local zoom
-    local okV, _, _, z = pcall(mod.ViewNow)
-    if okV then zoom = z end
-    if mod.FitZoom and q.point.map then
-        local okF, fit = pcall(mod.FitZoom, q.point.map)
-        if okF and fit then zoom = math.max(zoom or 1, fit) end
+    local _, _, zoom = mv.Now()
+    if q.point.map then
+        local fit = mv.FitZoom(q.point.map)
+        if fit then zoom = math.max(zoom or 1, fit) end
     end
-    ns.Call(mod.Glide, u, v, zoom)
-    if mod.PadQuestArea then ns.Call(mod.PadQuestArea, q.questID, q.point.map) end
+    mv.Glide(u, v, zoom)
+    mv.QuestArea(q.questID, q.point.map)
 end
 
 local function Select(q, glide)
@@ -1196,7 +1194,8 @@ local function Build(chrome)
     -- carte réduite pose la liste dehors ; la strate et le niveau de l'habillage)
     local host = _G.WorldMapFrame
     if host then panel:SetParent(host) end
-    if ns.mod and ns.mod.viewStrata then panel:SetFrameStrata(ns.mod.viewStrata) end
+    local strata = ns.Map.View.Strata()
+    if strata then panel:SetFrameStrata(strata) end
     panel:SetWidth(WIDTH)
     panel.chrome = chrome
     panel:EnableMouse(true)
@@ -1338,8 +1337,7 @@ local function Build(chrome)
     QP.Place()
     panel:Hide()
     panel.padPassive = true    -- (au repos tant que Menu n'y entre pas)
-    local roots = ns.mod and ns.mod.padRoots
-    if type(roots) == "table" then table.insert(roots, panel) end
+    ns.Map.Cursor.AddRoot(panel)
     F.RegisterWindow(panel, {
         onBack = function() QP.Blur() end,
         first = function()
@@ -1384,8 +1382,7 @@ function QP.Hide()
     -- (rouvert, le panneau montre la liste)
     if view ~= "list" then ShowView("list") end
     panel:Hide()
-    local mod = ns.mod
-    if mod and mod.PadQuestArea then ns.Call(mod.PadQuestArea, nil) end
+    ns.Map.View.QuestArea(nil)
     P.Dirty()
 end
 
@@ -1647,7 +1644,7 @@ F.WINDOW_CONTEXTS.questpage = true
 -- ramène, RT aussi, et la croix gauche du jeu donne le curseur.
 -- Le stick est gardé par un cadre de l'addon (EnableGamePadStick, comme la
 -- roue des actions : UI/ActionBar.lua) : il ne va plus au jeu, et il est lu
--- sur la manette (mod.PadCursorStick). Jamais les boutons. Seulement hors
+-- sur la manette (ns.Map.Cursor.Stick). Jamais les boutons. Seulement hors
 -- combat : en combat, le stick revient au personnage. La carte réduite le
 -- laisse au personnage, comme la carte en fenêtre du jeu.
 ---------------------------------------------------------------------------
@@ -1709,10 +1706,8 @@ end
 -- Le stick gauche lu : -1 (bas), 0, 1 (haut), et son inclinaison
 local stickDir, stickWait = 0, 0
 local function StickY()
-    local mod = ns.mod
-    if not (mod and mod.PadCursorStick) then return 0, 0 end
-    local ok, _, y = pcall(mod.PadCursorStick)
-    if not (ok and type(y) == "number") then return 0, 0 end
+    local _, y = ns.Map.Cursor.Stick()
+    if type(y) ~= "number" then return 0, 0 end
     local a = math.abs(y)
     local limit = stickDir ~= 0 and STICK_OFF or STICK_ON
     if a < limit then return 0, a end

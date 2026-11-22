@@ -64,7 +64,7 @@ local function Place()
     bar:ClearAllPoints()
     -- (la carte plein écran : en bas de l'écran, le pied de la carte du jeu caché
     -- dessous ; réduite, en bas de sa fenêtre)
-    local view = ns.MapSmall() and ns.mod.ViewFrame and ns.mod.ViewFrame()
+    local view = ns.MapSmall() and ns.Map.View.Frame()
     if view then
         bar:SetPoint("BOTTOM", view, "BOTTOM", 0, 6)
     elseif ns.FullMap() then
@@ -210,7 +210,7 @@ end
 -- La largeur que la barre peut prendre : celle de la carte réduite, ou de
 -- l'écran (moins une marge), à l'échelle de la barre
 local function MaxWidth()
-    local view = ns.MapSmall() and ns.mod.ViewFrame and ns.mod.ViewFrame()
+    local view = ns.MapSmall() and ns.Map.View.Frame()
     local f = view or UIParent
     local w = (f:GetWidth() or 0) * f:GetEffectiveScale() / bar:GetEffectiveScale()
     return math.max(200, w - 24)

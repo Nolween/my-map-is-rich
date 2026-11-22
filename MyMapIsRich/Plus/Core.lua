@@ -31,8 +31,6 @@ end
 ---------------------------------------------------------------------------
 local DEFAULTS = {
     enabled = true,        -- l'addon prend la manette carte ouverte
-    padView = true,        -- forcer la vue manette d'OpenMap (son option « padView »)
-    classicMap = false,    -- la carte dessinée dans celle du jeu (sinon : la carte plein écran ; après un /reload)
     mapSmall = false,      -- la carte de l'addon réduite, en fenêtre (sinon en plein écran ; X à la manette, le bouton Taille)
     layerMemory = {},      -- les clés d'un calque à plusieurs clés, allumées quand on l'a éteint (UI/Layers.lua)
     jump = true,           -- la croix saute d'icône en icône sur la carte
@@ -102,128 +100,43 @@ function ns.Fire(name, ...)
 end
 
 ---------------------------------------------------------------------------
--- OpenMap : ce dont l'addon a besoin, vérifié une fois
+-- La carte : tout passe par ns.Map (Map/Api.lua). Ces petits raccourcis
+-- restent ceux du reste de Plus.
 ---------------------------------------------------------------------------
--- (les fonctions du module « worldmap » appelées ; une seule absente et
--- l'addon reste en veille plutôt que de lever des erreurs en jeu)
-local NEEDED = {
-    "PadUI", "PadViewOn", "SetPadView", "Glide", "ViewNow", "CursorWorld",
-    "PadCursorXY", "PadControlAt", "MenuShown", "CloseMenu", "OpenMenu",
-    "FindMe", "SetPinMode", "PinMode", "TogglePins",
-}
+function ns.Why() return ns.Map.Why() end
 
-local why = L.WHY_NOT_LOADED
+-- La carte est trouvée et compatible
+function ns.Ready() return ns.Map.Ready() end
 
-function ns.Why() return why end
+-- Les fonctions de la vue sont là : elle tourne
+function ns.ViewReady() return ns.Map.ViewReady() end
 
-local function FindOpenMap()
-    -- (la carte de My Map Is Rich : l'espace de noms racine de l'addon)
-    local om = root
-    if type(om) ~= "table" or type(om.GetModule) ~= "function" then
-        why = L.WHY_NO_OPENMAP
-        return false
-    end
-    local ok, mod = pcall(om.GetModule, om, "worldmap")
-    if not ok or type(mod) ~= "table" then
-        why = L.WHY_NO_MODULE
-        return false
-    end
-    local S = om.MapStitch
-    if type(S) ~= "table" or type(S.GetPinSet) ~= "function" then
-        why = L.WHY_NO_STITCH
-        return false
-    end
-    -- (certaines fonctions n'existent qu'une fois la vue manette lancée,
-    -- PadView.lua : elles sont vérifiées au moment de s'en servir)
-    local missing = {}
-    for _, name in ipairs({ "PadUI", "SetPadView", "MenuShown", "CloseMenu", "OpenMenu", "FindMe", "SetPinMode", "PinMode", "TogglePins" }) do
-        if type(mod[name]) ~= "function" then missing[#missing + 1] = name end
-    end
-    if #missing > 0 then
-        why = L.WHY_MISSING:format(table.concat(missing, ", "))
-        return false
-    end
-    ns.OM, ns.mod, ns.S = om, mod, S
-    why = nil
-    return true
-end
-
--- OpenMap est là et compatible
-function ns.Ready() return ns.mod ~= nil end
-
--- Les fonctions de la vue manette (PadView.lua) sont là : elle tourne
-function ns.ViewReady()
-    local mod = ns.mod
-    if not mod then return false end
-    for _, name in ipairs(NEEDED) do
-        if type(mod[name]) ~= "function" then return false end
-    end
-    return true
-end
-
--- La vue d'OpenMap est là : la carte plein écran (souris et manette), ou la
--- vue manette de la carte classique (interface manette)
-function ns.ViewOn()
-    local mod = ns.mod
-    if not (mod and mod.PadViewOn) then return false end
-    local ok, on = pcall(mod.PadViewOn)
-    return ok and on or false
-end
+-- La vue de la carte est là et montrée
+function ns.ViewOn() return ns.Map.On() end
 
 -- L'interface manette de Forever est active
-function ns.PadUI()
-    local mod = ns.mod
-    if mod and mod.PadUI then
-        local ok, on = pcall(mod.PadUI)
-        if ok then return on end
-    end
-    return InputUtil and InputUtil.IsGamepadUIEnabled and InputUtil.IsGamepadUIEnabled() or false
-end
+function ns.PadUI() return ns.Map.PadUI() end
 
--- Un appel à OpenMap protégé : rend ok, résultats
+-- Un appel protégé : rend ok, résultats
 function ns.Call(fn, ...)
     if type(fn) ~= "function" then return false end
     return pcall(fn, ...)
 end
-
--- La carte du monde (celle du jeu ; jamais modifiée ici)
-function ns.Map() return _G.WorldMapFrame end
 
 function ns.MapShown()
     local map = _G.WorldMapFrame
     return map and map:IsShown() or false
 end
 
----------------------------------------------------------------------------
--- La vue manette d'OpenMap : son option « padView » est une option de test,
--- éteinte par défaut ; sans elle, OpenMap laisse la carte à Blizzard dès que
--- l'interface manette est active. On l'allume (option padView de l'addon),
--- avant le lancement d'OpenMap à la connexion (son OnEnable la lit), et
--- après coup si OpenMap attend déjà (mod.padWaits).
----------------------------------------------------------------------------
-local function WantPadView()
-    local mod = ns.mod
-    if not (mod and mod.db) then return end
-    -- (la carte plein écran ou la carte classique : lu par la carte à son lancement)
-    mod.db.classicMap = ns.db.options.classicMap and true or false
-    if not (ns.db.options.enabled and ns.db.options.padView) then return end
-    if not mod.db.padView then mod.db.padView = true end
-end
-
--- La carte plein écran est-elle là (PadView.lua) ?
-function ns.FullMap()
-    local mod = ns.mod
-    if not (mod and mod.ViewFull) then return false end
-    local ok, on = pcall(mod.ViewFull)
-    return ok and on or false
-end
+-- La carte plein écran (ou réduite) de l'addon est-elle là ?
+function ns.FullMap() return ns.Map.Full() end
 
 -- La carte de l'addon réduite : une fenêtre, le jeu visible autour, le
 -- personnage libre de bouger (ns.db.options.mapSmall ; sinon, le plein
 -- écran). Le bouton Taille de l'habillage ou X à la manette passent de l'une
 -- à l'autre (UI/MapChrome.lua) ; pas en combat (la croix sécurisée de la
--- carte se déplace avec elle). La carte (Map/PadView.lua) se pose en
--- conséquence, puis « MAP_SIZE » prévient l'habillage.
+-- carte se déplace avec elle). La carte se pose en conséquence, puis
+-- « MAP_SIZE » prévient l'habillage.
 function ns.MapSmall()
     return ns.FullMap() and ns.db and ns.db.options.mapSmall and true or false
 end
@@ -236,17 +149,17 @@ function ns.SetMapSmall(on)
         return
     end
     ns.db.options.mapSmall = on
-    local mod = ns.mod
-    if mod and mod.ViewSetSmall then ns.Call(mod.ViewSetSmall, on) end
+    ns.Map.SetSmall(on)
     ns.Fire("MAP_SIZE", on)
 end
 
 function ns.ToggleMapSize() ns.SetMapSmall(not ns.MapSmall()) end
 
 -- X à la manette : la taille de la carte. L'appui arrive par deux chemins,
--- le X du jeu sur sa carte (Map/PadView.lua, mod.OnViewOut) et la lecture de
--- la manette (Pad/MapNav.lua) ; le jeu ne l'envoie pas toujours (sa carte en
--- fenêtre), et les deux à la fois annuleraient le changement : un seul compte
+-- le X du jeu sur sa carte (le gestionnaire de sortie de la vue) et la
+-- lecture de la manette (Pad/MapNav.lua) ; le jeu ne l'envoie pas toujours
+-- (sa carte en fenêtre), et les deux à la fois annuleraient le changement :
+-- un seul compte
 local SIZE_PRESS_GAP = 0.4   -- s : un second appui plus proche est le même
 local sizePressAt = -10
 function ns.PadToggleMapSize()
@@ -292,35 +205,18 @@ blockedEvents:SetScript("OnEvent", function(_, _, addon, fn)
 end)
 
 ---------------------------------------------------------------------------
--- Les maîtres de vol appris : OpenMap les retient (mod.char.flightsKnown)
--- quand on ouvre la carte d'un maître de vol, et mesure les temps de vol ;
--- c'est mod:SetupFlights() qui met cela en place. Mais seule sa carte
--- habituelle l'appelle (WorldMap.lua) : sa vue manette (PadView.lua) ne le
--- fait pas, et avec elle rien n'était jamais appris (tous les maîtres de vol
--- gris, aucun vol dans les itinéraires). On l'appelle donc nous-mêmes, une
--- fois, quand OpenMap a pris le chemin de sa vue manette (mod.padWaits).
+-- Les maîtres de vol appris (apprendre un maître de vol, mesurer un vol) :
+-- seule la carte classique d'OpenMap mettait ce suivi en place ; on le fait
+-- nous-mêmes, une fois la carte lancée (ns.Map.Flights.Setup)
 ---------------------------------------------------------------------------
-local function EnsureFlights()
-    local mod = ns.mod
-    if ns.flightsHooked or not (mod and mod.padWaits and mod.SetupFlights) then return end
-    ns.flightsHooked = ns.Call(mod.SetupFlights, mod) and true or false
-end
-ns.EnsureFlights = EnsureFlights
+function ns.EnsureFlights() return ns.Map.Flights.Setup() end
+function ns.FlightsTracked() return ns.Map.Flights.Tracked() end
 
--- Le suivi des vols d'OpenMap est-il en place (par nous, ou par sa carte habituelle) ?
-function ns.FlightsTracked()
-    local mod = ns.mod
-    return ns.flightsHooked or (mod and mod.enabled and true) or false
-end
-
+-- La vue de la carte, lancée si elle attend (l'addon allumé, hors combat)
 local function StartPadView()
-    local mod = ns.mod
-    if not (mod and ns.db.options.enabled and ns.db.options.padView) then return end
-    WantPadView()
-    if mod.padWaits and not (mod.PadViewBuilt and mod.PadViewBuilt()) and not InCombatLockdown() then
-        ns.Call(mod.SetPadView, true)
-    end
-    EnsureFlights()
+    if not (ns.Ready() and ns.db.options.enabled) then return end
+    ns.Map.Start()
+    ns.EnsureFlights()
 end
 ns.StartPadView = StartPadView
 
@@ -343,35 +239,38 @@ events:SetScript("OnEvent", function(_, event, arg)
             if ns.db.options.travelRoads == false and ns.db.options.travelPath == nil then ns.db.options.travelPath = "fields" end
             ns.db.options.travelRoads = nil
         end
+        -- (0.5.0 : plus de carte classique, la carte plein écran est la seule)
+        ns.db.options.classicMap, ns.db.options.padView = nil, nil
         Fill(ns.db.options, DEFAULTS)
         ns.db.recent = ns.db.recent or {}
+        -- (ce qui est propre au personnage : ses vols appris, son point de destination...)
+        MyMapIsRichPlusCharDB = MyMapIsRichPlusCharDB or {}
+        ns.char = MyMapIsRichPlusCharDB
+        ns.Map.InitDB()
         if ns.UI and ns.UI.SetTheme then ns.UI.SetTheme(ns.db.options.theme, true) end
-        -- (OpenMap est chargé avant nous, ses réglages aussi : la vue manette
-        -- est demandée avant qu'il ne se lance, à la connexion)
-        if FindOpenMap() then WantPadView() end
+        ns.Map.Attach()
     elseif event == "PLAYER_LOGIN" then
         -- (OpenMap ou OpenMap On Gamepad chargé aussi : en veille, Init.lua le dit)
         if root.dormant or (root.Conflict and root.Conflict()) then return end
         -- (après une mise à jour : les nouveautés, l'écran de chargement
         -- passé ; UI/WhatsNew.lua)
         C_Timer.After(6, function() if ns.WhatsNew then ns.WhatsNew.MaybeShow() end end)
-        if not ns.mod then FindOpenMap() end
-        if not ns.mod then
+        local ok, why = ns.Map.Attach()
+        if not ok then
             ns.Print(L.DISABLED_WHY, why or "?")
             return
         end
-        -- (après le lancement d'OpenMap, qui a lu son réglage à la connexion)
+        -- (après le lancement de la carte, à la connexion)
         C_Timer.After(0, function()
             StartPadView()
-            EnsureFlights()
             ns.Fire("READY")
         end)
     end
 end)
 
 ---------------------------------------------------------------------------
--- /mmir (et /mymapisrich) ; /mmir carte <…> : les commandes de la carte
--- (celles d'OpenMap : status, pins, news, draw, reset... : Init.lua)
+-- /mmir (et /mymapisrich) ; /mmir carte : les réglages de la carte ;
+-- /mmir carte <…> : les commandes de la carte (status, pins, draw... : Init.lua)
 ---------------------------------------------------------------------------
 SLASH_MYMAPISRICH1 = "/mmir"
 SLASH_MYMAPISRICH2 = "/mymapisrich"
@@ -385,9 +284,21 @@ SlashCmdList.MYMAPISRICH = function(msg)
     local first, rest = raw:match("^(%S+)%s*(.*)$")
     first = first and first:lower()
     if first == "carte" or first == "map" then
-        if root.MapSlash then root.MapSlash(rest or "") end
+        -- (seul, ou une commande inconnue : les réglages de la carte, l'onglet Carte)
+        local sub = rest and rest:lower() or ""
+        local handled = false
+        if sub == "forgetflights" then
+            -- (les maîtres de vol appris par ce personnage, oubliés : Layers/Flights.lua)
+            ns.Map.Flights.Forget()
+            handled = true
+        elseif sub ~= "" and root.MapSlash then
+            handled = root.MapSlash(rest)
+        end
+        if not handled then ns.Map.Menu.Open() end
     elseif cmd == "etat" or cmd == "état" or cmd == "status" then
         if ns.Diag then ns.Diag.Status() end
+    elseif cmd == "sonde carte" or cmd == "probe map" then
+        if ns.Diag then ns.Diag.ProbeCoords() end
     elseif cmd == "sonde" or cmd == "probe" then
         if ns.Diag then ns.Diag.Probe() end
     elseif cmd == "test" then

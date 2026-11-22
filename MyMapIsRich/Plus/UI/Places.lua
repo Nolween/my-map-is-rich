@@ -14,7 +14,7 @@
 -- file : A y aller maintenant, X retirer, LT / RT monter / descendre, Y la
 -- remettre dans l'ordre le plus court.
 -- Les lieux sont ceux de la recherche d'OpenMap (Nav.lua, Places), lus dans
--- ses tables : les cartes du jeu (C_Map) qu'il sait dessiner (S.Rect), ses
+-- ses tables : les cartes du jeu (C_Map) qu'il sait dessiner (ns.Map.Coords.Rect), ses
 -- entrées de donjon (MapPlaces.instances) et ses maîtres de vol
 -- (MapFlights.nodes).
 local _, root = ...
@@ -46,15 +46,15 @@ local function T() return ns.Travel end
 ---------------------------------------------------------------------------
 local function ByName(a, b) return (a.text or "") < (b.text or "") end
 
--- Les cartes du jeu sous `parent`, d'un type, qu'OpenMap sait dessiner
+-- Les cartes du jeu sous `parent`, d'un type, que la carte sait dessiner
 local function Children(parent, kind)
-    local S = ns.S
+    local K = ns.Map.Coords
     local out = {}
     local ok, found = pcall(C_Map.GetMapChildrenInfo, parent, kind, true)
     if not ok or type(found) ~= "table" then return out end
     local seen = {}
     for _, info in ipairs(found) do
-        if info.mapID and not seen[info.mapID] and S.Rect(info.mapID) then
+        if info.mapID and not seen[info.mapID] and K.Rect(info.mapID) then
             seen[info.mapID] = true
             out[#out + 1] = { text = info.name, mapID = info.mapID }
         end
@@ -68,32 +68,31 @@ local byZone
 local function Index()
     if byZone then return byZone end
     byZone = {}
-    local S, OM = ns.S, ns.OM
+    local K, D = ns.Map.Coords, ns.Map.Data
     local function Put(u, v, item)
         if not u then return end
-        local ok, chain = pcall(S.ChainAt, u, v)
-        if not ok or type(chain) ~= "table" then return end
+        local chain = K.ChainAt(u, v)
         for _, id in ipairs(chain) do
             byZone[id] = byZone[id] or {}
             table.insert(byZone[id], item)
         end
     end
-    for _, g in ipairs((OM.MapPlaces or {}).instances or {}) do
-        local ok, u, v
-        if S.EntranceAt then ok, u, v = pcall(S.EntranceAt, g) else ok, u, v = pcall(S.FromYards, g[1], g[2], g[3]) end
-        if ok and u and type(g[4]) == "table" then
+    for _, g in ipairs((D.Places() or {}).instances or {}) do
+        local u, v = K.EntranceAt(g)
+        if not u then u, v = K.FromYards(g[1], g[2], g[3]) end
+        if u and type(g[4]) == "table" then
             for _, inst in ipairs(g[4]) do
-                local okN, name = pcall(S.InstanceName, inst)
-                if okN and name then
+                local name = K.InstanceName(inst)
+                if name then
                     Put(u, v, { text = name, kind = inst[3] and L.PLACE_RAID or L.PLACE_DUNGEON, u = u, v = v, order = inst[3] and 2 or 1 })
                 end
             end
         end
     end
-    for _, node in pairs((OM.MapFlights or {}).nodes or {}) do
+    for _, node in pairs((D.Flights() or {}).nodes or {}) do
         if type(node) == "table" and node[1] then
-            local ok, u, v = pcall(S.FromYards, node[2], node[3], node[4])
-            if ok and u then Put(u, v, { text = node[1], kind = L.PLACE_FLIGHT, u = u, v = v, order = 3 }) end
+            local u, v = K.FromYards(node[2], node[3], node[4])
+            if u then Put(u, v, { text = node[1], kind = L.PLACE_FLIGHT, u = u, v = v, order = 3 }) end
         end
     end
     return byZone
@@ -147,13 +146,13 @@ end
 
 -- La carte glisse jusqu'au lieu
 local function ShowOnMap(item)
-    local S, mod = ns.S, ns.mod
+    local view = ns.Map.View
     -- (la vue part vers ce lieu : elle ne suit plus le personnage, Pad/MapNav.lua)
     if ns.MapNav and ns.MapNav.SetFollow then ns.MapNav.SetFollow(false) end
     local u, v = item.u, item.v
     if not u and item.mapID then
-        local l, r, t, b = S.Rect(item.mapID)
-        if l and S.GlideToRect then ns.Call(S.GlideToRect, l, t, r, b, 0.95) end
+        local l, r, t, b = ns.Map.Coords.Rect(item.mapID)
+        if l then view.GlideToRect(l, t, r, b, 0.95) end
         return
     end
     if not u then
@@ -161,8 +160,8 @@ local function ShowOnMap(item)
         if p then u, v = Pl().UV(p) end
     end
     if u then
-        local ok, _, _, zoom = pcall(mod.ViewNow)
-        ns.Call(mod.Glide, u, v, math.max(14, ok and zoom or 1))
+        local _, _, zoom = view.Now()
+        view.Glide(u, v, math.max(14, zoom or 1))
     end
 end
 
@@ -228,7 +227,7 @@ local function PlacesEntries()
         out[#out + 1] = { text = item.text, norm = Norm(item.text), kind = item.kind, order = order,
             u = item.u, v = item.v, mapID = item.mapID, name = item.text }
     end
-    for _, cont in ipairs(Children(ns.S.WORLD, Enum.UIMapType.Continent)) do
+    for _, cont in ipairs(Children(ns.Map.Coords.World(), Enum.UIMapType.Continent)) do
         for _, zone in ipairs(Children(cont.mapID, Enum.UIMapType.Zone)) do
             Add({ text = zone.text, kind = L.PLACE_ZONE, mapID = zone.mapID }, 1)
         end
@@ -470,7 +469,7 @@ local function FillPlaces()
     local items
     if #path == 0 then
         items = { { text = L.PLACES_FIND_ME, findMe = true, tip = L.PLACES_FIND_ME_TIP, kind = "" } }
-        for _, c in ipairs(Children(ns.S.WORLD, Enum.UIMapType.Continent)) do
+        for _, c in ipairs(Children(ns.Map.Coords.World(), Enum.UIMapType.Continent)) do
             c.kind, c.level = L.PLACE_CONTINENT, "continent"
             items[#items + 1] = c
         end
@@ -532,9 +531,8 @@ local HANDLERS = {
     places = {
         a = function(item)
             if item.findMe then
-                local mod = ns.mod
                 PL.Hide()
-                ns.Call(mod.FindMe, mod)
+                ns.Map.View.FindMe()
             elseif item.level == "continent" then
                 path = { item }
                 FillPlaces()
@@ -616,8 +614,7 @@ end
 -- Le cadre sur lequel la fenêtre se pose : la carte plein écran ouverte (plein
 -- écran ou réduite), sa vue, pour rester sur la carte ; sinon l'écran
 local function Host()
-    local mod = ns.mod
-    local view = ns.FullMap() and ns.MapShown() and mod and mod.ViewFrame and mod.ViewFrame()
+    local view = ns.FullMap() and ns.MapShown() and ns.Map.View.Frame()
     return view or UIParent
 end
 
@@ -794,7 +791,7 @@ local function Build()
 end
 
 function PL.Show(which)
-    if not (ns.Ready() and ns.S and ns.S.Rect) then return end
+    if not ns.Ready() then return end
     Build()
     -- (le navigateur s'ouvre sur Lieux, là où on en était)
     tab = which or "places"

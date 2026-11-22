@@ -30,11 +30,11 @@ local F = ns.Focus
 local M = {}
 ns.MapNav = M
 
--- Les jeux d'icônes d'OpenMap (Stitch.lua : S.PinSet) qu'on peut viser
+-- Les jeux d'icônes de la carte (ns.Map.Pins) qu'on peut viser
 local SETS = {
     "dungeons", "boats", "zeppelins", "flight", "route", "routes",
-    "userpins", "waypoint", "group", "friends", "friendzones",
-    "quests", "questoffers", "notes",
+    "userpins", "waypoint", "group",
+    "quests", "questoffers",
     "tf_vendor", "tf_repair", "tf_innkeeper", "tf_banker", "tf_mailbox",
     "tf_auctioneer", "tf_stable", "tf_classTrainer", "tf_profTrainer",
     "tf_spirit", "tf_rare",
@@ -52,8 +52,7 @@ end
 -- Le rectangle de la vue à l'écran (px) : toute la carte plein écran, sinon
 -- la vue de la carte du jeu
 local function ViewRect()
-    local mod = ns.mod
-    local sc = ns.FullMap() and mod.ViewFrame and mod.ViewFrame() or Scroll()
+    local sc = ns.FullMap() and ns.Map.View.Frame() or Scroll()
     if not sc then return end
     local l, b, w, h = sc:GetRect()
     if not l then return end
@@ -63,11 +62,8 @@ end
 
 -- Le curseur de la manette (px de l'écran), sinon le milieu de la vue
 local function Cursor()
-    local mod = ns.mod
-    if mod and mod.PadCursorXY then
-        local ok, x, y = pcall(mod.PadCursorXY)
-        if ok and x then return x, y, true end
-    end
+    local x, y = ns.Map.Cursor.XY()
+    if x then return x, y, true end
     local l, b, r, t = ViewRect()
     if l then return (l + r) / 2, (b + t) / 2, false end
 end
@@ -98,18 +94,10 @@ end
 -- Les icônes visibles dans la vue : { { frame, x, y }, ... } en px de l'écran
 local function Icons()
     local out, seen = {}, {}
-    local S = ns.S
-    if S and S.GetPinSet then
-        for _, key in ipairs(SETS) do
-            local set = S.GetPinSet(key)
-            if set and set.frame and set.frame:IsVisible() and type(set.pins) == "table" then
-                for _, pin in ipairs(set.pins) do
-                    if not seen[pin] and Visible(pin) then
-                        seen[pin] = true
-                        out[#out + 1] = pin
-                    end
-                end
-            end
+    for _, pin in ipairs(ns.Map.Pins.Shown(SETS)) do
+        if not seen[pin] and Visible(pin) then
+            seen[pin] = true
+            out[#out + 1] = pin
         end
     end
     pcall(LibIcons, out, seen)
@@ -130,16 +118,14 @@ end
 
 -- La vue glisse pour que le point (tx, ty) de l'écran vienne sous (x, y)
 local function Bring(tx, ty, x, y)
-    local mod = ns.mod
-    if not (mod and mod.CursorWorld and mod.ViewNow and mod.Glide) then return false end
-    local okW, _, _, du, dv = pcall(mod.CursorWorld)
-    local okV, u, v, zoom = pcall(mod.ViewNow)
-    if not (okW and okV and du and u) then return false end
+    local _, _, du, dv = ns.Map.Cursor.World()
+    local u, v, zoom = ns.Map.View.Now()
+    if not (du and u) then return false end
     local _, _, _, _, es = ViewRect()
     es = es or 1
     local dx, dy = (tx - x) / es, (ty - y) / es
-    -- (l'écran monte, le monde d'OpenMap descend : v croît vers le bas)
-    ns.Call(mod.Glide, u + dx * du, v - dy * dv, zoom)
+    -- (l'écran monte, le monde de la carte descend : v croît vers le bas)
+    ns.Map.View.Glide(u + dx * du, v - dy * dv, zoom)
     return true
 end
 
@@ -177,18 +163,10 @@ magnet:SetScript("OnUpdate", function(_, elapsed)
         return
     end
     if magnetDone or GetTime() - restSince < REST then return end
-    local mod = ns.mod
-    if mod.Animating then
-        local ok, busy = pcall(mod.Animating)
-        if ok and busy then return end
-    end
-    if mod.Zooming then
-        local ok, busy = pcall(mod.Zooming)
-        if ok and busy then return end
-    end
-    -- (au-dessus d'une fenêtre d'OpenMap : rien)
-    local okC, ctl, blocked = pcall(mod.PadControlAt, x, y)
-    if okC and (ctl or blocked) then return end
+    if ns.Map.View.Animating() or ns.Map.View.Zooming() then return end
+    -- (au-dessus d'une fenêtre de la carte : rien)
+    local ctl, blocked = ns.Map.Cursor.ControlAt(x, y)
+    if ctl or blocked then return end
     local radius = ns.db.options.magnetRadius or 24
     local best, bestD = nil, radius * radius
     for _, it in ipairs(Icons()) do
@@ -203,10 +181,7 @@ end)
 ---------------------------------------------------------------------------
 -- Les actions
 ---------------------------------------------------------------------------
-local function FindMe()
-    local mod = ns.mod
-    ns.Call(mod.FindMe, mod)
-end
+local function FindMe() ns.Map.View.FindMe() end
 M.FindMe = FindMe
 
 ---------------------------------------------------------------------------
@@ -229,8 +204,7 @@ end
 
 -- Où est le personnage sur le monde d'OpenMap (u, v), et la carte où il est
 local function PlayerWorld()
-    local mod = ns.mod
-    if not (mod and mod.ToWorld and C_Map and C_Map.GetBestMapForUnit) then return end
+    if not (C_Map and C_Map.GetBestMapForUnit) then return end
     local ok, best = pcall(C_Map.GetBestMapForUnit, "player")
     best = ok and Plain(best) or nil
     if not best then return end
@@ -240,22 +214,21 @@ local function PlayerWorld()
     if not okXY then return end
     x, y = Plain(x), Plain(y)
     if not (x and y) or (x == 0 and y == 0) then return end
-    local okW, u, v = pcall(mod.ToWorld, best, x, y)
-    if okW and u then return u, v, best end
+    local u, v = ns.Map.Coords.ToWorld(best, x, y)
+    if u then return u, v, best end
 end
 
 -- La vue tout de suite sur le personnage ; `fit` : au moins au zoom où sa zone tient
 local function CenterNow(fit)
-    local mod = ns.mod
     local u, v, best = PlayerWorld()
     if not u then return false end
-    local ok, cu, cv, zoom = pcall(mod.ViewNow)
-    if not (ok and cu) then return false end
-    if fit and mod.FitZoom then
-        local okZ, z = pcall(mod.FitZoom, best)
-        if okZ and z then zoom = math.max(zoom, z) end
+    local cu, _, zoom = ns.Map.View.Now()
+    if not cu then return false end
+    if fit then
+        local z = ns.Map.View.FitZoom(best)
+        if z then zoom = math.max(zoom, z) end
     end
-    ns.Call(mod.ShowNow, u, v, zoom)
+    ns.Map.View.Show(u, v, zoom)
     return true
 end
 
@@ -280,24 +253,16 @@ follow:SetScript("OnUpdate", function(_, elapsed)
     followWait = FOLLOW_EVERY
     if not (following and ns.ViewOn()) then return end
     if P.current == "sketch" or P.current == "dungeon" then return end
-    local mod = ns.mod
     -- (un recentrage qui glisse encore, ou un zoom en cours : on attend)
-    if mod.Animating then
-        local ok, busy = pcall(mod.Animating)
-        if ok and busy then return end
-    end
-    if mod.Zooming then
-        local ok, busy = pcall(mod.Zooming)
-        if ok and busy then return end
-    end
+    if ns.Map.View.Animating() or ns.Map.View.Zooming() then return end
     local u, v = PlayerWorld()
     if not u then return end
-    local ok, cu, cv = pcall(mod.ViewNow)
-    if not (ok and cu) then return end
+    local cu, cv = ns.Map.View.Now()
+    if not cu then return end
     -- (moins d'un demi-pixel d'écart : rien à faire)
-    local okC, _, _, pu, pv = pcall(mod.CursorWorld)
-    local tu = okC and pu and pu * 0.5 or 1e-6
-    local tv = okC and pv and pv * 0.5 or 1e-6
+    local _, _, pu, pv = ns.Map.Cursor.World()
+    local tu = pu and pu * 0.5 or 1e-6
+    local tv = pv and pv * 0.5 or 1e-6
     if math.abs(u - cu) <= tu and math.abs(v - cv) <= tv then return end
     CenterNow(false)
 end)
@@ -314,17 +279,12 @@ ns.On("MAP_SHOW", function()
 end)
 ns.On("MAP_HIDE", function() follow:Hide() end)
 
-local function Sketching()
-    local mod = ns.mod
-    if not (mod and mod.IsSketching) then return false end
-    local ok, on = pcall(mod.IsSketching, mod)
-    return ok and on or false
-end
+local function Sketching() return ns.Map.Sketch.Drawing() end
 
 -- Le plateau de la plume (Sketch.lua : sa fenêtre, donnée au curseur)
 local function Tray()
-    local roots = ns.mod and ns.mod.padRoots
-    if type(roots) ~= "table" then return end
+    local roots = ns.Map.Cursor.Roots()
+    if not roots then return end
     for _, f in ipairs(roots) do
         if type(f) == "table" and f.tools and f.head and f.IsVisible and f:IsVisible() then return f end
     end
@@ -419,9 +379,7 @@ end
 -- puis A et B (du jeu, en gris).
 P.DefineContext("map", 10, CanvasFocus, nil, "read")
 P.SetPassive("map", "PAD1", function()
-    local mod = ns.mod
-    local ok, on = pcall(mod.PinMode)
-    return (ok and on) and "HINT_PIN_DROP" or "HINT_SELECT"
+    return ns.Map.MyPins.Mode() and "HINT_PIN_DROP" or "HINT_SELECT"
 end)
 -- (R3 : le clic du stick droit ; Travel/ est chargé après ce fichier)
 P.SetAction("map", "PADRSTICK", function()
@@ -463,7 +421,7 @@ end, function()
     return "HINT_QUESTS"
 end)
 -- (X : la taille de la carte, plein écran ou réduite. Lu ici, car le X du jeu
--- (UI/MapChrome.lua, mod.OnViewOut) ne vient pas sur sa carte en fenêtre,
+-- (UI/MapChrome.lua, ns.Map.View.SetOutHandler) ne vient pas sur sa carte en fenêtre,
 -- sous la carte réduite ; s'il vient aussi, ns.PadToggleMapSize n'en compte
 -- qu'un. La carte classique : le X du jeu, dézoomer)
 P.SetAction("map", "PAD3", function()
@@ -490,17 +448,9 @@ ns.On("CONTEXT", function(name)
     restX, magnetDone = nil, false
 end)
 
--- Poser une épingle depuis le menu d'OpenMap : le menu se ferme, pour que A
--- pose l'épingle sur la carte (la vue manette le fait quand aucune fenêtre
--- n'a la manette)
-ns.On("READY", function()
-    local mod = ns.mod
-    if type(mod.SetPinMode) == "function" then
-        hooksecurefunc(mod, "SetPinMode", function(on)
-            if on and ns.ViewOn() and mod.MenuShown and mod.MenuShown() then
-                ns.Call(mod.CloseMenu)
-            end
-            P.Dirty()
-        end)
-    end
+-- Poser une épingle depuis le menu de la carte : le menu se ferme, pour que A
+-- pose l'épingle sur la carte (la vue le fait quand aucune fenêtre n'a la manette)
+ns.On("MAP_PIN_MODE", function(on)
+    if on and ns.ViewOn() and ns.Map.Menu.Shown() then ns.Map.Menu.Close() end
+    P.Dirty()
 end)

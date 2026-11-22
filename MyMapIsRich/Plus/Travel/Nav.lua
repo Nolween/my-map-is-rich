@@ -413,7 +413,7 @@ local function HostileAreas(cont, faction)
     end
     -- (les villes : un maître de vol de l'autre faction, aucun des tiens à
     -- moins de SHARED, pas dans une capitale déjà comptée)
-    local F = ns.OM and ns.OM.MapFlights
+    local F = ns.Map.Data.Flights()
     local nodes = type(F) == "table" and type(F.nodes) == "table" and F.nodes
     if not (nodes and bit and bit.band) then return list end
     local function Side(n, b)

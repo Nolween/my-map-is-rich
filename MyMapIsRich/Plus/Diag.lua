@@ -20,11 +20,10 @@ local function Meta(addon, field)
 end
 
 function Diag.Status()
-    local mod = ns.mod
     ns.Print(L.STATUS_HEAD, ns.VERSION, "0.8.11")
     ns.Print(L.STATUS_OPENMAP, YesNo(ns.Ready()), ns.Why() or "")
     ns.Print(L.STATUS_PADUI, YesNo(ns.PadUI()))
-    ns.Print(L.STATUS_PADVIEW, YesNo(mod and mod.db and mod.db.padView), YesNo(ns.ViewReady()),
+    ns.Print(L.STATUS_PADVIEW, YesNo(ns.Map.Waits()), YesNo(ns.ViewReady()),
         YesNo(ns.MapShown() and ns.ViewOn()))
     ns.Print(L.STATUS_CONTEXT, P.current or L.NONE)
     if not P.current then
@@ -41,9 +40,9 @@ function Diag.Status()
         local steps = type(mgir.Focus) == "table" and type(mgir.Focus.InGame) == "function"
         ns.Print(L.STATUS_MGIR, YesNo(true), YesNo(steps))
     end
-    if mod and mod.padWaits and not ns.ViewReady() then ns.Print(L.STATUS_RELOAD) end
-    -- (les maîtres de vol qu'OpenMap retient pour ce personnage, et s'il les écoute : Core.lua, EnsureFlights)
-    local learned, count = mod and mod.char and mod.char.flightsKnown, 0
+    if ns.Map.Waits() and not ns.ViewReady() then ns.Print(L.STATUS_RELOAD) end
+    -- (les maîtres de vol retenus pour ce personnage, et s'ils sont écoutés : ns.Map.Flights)
+    local learned, count = ns.Map.Flights.Known(), 0
     if type(learned) == "table" then
         for _ in pairs(learned) do count = count + 1 end
     end
@@ -110,12 +109,7 @@ function Diag.Focus(withApi)
     end
     ns.Print("  InputBindingManager : %s · IsOnlyCoreBindingSetActive : %s", tostring(manager ~= nil),
         Try(manager, "IsOnlyCoreBindingSetActive"))
-    local mod = ns.mod
-    local x, y
-    if mod and mod.PadCursorXY then
-        local ok, a, b = pcall(mod.PadCursorXY)
-        if ok then x, y = a, b end
-    end
+    local x, y = ns.Map.Cursor.XY()
     ns.Print("  curseur My Map Is Rich : %s", x and ("%.0f, %.0f"):format(x, y) or L.NONE)
     for _, key in ipairs({ "PAD1", "PAD2", "PADDRIGHT", "PADLSHOULDER" }) do
         local ok, action = pcall(GetBindingAction, key, true)
@@ -299,4 +293,68 @@ function Diag.Test()
         if not HasCursor() then return EndTest(L.TEST_NO_FOCUS) end
         Next()
     end)
+end
+
+---------------------------------------------------------------------------
+-- /mmir sonde carte : les coordonnées de My Map Is Rich (Map/Coords.lua)
+-- comparées à celles d'OpenMap (Map/Stitch.lua, encore là), sur toutes les
+-- cartes du jeu et sur chaque maître de vol. Un écart : l'un des deux se trompe
+---------------------------------------------------------------------------
+local GAP = 1e-6          -- (plus petit : le même point)
+
+function Diag.ProbeCoords()
+    local mod, S = ns.Map.Legacy()
+    if not (mod and S and S.Rect and S.FromYards) then
+        ns.Print(L.PROBE_NO_OLD)
+        return
+    end
+    local K = ns.Map.Coords
+    local ok, maps = pcall(C_Map.GetMapChildrenInfo, K.World(), nil, true)
+    if not ok or type(maps) ~= "table" then maps = {} end
+    local n, bad, worst, first = 0, 0, 0, nil
+    local function Gap(a, b)
+        if a == nil and b == nil then return 0 end
+        if a == nil or b == nil then return 1 end
+        return math.abs(a - b)
+    end
+    for _, info in ipairs(maps) do
+        local id = info.mapID
+        local l1, r1, t1, b1 = K.Rect(id)
+        local l2, r2, t2, b2 = S.Rect(id)
+        local g = math.max(Gap(l1, l2), Gap(r1, r2), Gap(t1, t2), Gap(b1, b2))
+        if l1 and l2 then
+            local u1, v1 = K.ToWorld(id, 0.3, 0.7)
+            local okW, u2, v2 = pcall(mod.ToWorld, id, 0.3, 0.7)
+            if okW then g = math.max(g, Gap(u1, u2), Gap(v1, v2)) end
+            -- (les cartes sous le milieu de la carte, du monde à la plus petite)
+            local cu, cv = (l1 + r1) / 2, (t1 + b1) / 2
+            local c1, c2 = K.ChainAt(cu, cv), S.ChainAt(cu, cv)
+            if #c1 ~= #c2 or c1[#c1] ~= c2[#c2] then g = math.max(g, 1) end
+        end
+        n = n + 1
+        if g > GAP then
+            bad = bad + 1
+            first = first or id
+        end
+        worst = math.max(worst, g)
+    end
+    ns.Print(L.PROBE_COORDS, n, bad, worst, first and tostring(first) or "-")
+    -- (les yards : chaque maître de vol, et le retour en yards)
+    local flights = ns.Map.Data.Flights()
+    local pts, badY, worstY = 0, 0, 0
+    for _, node in pairs(flights and flights.nodes or {}) do
+        if type(node) == "table" and node[3] and node[4] then
+            local u1, v1 = K.FromYards(node[2], node[3], node[4])
+            local u2, v2 = S.FromYards(node[2], node[3], node[4])
+            local g = math.max(Gap(u1, u2), Gap(v1, v2))
+            if u1 then
+                local x, y = K.ToYards(node[2], u1, v1)
+                if x then g = math.max(g, math.abs(x - node[3]) / 1e4, math.abs(y - node[4]) / 1e4) end
+            end
+            pts = pts + 1
+            if g > GAP then badY = badY + 1 end
+            worstY = math.max(worstY, g)
+        end
+    end
+    ns.Print(L.PROBE_YARDS, pts, badY, worstY)
 end

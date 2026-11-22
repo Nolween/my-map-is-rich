@@ -11,11 +11,11 @@
 --   au bord           : « Toi », quand ta flèche sort de la vue (clic : recentre)
 -- Le rail des calques est à part (UI/Layers.lua) ; la barre d'aide aussi
 -- (UI/HintBar.lua).
--- Tout est posé sur la vue de la carte (Map/PadView.lua : mod.ViewFrame),
+-- Tout est posé sur la vue de la carte (ns.Map.View.Frame),
 -- au-dessus de l'art et de ta flèche, sous le curseur de la manette. Chaque
--- bande est donnée au curseur de la manette (mod.padRoots) : A la presse.
+-- bande est donnée au curseur de la manette (ns.Map.Cursor.AddRoot) : A la presse.
 -- À la souris, un clic sur la carte avec Maj : l'itinéraire jusque-là ; avec
--- Ctrl : une épingle ; avec Alt : le menu des actions (mod.OnViewClick ;
+-- Ctrl : une épingle ; avec Alt : le menu des actions (ns.Map.View.SetClickHandler ;
 -- UI/PointCard.lua). Un clic sur une icône ouvre sa fiche (UI/PointCard.lua).
 -- Fermer est un bouton sécurisé qui clique la croix de la carte du jeu (comme
 -- Map/Gamepad.lua) : il ferme aussi en combat. Il est fait hors combat, et A ne
@@ -52,10 +52,7 @@ local function Plain(v)
 end
 
 -- Un cadre donné au curseur de la manette (Map/Gamepad.lua : A le presse)
-local function Roots(f)
-    local roots = ns.mod and ns.mod.padRoots
-    if type(roots) == "table" then table.insert(roots, f) end
-end
+local function Roots(f) ns.Map.Cursor.AddRoot(f) end
 
 -- Le nom d'une touche, celui du jeu (Maj, Ctrl, Alt, Échap)
 local function KeyName(global, fallback)
@@ -87,37 +84,21 @@ local function MapName(mapID)
     return info and info.name or nil
 end
 
--- La zone sous un point du monde d'OpenMap : sa carte, et la place du point dessus
-local function ZoneAt(u, v)
-    local S = ns.S
-    if not (S and S.ChainAt and S.Rect) then return end
-    local chain = S.ChainAt(u, v)
-    for i = #chain, 1, -1 do
-        local id = chain[i]
-        if id ~= S.WORLD then
-            local l, r, t, b = S.Rect(id)
-            if l and r > l and b > t then return id, (u - l) / (r - l), (v - t) / (b - t) end
-        end
-    end
-end
+-- La zone sous un point du monde : sa carte, et la place du point dessus
+local function ZoneAt(u, v) return ns.Map.Coords.ZoneAt(u, v) end
 
 -- Le curseur est-il sur la carte (celui de la manette, ou la souris) ?
 local function CursorLive()
-    local mod = ns.mod
-    if mod.PadCursorXY then
-        local ok, x = pcall(mod.PadCursorXY)
-        if ok and x then return true end
-    end
-    local view = mod.ViewFrame and mod.ViewFrame()
+    if ns.Map.Cursor.XY() then return true end
+    local view = ns.Map.View.Frame()
     return view and view:IsMouseOver() or false
 end
 
 -- Le point du monde sous le curseur, et sa zone
 local function CursorZone()
-    local mod = ns.mod
-    if not (mod.CursorWorld and CursorLive()) then return end
-    local ok, u, v = pcall(mod.CursorWorld)
-    if not (ok and u) then return end
+    if not CursorLive() then return end
+    local u, v = ns.Map.Cursor.World()
+    if not u then return end
     return ZoneAt(u, v)
 end
 
@@ -125,11 +106,10 @@ end
 -- La souris : Maj, Ctrl ou Alt + clic sur la carte
 ---------------------------------------------------------------------------
 local function PinHere()
-    local mod = ns.mod
-    if not mod.AddPin then return false end
+    if not ns.Map.MyPins.CanAdd() then return false end
     local id, x, y = CursorZone()
     if not id then return false end
-    ns.Call(mod.AddPin, id, x, y)
+    ns.Map.MyPins.Add(id, x, y)
     return true
 end
 
@@ -143,8 +123,8 @@ local function OnViewClick(button)
     elseif IsAltKeyDown() then
         -- (le menu des actions là où l'on a cliqué : UI/PointCard.lua ; sinon la roue)
         if ns.PointCard then
-            local ok, u, v = pcall(ns.mod.CursorWorld)
-            ns.PointCard.Actions(ok and u or nil, ok and v or nil)
+            local u, v = ns.Map.Cursor.World()
+            ns.PointCard.Actions(u, v)
         elseif ns.ActionBar then
             ns.ActionBar.Toggle()
         end
@@ -161,9 +141,8 @@ function C.GoTo()
 end
 
 function C.Locate()
-    local mod = ns.mod
     if ns.MapNav then ns.MapNav.SetFollow(false) end
-    ns.Call(mod.FindMe, mod, true)
+    ns.Map.View.FindMe(true)
 end
 
 function C.ToggleFollow()
@@ -171,10 +150,7 @@ function C.ToggleFollow()
     if M then M.SetFollow(not M.Following()) end
 end
 
-function C.OpenMenu()
-    local mod = ns.mod
-    if mod.MenuShown and mod.MenuShown() then ns.Call(mod.CloseMenu) else ns.Call(mod.OpenMenu, mod) end
-end
+function C.OpenMenu() ns.Map.Menu.Toggle() end
 
 -- Plein écran ou réduite (Plus/Core.lua : ns.SetMapSmall ; pas en combat)
 function C.ToggleSize() ns.ToggleMapSize() end
@@ -252,7 +228,8 @@ local function MakeClose()
     b:SetSize(SQUARE, SQUARE)
     b:SetPoint("TOPRIGHT", UIParent, "TOPRIGHT", -(EDGE + 4), -(EDGE + 4))   -- (puis au coin de la carte : PlaceClose)
     -- (la strate de la vue, au-dessus de la carte du jeu : Map/PadView.lua)
-    if ns.mod.viewStrata then b:SetFrameStrata(ns.mod.viewStrata) end
+    local strata = ns.Map.View.Strata()
+    if strata then b:SetFrameStrata(strata) end
     b:SetFrameLevel(LEVEL + 10)
     b.noPadPress = true     -- (A ne le presse pas : B ferme la carte, à la manette)
     b.noGamepad = true
@@ -378,12 +355,7 @@ end
 -- Les mises à jour
 ---------------------------------------------------------------------------
 local function UpdateZone()
-    local mod = ns.mod
-    local text, fish, _, continent
-    if mod.ViewPlace then
-        local ok, a, b, c, d = pcall(mod.ViewPlace)
-        if ok then text, fish, _, continent = a, b, c, d end
-    end
+    local text, fish, _, continent = ns.Map.View.Place()
     if not text then
         zone:Hide()
         return
@@ -420,19 +392,12 @@ end
 
 -- « Toi » au bord, dans ta direction, quand ta flèche sort de la vue
 local function UpdateYou()
-    local mod = ns.mod
     local best, x, y = PlayerMap()
     local pu, pv
-    if best and mod.ToWorld then
-        local ok, a, b = pcall(mod.ToWorld, best, x, y)
-        if ok then pu, pv = a, b end
-    end
-    local okV, u, v, zoom = pcall(mod.ViewNow)
+    if best then pu, pv = ns.Map.Coords.ToWorld(best, x, y) end
+    local u, v, zoom = ns.Map.View.Now()
     local hu, hv
-    if okV and u and mod.ViewHalfExtents then
-        local okH, a, b = pcall(mod.ViewHalfExtents, zoom)
-        if okH then hu, hv = a, b end
-    end
+    if u then hu, hv = ns.Map.View.HalfExtents(zoom) end
     if not (pu and u and hu and hu > 0 and hv > 0) then
         you:Hide()
         return
@@ -533,12 +498,10 @@ end
 local panDriver = CreateFrame("Frame")
 panDriver:SetScript("OnUpdate", function(_, elapsed)
     if not next(held) then return end
-    local mod = ns.mod
-    if not (mod and mod.ViewNow and mod.ViewHalfExtents and mod.ShowNow) then return end
-    local ok, u, v, zoom = pcall(mod.ViewNow)
-    if not (ok and u) then return end
-    local okH, hu, hv = pcall(mod.ViewHalfExtents, zoom)
-    if not (okH and hu) then return end
+    local u, v, zoom = ns.Map.View.Now()
+    if not u then return end
+    local hu, hv = ns.Map.View.HalfExtents(zoom)
+    if not hu then return end
     local dx, dy = 0, 0
     for dir in pairs(held) do
         local p = PAN[dir]
@@ -547,7 +510,7 @@ panDriver:SetScript("OnUpdate", function(_, elapsed)
     if dx == 0 and dy == 0 then return end
     local M = ns.MapNav
     if M and M.Following() then M.SetFollow(false) end
-    ns.Call(mod.ShowNow, u + dx * hu * PAN_SPEED * elapsed, v + dy * hv * PAN_SPEED * elapsed, zoom)
+    ns.Map.View.Show(u + dx * hu * PAN_SPEED * elapsed, v + dy * hv * PAN_SPEED * elapsed, zoom)
 end)
 
 -- (une touche du clavier, pas un bouton de la souris ni de la manette)
@@ -596,8 +559,7 @@ end
 ---------------------------------------------------------------------------
 local function Build()
     if chrome then return chrome end
-    local mod = ns.mod
-    local view = mod and mod.ViewFrame and mod.ViewFrame()
+    local view = ns.Map.View.Frame()
     if not view then return end
     chrome = CreateFrame("Frame", nil, view)
     chrome:SetAllPoints(view)
@@ -610,15 +572,15 @@ local function Build()
     BuildYou()
     chrome:SetScript("OnUpdate", OnUpdate)
     -- (le nom de la zone est le nôtre, en haut à gauche : PadView.lua n'écrit plus le sien)
-    mod.viewChrome = true
-    mod.OnViewClick = OnViewClick
+    ns.Map.View.SetChrome(true)
+    ns.Map.View.SetClickHandler(OnViewClick)
     -- (X à la manette, rien d'OpenMap ouvert : la taille de la carte, au lieu
     -- de dézoomer ; le stick droit zoome. En combat, un message : ns.SetMapSmall.
     -- X est aussi lu sur la manette, Pad/MapNav.lua : un seul des deux compte)
-    mod.OnViewOut = function()
+    ns.Map.View.SetOutHandler(function()
         ns.PadToggleMapSize()
         return true
-    end
+    end)
     -- (la carte change de taille : la croix sécurisée la suit)
     chrome:HookScript("OnSizeChanged", function()
         Layout()
@@ -686,8 +648,7 @@ end
 
 ns.On("READY", function()
     -- (la taille choisie, pour la carte : Map/PadView.lua)
-    local mod = ns.mod
-    if mod and mod.ViewSetSmall then ns.Call(mod.ViewSetSmall, ns.db.options.mapSmall) end
+    ns.Map.SetSmall(ns.db.options.mapSmall)
     C_Timer.After(1, KeepGameWindowed)
 end)
 ns.On("MAP_HIDE", function() C_Timer.After(0, KeepGameWindowed) end)

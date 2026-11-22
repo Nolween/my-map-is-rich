@@ -1704,7 +1704,10 @@ function mod:OnEnable()
 	-- the full-screen map (the default): the controller view's frame, for the mouse and the controller
 	-- alike, over Blizzard's map, which is left as it is (PadView.lua). Blizzard's map isn't set up then:
 	-- the art is built once, on that frame
-	if not self.db.classicMap and mod.StartPadView then
+	-- (My Map Is Rich 0.5.0 : la carte classique n'existe plus, la carte plein écran est la seule ;
+	-- la suite de cette fonction ne sert plus, elle partira avec ce fichier)
+	self.db.classicMap, self.db.chart, self.db.gapFills = false, false, false
+	if mod.StartPadView then
 		self.enabled, self.padWaits = false, true
 		mod.StartPadView()
 		return
@@ -2009,8 +2012,9 @@ function mod:Options()
 	if mod.SketchOptions then mod:SketchOptions(opts, get, set, off) end
 	if mod.WindowOptions then mod:WindowOptions(opts, get, set, off) end
 	if mod.CloseOptions then mod:CloseOptions(opts, get, set, off) end
-	opts.news = { type = "execute", name = ns.L["What's new"], order = 1.5, func = function() mod:ToggleNews(true) end,
-		desc = ns.L["This version's changes, and the versions before."] }
+	-- (My Map Is Rich 0.5.0 : plus de carte classique ni de dessins de Santiago Reyes, donc ni
+	-- luminosité, ni carte marine, ni terres peintes entre les zones ; les nouveautés sont celles de /mmir)
+	opts.brightness, opts.chart, opts.gapFills = nil, nil, nil
 	opts.resetSliders = { type = "execute", name = ns.L["Reset sliders to defaults"], order = 2, disabled = off,
 		desc = ns.L["Every slider here (and the My Map Is Rich menu's) back to how My Map Is Rich comes."],
 		confirm = true, confirmText = ns.L["Put every slider back to its default?"],

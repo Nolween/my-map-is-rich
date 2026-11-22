@@ -1,12 +1,11 @@
--- Le tracé d'un itinéraire sur la carte d'OpenMap : un jeu d'icônes à nous
--- (S.PinSet, le moteur de la carte assemblée d'OpenMap ; jamais la carte de
--- Blizzard), avec une ligne par étape (un bord sombre et un cœur coloré,
+-- Le tracé d'un itinéraire sur la carte : un jeu d'icônes à nous
+-- (ns.Map.Pins ; jamais la carte de Blizzard), avec une ligne par étape (un bord sombre et un cœur coloré,
 -- comme les vols de Flights.lua), un point à chaque étape et la destination
 -- avec sa légende (le temps, le nombre d'étapes).
 --   marche : blanc, le long des routes suivies · vol : doré, le long des vrais trajets des vols ·
 --   bateau : bleu · zeppelin : rouge (en ligne droite de quai à quai) ·
 --   portail : violet · tram : gris acier (en ligne droite d'un bout à l'autre)
--- Le tracé attend que la carte assemblée existe (S.IsBuilt) : sinon il est
+-- Le tracé attend que la carte assemblée existe (ns.Map.Pins.Ready) : sinon il est
 -- fait à la prochaine ouverture de la carte.
 local _, root = ...
 local ns = root.Plus
@@ -43,21 +42,18 @@ function R.Clock(secs)
 end
 
 local function Set()
-    local S = ns.S
-    if set or not (S and S.PinSet and S.IsBuilt and S.IsBuilt()) then return set end
-    -- (au niveau des vols tracés par OpenMap, sous ses icônes)
-    local ok, s = pcall(S.PinSet, "omgp_journey", 1, 1)
-    if ok then set = s end
+    if set or not ns.Map.Pins.Ready() then return set end
+    -- (au niveau des vols tracés sur la carte, sous ses icônes)
+    set = ns.Map.Pins.Set("omgp_journey", 1, 1)
     return set
 end
 
 local function Line(u1, v1, u2, v2, color, alpha)
-    local S = ns.S
     local r, g, b = color[1], color[2], color[3]
-    local edge = S.AddLine(set, u1, v1, u2, v2, 3.4, 0.12, 0.08, 0.03, alpha * 0.8)
-    local core = S.AddLine(set, u1, v1, u2, v2, 1.8, r, g, b, alpha)
-    edge:SetDrawLayer("ARTWORK", 0)
-    core:SetDrawLayer("ARTWORK", 1)
+    local edge = ns.Map.Pins.Line(set, u1, v1, u2, v2, 3.4, 0.12, 0.08, 0.03, alpha * 0.8)
+    local core = ns.Map.Pins.Line(set, u1, v1, u2, v2, 1.8, r, g, b, alpha)
+    if edge then edge:SetDrawLayer("ARTWORK", 0) end
+    if core then core:SetDrawLayer("ARTWORK", 1) end
 end
 
 -- Le tracé d'une étape en yards de son continent : { {x, y}, ... } (une
@@ -91,10 +87,10 @@ function R.Geometry(leg)
 end
 
 local function Polyline(cont, pts, color, alpha)
-    local S = ns.S
-    local pu, pv = S.FromYards(cont, pts[1].x, pts[1].y)
+    local FromYards = ns.Map.Coords.FromYards
+    local pu, pv = FromYards(cont, pts[1].x, pts[1].y)
     for i = 2, #pts do
-        local u, v = S.FromYards(cont, pts[i].x, pts[i].y)
+        local u, v = FromYards(cont, pts[i].x, pts[i].y)
         if pu and u then Line(pu, pv, u, v, color, alpha) end
         pu, pv = u, v
     end
@@ -139,8 +135,8 @@ end
 
 local function Draw()
     if not wanted or not Set() then return end
-    local S = ns.S
-    S.ClearPinSet(set)
+    local Pins = ns.Map.Pins
+    Pins.Clear(set)
     local plan, index = wanted.plan, wanted.index or 1
     for i, leg in ipairs(plan.legs) do
         DrawLeg(leg, i < index and DONE_ALPHA or 0.95, i == index and wanted.live or nil)
@@ -148,8 +144,8 @@ local function Draw()
     -- (un point à chaque changement d'étape)
     for i = 1, #plan.legs - 1 do
         local u, v = Pl.UV(plan.legs[i].to)
-        if u then
-            local pin = S.AddPin(set, u, v, STOP)
+        local pin = u and Pins.Add(set, u, v, STOP)
+        if pin then
             local c = COLORS[plan.legs[i + 1].kind] or COLORS.walk
             pin.Icon:SetVertexColor(c[1], c[2], c[3], i < index and DONE_ALPHA or 1)
             pin:EnableMouse(false)
@@ -160,8 +156,8 @@ local function Draw()
     end
     local goal = plan.legs[#plan.legs].to
     local gu, gv = Pl.UV(goal)
-    if gu then
-        local pin = S.AddPin(set, gu, gv, GOAL)
+    local pin = gu and Pins.Add(set, gu, gv, GOAL)
+    if pin then
         pin.Icon:SetVertexColor(1, 0.85, 0.3)
         pin.plan, pin.index = plan, index
         pin:SetScript("OnEnter", GoalTooltip)
@@ -193,7 +189,7 @@ function R.Drawn() return drawn end
 function R.Clear()
     wanted = nil
     if set and drawn then
-        pcall(ns.S.ClearPinSet, set)
+        ns.Map.Pins.Clear(set)
     end
     drawn = false
 end

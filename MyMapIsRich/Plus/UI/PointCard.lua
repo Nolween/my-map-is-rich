@@ -121,28 +121,27 @@ end
 
 -- L'action propre à une icône, et son libellé
 local function ActionOf(pin)
-    local mod = ns.mod
     local data = pin.data
     if type(data) == "table" and data.id and data.map then return "FICHE_PIN_EDIT", true end
-    if pin.instances then return "FICHE_DUNGEON_MAP" end
-    if pin.node then return "FICHE_FLIGHT" end
-    if pin.OnClick and mod.PinAction then return "FICHE_MORE" end
+    local kind = ns.Map.Pins.Kind(pin)
+    if kind == "dungeon" then return "FICHE_DUNGEON_MAP" end
+    if kind == "flight" then return "FICHE_FLIGHT" end
+    if kind == "action" then return "FICHE_MORE" end
 end
 
 ---------------------------------------------------------------------------
 -- Le cercle doré autour du point choisi
 ---------------------------------------------------------------------------
 local function PlaceRing()
-    local mod = ns.mod
     local chrome = ns.MapChrome and ns.MapChrome.Frame()
     local shown = (card and card:IsShown()) or (preview and preview:IsShown())
-    if not (ring and chrome and shown and current and mod.ViewOffset) then
+    if not (ring and chrome and shown and current) then
         if ring then ring:Hide() end
         return
     end
-    local ok, sx, sy = pcall(mod.ViewOffset, current.point.u, current.point.v)
+    local sx, sy = ns.Map.View.Offset(current.point.u, current.point.v)
     local w, h = chrome:GetWidth() / 2, chrome:GetHeight() / 2
-    if not (ok and sx) or math.abs(sx) > w or math.abs(sy) > h then
+    if not sx or math.abs(sx) > w or math.abs(sy) > h then
         ring:Hide()
         return
     end
@@ -179,10 +178,7 @@ local function Place(f)
     if chrome then f:SetPoint("TOPLEFT", chrome, "TOPLEFT", EDGE, -TOP) end
 end
 
-local function Roots(f)
-    local roots = ns.mod and ns.mod.padRoots
-    if type(roots) == "table" then table.insert(roots, f) end
-end
+local function Roots(f) ns.Map.Cursor.AddRoot(f) end
 
 ---------------------------------------------------------------------------
 -- La fiche
@@ -234,22 +230,20 @@ local function BuildCard(chrome)
     card.queue:SetScript("OnClick", function() Queue() end)
     card.action = Button(card, "", "grey")
     card.action:SetScript("OnClick", function()
-        local mod = ns.mod
         local c = current
         if not c then return end
         -- (les icônes sont réutilisées : la même, toujours à sa place ?)
-        if c.pin and c.pin.u == c.pinU and c.pin.v == c.pinV and c.pin:IsShown() and mod.PinAction then
+        if c.pin and c.pin.u == c.pinU and c.pin.v == c.pinV and c.pin:IsShown() then
             Close()
-            mod.PinAction(c.pin)
+            ns.Map.Pins.Action(c.pin)
         end
     end)
     card.pinHere = Button(card, L.FICHE_PIN_HERE, "grey")
     card.pinHere:SetScript("OnClick", function()
-        local mod = ns.mod
         local point = current and current.point
-        if not (point and point.map and mod.AddPin) then return end
+        if not (point and point.map and ns.Map.MyPins.CanAdd()) then return end
         Close()
-        ns.Call(mod.AddPin, point.map, point.mx, point.my)
+        ns.Map.MyPins.Add(point.map, point.mx, point.my)
     end)
     card.share = Button(card, L.ACT_SHARE, "grey")
     card.share:SetScript("OnClick", function()
@@ -545,7 +539,6 @@ end
 -- Les actions à la souris : un menu là où l'on a fait Alt+clic
 ---------------------------------------------------------------------------
 function PC.Actions(u, v)
-    local mod = ns.mod
     local point = u and PointAt(u, v)
     local x, y = GetCursorPosition()
     local title = point and ZoneAndCoords(point)
@@ -565,11 +558,11 @@ function PC.Actions(u, v)
         { L.ACT_QUEUE, Need(function() T().Enqueue(point) end) },
         { L.ACT_SHARE, Need(function() if ns.TravelShare then ns.TravelShare.Propose(point) end end) },
         { L.ACT_PIN, Need(function()
-            if point.map and mod.AddPin then ns.Call(mod.AddPin, point.map, point.mx, point.my) end
+            if point.map then ns.Map.MyPins.Add(point.map, point.mx, point.my) end
         end), key = L.MENU_CLICK:format(ctrl) },
-        { L.ACT_PINS .. "…", function() ns.Call(mod.TogglePins, mod, true) end, sep = true },
-        { L.ACT_QUILL, function() if mod.ToggleSketch then ns.Call(mod.ToggleSketch, mod, true) end end },
-        { L.MAP_SETTINGS, function() ns.Call(mod.OpenMenu, mod) end },
+        { L.ACT_PINS .. "…", function() ns.Map.MyPins.Toggle(true) end, sep = true },
+        { L.ACT_QUILL, function() ns.Map.Sketch.Toggle(true) end },
+        { L.MAP_SETTINGS, function() ns.Map.Menu.Open() end },
     }
     UI.ShowMenu(items, x, y, title and L.MENU_HERE:format(title) or nil)
 end
@@ -578,7 +571,6 @@ end
 -- Une icône pressée sur la carte plein écran (Map/PadView.lua : Press)
 ---------------------------------------------------------------------------
 local function OnPinPress(pin)
-    local mod = ns.mod
     if not (card and pin.u and pin.v) then return false end
     -- (à la souris, Maj, Ctrl et Alt comme sur la carte ; à la manette, ils ne
     -- sont pas tenus)
@@ -589,7 +581,7 @@ local function OnPinPress(pin)
         return true
     elseif IsControlKeyDown() then
         local point = PointAt(pin.u, pin.v)
-        if point and point.map and mod.AddPin then ns.Call(mod.AddPin, point.map, point.mx, point.my) end
+        if point and point.map then ns.Map.MyPins.Add(point.map, point.mx, point.my) end
         return true
     elseif IsAltKeyDown() then
         PC.Actions(pin.u, pin.v)
@@ -632,8 +624,7 @@ local function Build(chrome)
         wait = 0.03
         PlaceRing()
     end)
-    local mod = ns.mod
-    mod.OnPinPress = OnPinPress
+    ns.Map.View.SetPressHandler(OnPinPress)
 end
 
 ns.On("MAP_CHROME", Build)

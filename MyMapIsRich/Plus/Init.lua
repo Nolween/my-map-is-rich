@@ -6,7 +6,7 @@
 -- d'OpenMap : Core.lua, Map/...). Plus vit dans root.Plus : chacun de ses
 -- fichiers commence par « local _, root = ... ; local ns = root.Plus », si
 -- bien que ses ns.L, ns.db, ns.UI, ns.Print... ne touchent jamais ceux de la
--- carte. Plus atteint la carte par ns.OM (= root : root:GetModule("worldmap"),
--- root.MapStitch...), comme OpenMap On Gamepad atteignait _G.OpenMap.
+-- carte. Plus atteint la carte par ns.Map seulement (Map/Api.lua), qui appelle
+-- encore le code d'OpenMap tant que nos propres modules ne l'ont pas remplacé.
 local _, root = ...
 root.Plus = root.Plus or {}
