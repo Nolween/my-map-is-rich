@@ -49,9 +49,11 @@ local function Scroll()
     return map and map.ScrollContainer
 end
 
--- Le rectangle de la vue à l'écran (px)
+-- Le rectangle de la vue à l'écran (px) : toute la carte plein écran, sinon
+-- la vue de la carte du jeu
 local function ViewRect()
-    local sc = Scroll()
+    local mod = ns.mod
+    local sc = ns.FullMap() and mod.ViewFrame and mod.ViewFrame() or Scroll()
     if not sc then return end
     local l, b, w, h = sc:GetRect()
     if not l then return end
@@ -409,11 +411,17 @@ end
 
 -- La carte seule : aucun raccourci posé (l'interface manette perdrait le
 -- focus de la carte) ; les boutons dont elle ne se sert pas y sont lus
--- (Pad/Bindings.lua, mode « read »). La croix, Y, A, X, B et les sticks
--- restent les siens et ceux d'OpenMap (sa barre d'aide les montre).
--- (la barre d'aide en montre quatre, dans cet ordre : R3, RB, LB, View ;
--- LT / RT sont dans l'onglet Aide)
+-- (Pad/Bindings.lua, mode « read »). La croix, A, X, B et les sticks
+-- restent les siens et ceux d'OpenMap.
+-- La barre d'aide, comme la maquette de la carte plein écran : A Choisir,
+-- R3, LB, RB, Y (les calques : UI/Layers.lua), Menu (les quêtes :
+-- UI/QuestPanel.lua), View, LT / RT, puis X et B (du jeu, en gris).
 P.DefineContext("map", 10, CanvasFocus, nil, "read")
+P.SetPassive("map", "PAD1", function()
+    local mod = ns.mod
+    local ok, on = pcall(mod.PinMode)
+    return (ok and on) and "HINT_PIN_DROP" or "HINT_SELECT"
+end)
 -- (R3 : le clic du stick droit ; Travel/ est chargé après ce fichier)
 P.SetAction("map", "PADRSTICK", function()
     if ns.Travel then ns.Travel.AtCursor() end
@@ -423,15 +431,31 @@ end)
 P.SetAction("map", "PADRSHOULDER", ToggleFollow, function()
     return following and "HINT_FOLLOW_STOP" or "HINT_FOLLOW"
 end)
-P.SetAction("map", "PADLSHOULDER", function() if ns.Places then ns.Places.Toggle() end end, "HINT_PLACES")
+P.SetAction("map", "PADLSHOULDER", function()
+    -- (la carte plein écran : « Aller à… », la recherche ; sinon le navigateur de lieux)
+    if not ns.Places then return end
+    if ns.FullMap() then
+        if ns.Places.Shown() then ns.Places.Hide() else ns.Places.Show("search") end
+    else
+        ns.Places.Toggle()
+    end
+end, function() return ns.FullMap() and "HINT_GOTO" or "HINT_PLACES" end)
+-- (Y : le panneau des calques, sur la carte plein écran seulement)
+P.SetAction("map", "PAD4", function()
+    if ns.FullMap() and ns.Layers then ns.Layers.TogglePanel() end
+end, function() return ns.FullMap() and "HINT_LAYERS" or nil end)
 P.SetAction("map", "PADBACK", Actions, "HINT_ACTIONS")
 P.SetAction("map", "PADLTRIGGER", function() M.Cycle(-1) end)
-P.SetAction("map", "PADRTRIGGER", function() M.Cycle(1) end)
-P.SetPassive("map", "PAD1", function()
-    local mod = ns.mod
-    local ok, on = pcall(mod.PinMode)
-    return (ok and on) and "HINT_PIN_DROP" or nil
+P.SetAction("map", "PADRTRIGGER", function() M.Cycle(1) end, "HINT_ICON_PREV_NEXT")
+-- (Menu, libre sur la carte : les quêtes de la carte plein écran, UI/QuestPanel.lua)
+P.SetAction("map", "PADFORWARD", function()
+    if ns.FullMap() and ns.QuestPanel then ns.QuestPanel.PadMenu() end
+end, function()
+    if not ns.FullMap() then return nil end
+    return (ns.QuestPanel and ns.QuestPanel.Shown()) and "HINT_QUESTS_ENTER" or "HINT_QUESTS"
 end)
+P.SetPassive("map", "PAD3", function() return ns.FullMap() and "HINT_ZOOM_OUT" or nil end)
+P.SetPassive("map", "PAD2", function() return ns.FullMap() and "HINT_CLOSE_MAP" or nil end)
 
 -- La plume sortie : A pose et lève la plume, X la range (OpenMap) ; View
 -- passe dans ses outils, RB recentre

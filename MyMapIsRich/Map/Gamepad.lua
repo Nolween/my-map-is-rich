@@ -45,7 +45,9 @@ function Find(f, x, y)
 	if not f:IsVisible() then return end
 	if f:IsMouseEnabled() and Inside(f, x, y) then
 		blocked = true
-		if Pressable(f) and (not found or Height(f) >= foundLevel) then found, foundLevel = f, Height(f) end
+		-- (noPadPress: a secure button of the game's that A mustn't click from here, the full-screen map's
+		-- Close: B closes the map, Blizzard's own)
+		if Pressable(f) and not f.noPadPress and (not found or Height(f) >= foundLevel) then found, foundLevel = f, Height(f) end
 	end
 	FindIn(x, y, f:GetChildren())
 end

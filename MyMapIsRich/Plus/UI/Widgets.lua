@@ -963,6 +963,220 @@ function UI.Slider(parent, width, minValue, maxValue, step, onChange, format)
 end
 
 ---------------------------------------------------------------------------
+-- Ce qui se pose sur la carte plein écran (UI/MapChrome.lua, UI/Layers.lua) :
+-- les bandes, les boutons-icônes qu'on allume, les pastilles.
+---------------------------------------------------------------------------
+-- Une bande posée sur la carte (le nom de la zone, les boutons, le rail des
+-- calques) : le dégradé de la fenêtre, un liseré brun, un trait noir dedans
+-- et une ombre portée. Le contenu en est l'enfant. UI.PaintOverlay peint un
+-- cadre qui existe déjà (un bouton : « Aller à… ») ; UI.Overlay en crée un.
+function UI.PaintOverlay(f)
+    local shadow = f:CreateTexture(nil, "BACKGROUND", nil, -8)
+    shadow:SetPoint("TOPLEFT", -2, 1)
+    shadow:SetPoint("BOTTOMRIGHT", 3, -4)
+    shadow:SetColorTexture(0, 0, 0, 0.45)
+    f.bg = f:CreateTexture(nil, "BACKGROUND", nil, -7)
+    f.bg:SetAllPoints()
+    UI.Fade(f.bg, "VERTICAL", "windowBottom", 0.96, "windowTop", 0.96)
+    UI.Border(f, "windowEdge", 1)
+    UI.Border(f, 0, 0, 0, 0.6, 1)
+    return f
+end
+
+function UI.Overlay(parent)
+    return UI.PaintOverlay(CreateFrame("Frame", nil, parent))
+end
+
+-- Une icône dans un bouton : un atlas du jeu s'il existe, sinon la texture
+-- (une icône d'objet, Interface\Icons, rognée de son bord)
+function UI.SetIcon(tex, texture, atlas)
+    if atlas and HasAtlas(atlas) then
+        tex:SetAtlas(atlas)
+        tex:SetTexCoord(0, 1, 0, 1)
+        return
+    end
+    tex:SetTexture(texture)
+    if type(texture) == "string" and texture:find("^Interface\\Icons\\") then
+        tex:SetTexCoord(0.07, 0.93, 0.07, 0.93)
+    else
+        tex:SetTexCoord(0, 1, 0, 1)
+    end
+end
+
+-- Un bouton carré avec une icône, qu'on allume ou éteint (un calque du rail,
+-- Me suivre) : allumé, le dégradé et le liseré dorés et une pastille verte
+-- (sans pastille : b.noDot) ; éteint, l'icône à 40 % ; nil, un simple bouton
+-- (Me localiser). Survol : un voile doré.
+-- b:SetOn(true / false / nil), b:SetIcon(texture, atlas) ; b.icon, b.isOn.
+function UI.IconToggle(parent, size, texture, atlas)
+    size = size or 44
+    local b = CreateFrame("Button", nil, parent)
+    b:SetSize(size, size)
+    b.bg = b:CreateTexture(nil, "BACKGROUND")
+    b.bg:SetAllPoints()
+    UI.Fade(b.bg, "VERTICAL", "navBottom", 1, "navTop", 1)
+    b.lit = b:CreateTexture(nil, "BACKGROUND", nil, 1)
+    b.lit:SetAllPoints()
+    UI.Gradient(b.lit, "HORIZONTAL", 1, 0.82, 0, 0.2, 1, 0.82, 0, 0.05)
+    b.edge = UI.Border(b, "panelEdge", 1, 0, "BORDER")
+    b.icon = b:CreateTexture(nil, "ARTWORK")
+    b.icon:SetSize(math.floor(size * 0.55 + 0.5), math.floor(size * 0.55 + 0.5))
+    b.icon:SetPoint("CENTER")
+    local ring = UI.Disc(b, 8, "OVERLAY", 0)
+    ring:ClearAllPoints()
+    ring:SetPoint("TOPRIGHT", -2, -2)
+    ring:SetColorTexture(0, 0, 0, 1)
+    local dot = UI.Disc(b, 6, "OVERLAY", 1)
+    dot:ClearAllPoints()
+    dot:SetPoint("CENTER", ring, "CENTER")
+    dot:SetColorTexture(UI.RGBA("good"))
+    local hl = b:CreateTexture(nil, "HIGHLIGHT")
+    hl:SetAllPoints()
+    hl:SetColorTexture(1, 0.82, 0, 0.09)
+    function b:SetIcon(tex, at)
+        UI.SetIcon(self.icon, tex, at)
+    end
+    function b:SetOn(on)
+        self.isOn = on
+        local lit = on == true
+        self.lit:SetShown(lit)
+        if lit then self.edge:SetColor(1, 0.82, 0, 0.85) else self.edge:SetColor("panelEdge", 1) end
+        self.icon:SetAlpha(on == false and 0.4 or 1)
+        self.icon:SetDesaturated(on == false)
+        ring:SetShown(lit and not self.noDot)
+        dot:SetShown(lit and not self.noDot)
+    end
+    if texture or atlas then b:SetIcon(texture, atlas) end
+    b:SetOn(nil)
+    return b
+end
+
+-- Une pastille de coordonnées : fond noir, liseré brun, un libellé doré puis
+-- une valeur blanche. p:Set(libellé, valeur, précision grise) la redimensionne.
+function UI.Pill(parent)
+    local p = CreateFrame("Frame", nil, parent)
+    p:SetHeight(24)
+    local bg = p:CreateTexture(nil, "BACKGROUND")
+    bg:SetAllPoints()
+    bg:SetColorTexture(0, 0, 0, 0.8)
+    UI.Border(p, "windowInner", 1)
+    p.label = UI.Text(p, "GameFontNormalSmall")
+    p.label:SetPoint("LEFT", 10, 0)
+    p.extra = UI.DimText(p, nil, "GameFontHighlightSmall")
+    p.extra:SetPoint("LEFT", p.label, "RIGHT", 8, 0)
+    p.value = UI.Text(p, "GameFontHighlightSmall")
+    function p:Set(label, value, extra)
+        self.label:SetText(label or "")
+        self.extra:SetText(extra or "")
+        self.value:SetText(value or "")
+        self.value:ClearAllPoints()
+        local anchor = (extra and extra ~= "") and self.extra or self.label
+        self.value:SetPoint("LEFT", anchor, "RIGHT", 8, 0)
+        local w = 20 + self.label:GetStringWidth() + 8 + self.value:GetStringWidth()
+        if extra and extra ~= "" then w = w + self.extra:GetStringWidth() + 8 end
+        self:SetWidth(math.ceil(w))
+    end
+    return p
+end
+
+---------------------------------------------------------------------------
+-- Un menu contextuel (Alt+clic sur la carte) : fond `dialog`, une ligne de
+-- titre grise, des lignes de 26 px (le libellé doré, le raccourci en gris à
+-- droite), un trait doré avant un groupe ; survol en voile doré. Il se ferme
+-- au clic ailleurs, ou quand on choisit.
+-- items : { { texte, fonction, key = "Maj+clic", sep = true }, ... } ;
+-- x, y : en px de l'écran (GetCursorPosition) ; title : la ligne grise.
+---------------------------------------------------------------------------
+local MENU_W, MENU_ROW = 250, 26
+local menu
+
+local function MenuRow(i)
+    local row = menu.rows[i]
+    if row then return row end
+    row = CreateFrame("Button", nil, menu)
+    row:SetSize(MENU_W - 2, MENU_ROW)
+    local hl = row:CreateTexture(nil, "HIGHLIGHT")
+    hl:SetAllPoints()
+    hl:SetColorTexture(1, 0.82, 0, 0.09)
+    row.text = UI.Text(row, "GameFontNormalSmall")
+    row.text:SetPoint("LEFT", 12, 0)
+    row.key = UI.Text(row, "GameFontDisableSmall")
+    row.key:SetPoint("RIGHT", -12, 0)
+    row:SetScript("OnClick", function(self)
+        menu:Hide()
+        if self.func then
+            local ok, err = pcall(self.func)
+            if not ok and geterrorhandler then geterrorhandler()(err) end
+        end
+    end)
+    menu.rows[i] = row
+    return row
+end
+
+function UI.ShowMenu(items, x, y, title)
+    if not menu then
+        menu = CreateFrame("Frame", "MyMapIsRichPlusMenu", UIParent)
+        menu:SetWidth(MENU_W)
+        menu:SetFrameStrata("FULLSCREEN_DIALOG")
+        menu:SetFrameLevel(8500)
+        menu:SetClampedToScreen(true)
+        menu:EnableMouse(true)
+        UI.DialogBackdrop(menu)
+        menu.title = UI.Text(menu, "GameFontDisableSmall")
+        menu.title:SetPoint("TOPLEFT", 12, -8)
+        menu.title:SetPoint("RIGHT", menu, "RIGHT", -12, 0)
+        menu.title:SetJustifyH("LEFT")
+        menu.title:SetWordWrap(false)
+        menu.rows, menu.rules = {}, {}
+        menu:SetScript("OnShow", function(self) self:RegisterEvent("GLOBAL_MOUSE_DOWN") end)
+        menu:SetScript("OnHide", function(self) self:UnregisterEvent("GLOBAL_MOUSE_DOWN") end)
+        menu:SetScript("OnEvent", function(self) if not self:IsMouseOver() then self:Hide() end end)
+        menu:Hide()
+        if ns.mod and type(ns.mod.padRoots) == "table" then table.insert(ns.mod.padRoots, menu) end
+    end
+    menu.title:SetText(title or "")
+    local top = title and -24 or -4
+    for _, r in ipairs(menu.rows) do r:Hide() end
+    for _, r in ipairs(menu.rules) do r:Hide() end
+    local nRule = 0
+    for i, item in ipairs(items) do
+        if item.sep and i > 1 then
+            nRule = nRule + 1
+            local rule = menu.rules[nRule]
+            if not rule then
+                rule = UI.Rule(menu)
+                menu.rules[nRule] = rule
+            end
+            rule:ClearAllPoints()
+            rule:SetPoint("TOPLEFT", menu, "TOPLEFT", 10, top - 4)
+            rule:SetPoint("TOPRIGHT", menu, "TOPRIGHT", -10, top - 4)
+            rule:Show()
+            top = top - 9
+        end
+        local row = MenuRow(i)
+        row.text:SetText(item[1] or "")
+        row.key:SetText(item.key or "")
+        row.func = item[2]
+        row:ClearAllPoints()
+        row:SetPoint("TOPLEFT", menu, "TOPLEFT", 1, top)
+        row:Show()
+        top = top - MENU_ROW
+    end
+    menu:SetHeight(-top + 6)
+    local es = UIParent:GetEffectiveScale()
+    menu:ClearAllPoints()
+    menu:SetPoint("TOPLEFT", UIParent, "BOTTOMLEFT", (x or 0) / es + 14, (y or 0) / es - 10)
+    menu:Show()
+    return menu
+end
+
+function UI.HideMenu()
+    if menu then menu:Hide() end
+end
+
+function UI.MenuShown() return menu and menu:IsShown() or false end
+
+---------------------------------------------------------------------------
 -- Une fenêtre de l'addon par-dessus la carte (navigateur de lieux, clavier
 -- virtuel) : le cadre de la charte, barre de titre, croix rouge ; ni
 -- portrait, ni liste d'Échap (voir l'en-tête). Elle est posée au-dessus de

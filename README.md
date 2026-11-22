@@ -6,16 +6,36 @@ My Map Is Rich réunit dans un seul addon :
 - **la carte d'[OpenMap](https://github.com/openmap-world/openmap)** 0.8.11 : la carte assemblée, ses icônes (donjons, maîtres de vol, bateaux, PNJ de ville), les épingles, la plume, les cartes de donjon, les amis et la guilde sur la carte… Son code est sous licence MIT, merci à ses auteurs ;
 - **tout [OpenMap On Gamepad](https://github.com/Nolween/openmap-on-gamepad)** 0.6.0 : la manette sur la carte, les itinéraires, le panneau de trajet et la flèche GPS, la file, la roue, les lieux et la recherche, le partage avec le groupe.
 
+## La carte plein écran
+
+Depuis la 0.2.0, M (ou le bouton carte de la manette) ouvre la carte **en plein écran**, à la souris comme à la manette :
+- en haut à gauche, la zone sous le curseur ; dessous, le panneau de trajet ;
+- en haut au milieu, **Aller à…** (LB, Ctrl+F) ;
+- en haut à droite, Quêtes, Me localiser, Me suivre, le menu de la carte et Fermer ;
+- à gauche, sous la zone, **le rail des calques** (donjons, maîtres de vol, bateaux et zeppelins, quêtes, citadins, groupe, épingles, dessins) : un clic affiche ou cache un calque, un clic droit (ou Y, ou « ··· ») ouvre le panneau des calques et leurs détails ;
+- à droite, **tes quêtes**, affichées de base (L ou le bouton Quêtes les cachent ou les rouvrent ; à la manette, Menu y entre, B revient à la carte) : par zone ou les plus proches, la quête choisie et ses objectifs, l'itinéraire, la file, suivre, partager ;
+- en bas à droite, tes coordonnées et celles du curseur ; au bord, « Toi » quand ta flèche sort de la vue ;
+- en bas, la barre d'aide : les boutons de la manette, ou les clics et les touches à la souris.
+
+Carte ouverte (hors combat), le personnage ne bouge pas : les touches de déplacement font glisser la carte.
+
+À la souris : clic gauche choisir ou zoomer, clic droit dézoomer, molette zoom, glisser pour déplacer, Maj+clic itinéraire, Ctrl+clic épingle, Alt+clic le menu des actions, clic du milieu me localiser, Échap ou M fermer.
+
+Une icône choisie (A, ou un clic) ouvre **sa fiche**, sous la zone : ce qu'est le point, le temps pour y aller et par où, et quoi faire (itinéraire, file, l'action de l'icône, poser une épingle, envoyer au groupe). Itinéraire (Y) en montre d'abord **l'aperçu** : le temps, l'arrivée, chaque étape ; Partir (A), la file (X), Annuler (B). R3 et Maj+clic partent tout de suite.
+
+La carte du jeu reste ouverte dessous, invisible : c'est elle que M, Échap et B ferment. **La carte classique** (celle d'OpenMap, dessinée dans la fenêtre de carte du jeu) revient par l'onglet Réglages de `/mmir`, « Carte classique », puis `/reload`. Elle garde ce que la carte plein écran n'a pas encore : la carte marine, le zoom dans les grottes, la luminosité, le redimensionnement de la fenêtre et les icônes des addons qui ne passent pas par HereBeDragons.
+
 ## À la manette
 
 | Où | Bouton | Action |
 |---|---|---|
 | Carte | R3 | Itinéraire le plus rapide jusqu'au point sous le curseur (à pied, vols appris, bateaux, zeppelins, portail de Darnassus, tram des profondeurs) ; R3 sur sa destination l'annule |
 | Carte | RB | Me suivre : la carte me garde au centre quand je bouge (RB de nouveau : arrêter) |
-| Carte | LB | Lieux : parcourir, rechercher au clavier (lieux, PNJ et objets de Questie), récents, la file |
+| Carte | LB | Aller à… (carte plein écran) ou Lieux : parcourir, rechercher au clavier (lieux, PNJ et objets de Questie), récents, la file |
+| Carte | Y | Le panneau des calques (carte plein écran) |
 | Carte | View | La roue, autour du curseur : ajouter à la file, envoyer au groupe, poser une épingle, épingles, plume, menu de la carte (stick droit pour choisir, A pour valider, View pour fermer) |
 | Carte | LT / RT | Icône précédente / suivante autour du curseur |
-| Carte | Stick gauche, A, X, B, Y, croix, L3, stick droit | Ceux du jeu et de la carte : curseur, appuyer / zoomer, dézoomer, fermer, Plus, Carte standard, marqueur, zoom |
+| Carte | Stick gauche, A, X, B, croix, L3, stick droit | Ceux du jeu et de la carte : curseur (sur tout l'écran, carte plein écran), appuyer / zoomer, dézoomer, fermer, Carte standard, marqueur, zoom |
 | Liste des quêtes (carte réduite) | R3 | Itinéraire jusqu'à la quête qui a le focus ; stick droit : tourner la caméra |
 | Fenêtre | Croix, A / X / B, LB / RB | D'un élément à l'autre, valider / clic droit / retour, onglets |
 | Lieux | Y / X | Itinéraire jusqu'au lieu / l'ajouter à la file ; dans la file : LT / RT monter / descendre |
@@ -53,6 +73,7 @@ tools/                      roads/ et nav/ : les données de marche (voir plus b
 - **Plus** a son propre espace de noms : chaque fichier commence par `local _, root = ... ; local ns = root.Plus`. Ses `ns.L`, `ns.db` (`MyMapIsRichPlusDB`), `ns.UI`... ne touchent jamais ceux de la carte. Il atteint la carte par `ns.OM` (la racine : `root:GetModule("worldmap")`, `root.MapStitch`).
 - La veille : `ns.Conflict()` (Core.lua), demandée à la connexion par Init.lua, Map/Launcher.lua et Plus/Core.lua.
 - Règle : rien n'est écrit dans les cadres de Blizzard (seulement `hooksecurefunc` / `HookScript`), et aucune fenêtre de la manette n'entre dans `UISpecialFrames` : sinon l'interface manette du jeu bloque des actions au nom de l'addon.
+- **La carte plein écran** est la vue manette d'OpenMap (`Map/PadView.lua`) étendue à tout l'écran et à la souris : elle se bâtit une fois, sur son propre cadre, enfant de la carte du jeu (qui reste ouverte dessous). Plus pose dessus son habillage (`Plus/UI/MapChrome.lua`) et le rail des calques (`Plus/UI/Layers.lua`). Le réglage `classicMap` (« Carte classique ») rend la carte d'OpenMap dessinée dans celle du jeu, après un `/reload`.
 - Le détail des modules de Plus (la couche des boutons, les itinéraires, le panneau, la roue, les lieux, le groupe) est dans les en-têtes de leurs fichiers, comme dans OpenMap On Gamepad.
 
 ## Les données de marche

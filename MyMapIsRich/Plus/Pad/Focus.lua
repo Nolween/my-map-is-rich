@@ -46,6 +46,9 @@ local function Height(f) return (STRATA[f:GetFrameStrata()] or 3) * 100000 + f:G
 local function IsWindow(f)
     if type(f) ~= "table" or not f.IsVisible or not f:IsVisible() then return false end
     if not f:IsMouseEnabled() then return false end
+    -- (un panneau au repos, ouvert sans prendre la manette : le panneau des
+    -- quêtes, UI/QuestPanel.lua ; le curseur peut quand même y presser une ligne)
+    if f.padPassive then return false end
     if f == _G.MyMapIsRichDungeonView then return false end
     if f.tools and f.head then return false end
     local w, h = f:GetSize()

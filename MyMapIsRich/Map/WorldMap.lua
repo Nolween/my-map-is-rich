@@ -45,6 +45,8 @@ local mod = ns:NewModule("worldmap", {
 		chart = false,          -- Santiago Reyes's sea chart round the world (Chart.lua)
 		padMap = false,         -- OpenMap's map with the Gamepad UI on too (Gamepad.lua binds B and full screen; a test)
 		padView = false,        -- with the Gamepad UI on, OpenMap's map over Blizzard's on a frame of its own (PadView.lua; a test)
+		classicMap = false,     -- the map drawn on Blizzard's own (off: My Map Is Rich's full-screen map, PadView.lua, with
+		                        --  the mouse and the controller alike; changed with a /reload)
 	},
 })
 
@@ -1610,7 +1612,7 @@ local styleOwner = {}
 local function StyleChanged()
 	if PadUI() then
 		if started and not mod.db.padMap then ns:Print(ns.L["The Gamepad UI is on: /reload so My Map Is Rich leaves the world map to Blizzard (until then the game may block closing the map with the controller)."]) end
-	elseif mod.padWaits then
+	elseif mod.padWaits and mod.db.classicMap then   -- (the full-screen map is for the mouse too: it stays)
 		if InCombatLockdown() then      -- (set up out of combat, as at login)
 			ns.RegisterEvent(styleOwner, "PLAYER_REGEN_ENABLED", function()
 				ns.UnregisterEvent(styleOwner, "PLAYER_REGEN_ENABLED")
@@ -1632,7 +1634,9 @@ end
 -- map OpenMap's, only a reload gives it back
 local padMapOwner = {}
 function mod.SetPadMap(on)
-	if on and mod.padWaits and not InCombatLockdown() then
+	if on and mod.padWaits and not mod.db.classicMap then
+		-- (the full-screen map: Blizzard's isn't OpenMap's, padMap has nothing to do)
+	elseif on and mod.padWaits and not InCombatLockdown() then
 		mod.padWaits = nil
 		mod.enabled = true
 		Start()
@@ -1674,6 +1678,14 @@ function mod:OnEnable()
 	end)
 	mod:RefreshInstancePins()
 	ns.RegisterEvent(styleOwner, "INPUT_DEVICE_INTERFACE_TRANSITION", StyleChanged)
+	-- the full-screen map (the default): the controller view's frame, for the mouse and the controller
+	-- alike, over Blizzard's map, which is left as it is (PadView.lua). Blizzard's map isn't set up then:
+	-- the art is built once, on that frame
+	if not self.db.classicMap and mod.StartPadView then
+		self.enabled, self.padWaits = false, true
+		mod.StartPadView()
+		return
+	end
 	if PadUI() and not self.db.padMap then
 		self.enabled, self.padWaits = false, true
 		-- (padView: OpenMap's map on a frame of its own over Blizzard's, which it leaves alone)

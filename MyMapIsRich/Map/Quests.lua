@@ -22,6 +22,7 @@ local L = ns.L
 local function G(name) return _G[name] end
 
 mod.defaults.allQuests = true   -- the quests in your log from every zone (off: Blizzard's, the zone's own map only)
+mod.defaults.questIcons = true  -- the quests' icons at all (off: none; the full-screen map's Quests layer)
 
 local BADGE = { atlas = "UI-QuestPoi-QuestNumber", texture = "Interface\\GossipFrame\\ActiveQuestIcon", size = 22 }
 local IN_PROGRESS = { atlas = "Quest-In-Progress-Icon-yellow", texture = "Interface\\GossipFrame\\IncompleteQuestIcon" }
@@ -294,7 +295,7 @@ function mod:RefreshQuests()
 	local pad = PadView()
 	local all = mod.db.allQuests ~= false
 	local on = (all or pad) and (mod.IsStitched() or pad) and C_QuestLog.GetQuestsOnMap ~= nil
-		and not (GetCVarBool and not GetCVarBool("questPOI"))
+		and not (GetCVarBool and not GetCVarBool("questPOI")) and mod.db.questIcons ~= false
 	S.SetPinSetOn(set, on)
 	if not on then                                  -- (off: gone at once)
 		if offerSet then

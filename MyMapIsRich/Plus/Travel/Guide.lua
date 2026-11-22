@@ -577,6 +577,19 @@ local function Plan(goal, quiet, mode)
     return true
 end
 
+-- Le trajet vers un point du monde, calculé sans le lancer (la fiche d'un
+-- point, l'aperçu : UI/PointCard.lua) : le plan, sinon nil et la raison
+-- ("here" : tu y es ; "nohere" : ta position est inconnue ; "noroute")
+function T.Preview(goal)
+    if not (ns.db and ns.db.options.travel and goal) then return nil, "off" end
+    local here = Pl.PlayerPoint()
+    if not here then return nil, "nohere" end
+    if here.cont == goal.cont and G.Dist(here, goal) <= GOAL_REACH then return nil, "here" end
+    local ok, plan = pcall(Pl.Find, here, goal)
+    if not ok or not plan or #plan.legs == 0 then return nil, "noroute" end
+    return plan
+end
+
 -- Un trajet vers un point du monde (le navigateur de lieux, une
 -- destination reçue du groupe...) ; vrai s'il est lancé
 function T.Go(goal, quiet)

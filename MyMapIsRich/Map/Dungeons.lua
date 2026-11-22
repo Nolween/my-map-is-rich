@@ -312,6 +312,7 @@ end
 
 local function BuildView()
 	view = CreateFrame("Frame", "MyMapIsRichDungeonView", sc)
+	if mod.viewStrata then view:SetFrameStrata(mod.viewStrata) end   -- (over the full-screen map: PadView.lua)
 	view:SetAllPoints(sc)
 	view:SetFrameLevel(math.min(sc:GetFrameLevel() + 8800, 9800))   -- (over the map and its icons; under OpenMap's menu and card)
 	view:EnableMouse(true)
@@ -589,6 +590,7 @@ local function BuildView()
 	-- the tabs beside the quest log while the panel's in it: the log's list, or the dungeon (the log's
 	-- own tabs' look; WoW Forever's log doesn't show its tabs)
 	local tabs = CreateFrame("Frame", nil, map)    -- (the map's: the view clips, and they're past its edge)
+	if mod.viewStrata then tabs:SetFrameStrata(mod.viewStrata) end
 	view.sideTabs = tabs
 	tabs:SetSize(TAB_W, TAB_H * 2 + 3)
 	tabs.list = {}
@@ -1650,6 +1652,7 @@ end
 
 local function Card()
 	card = CreateFrame("Frame", nil, map)
+	if mod.viewStrata then card:SetFrameStrata(mod.viewStrata) end
 	card:SetWidth(CARD_W)
 	-- (below Blizzard's filter and pin buttons where a client has them in that corner: retail's)
 	card:SetPoint("TOPRIGHT", sc, "TOPRIGHT", -8, ns.Client == "Forever" and -8 or -70)

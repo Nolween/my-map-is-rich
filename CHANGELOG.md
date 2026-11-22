@@ -1,5 +1,51 @@
 # Journal des versions — My Map Is Rich
 
+## 0.4.0
+
+**Tes quêtes sur la carte plein écran.**
+
+- **Affichées de base** quand la carte plein écran s'ouvre. Si tu les fermes, elles restent fermées les fois suivantes.
+  - Au clavier et à la souris, **L** ou le nouveau bouton **Quêtes** (le premier en haut à droite) les affiche ou les cache.
+  - À la manette, **Menu** entre dans les quêtes, **B** revient à la carte, et Menu de nouveau les ferme. Tant que tu n'y es pas entré, la carte garde la manette et son curseur.
+- **Le panneau, à droite**, sur toute la hauteur :
+  - tes quêtes par zone ou les plus proches (LT / RT), avec une recherche ;
+  - chacune avec son niveau en couleur, sa progression et sa distance ;
+  - en bas, la quête choisie : ses objectifs (ou son texte) et le temps pour y aller depuis toi.
+- **Choisir une quête** fait glisser la carte jusqu'à elle et montre sa zone. Itinéraire (Y) ouvre l'aperçu du trajet, Ajouter à la file (X), Suivre, Partager au groupe, Texte de la quête. À la souris : Maj+clic sur une quête part tout de suite, clic droit l'ajoute à la file.
+- **Le rail des calques passe à gauche**, sous la zone. La fiche d'un point, l'aperçu d'un itinéraire et le panneau de trajet se posent à sa droite.
+- **Sur la carte plein écran, ton personnage ne bouge plus.** Les touches de déplacement font glisser la carte ; le saut, la course automatique et s'asseoir ne font rien. En combat, tout redevient normal. À la manette, le stick droit n'y tourne plus la caméra.
+
+## 0.3.0
+
+Deuxième étape de la nouvelle interface : **la fiche d'un point, l'aperçu d'un itinéraire et le menu des actions**, sur la carte plein écran.
+
+- **La fiche d'un point** : A, ou un clic, sur une icône de la carte (donjon, maître de vol, quai, épingle, quête, PNJ de ville…) ouvre sa fiche sous le nom de la zone, et le point est cerclé d'or. La fiche dit :
+  - ce qu'est le point (le titre et les lignes de son info-bulle) ;
+  - sa zone et ses coordonnées ;
+  - le temps pour y aller depuis toi, et par où (à pied, vol, bateau…).
+
+  Elle propose : Itinéraire (Y), Ajouter à la file (X), l'action de l'icône (la carte du donjon, les vols du maître de vol, modifier l'épingle), Poser une épingle ici, Envoyer au groupe. B ou la croix la ferment.
+- **L'aperçu de l'itinéraire** : Itinéraire (Y) sur la fiche montre tout le trajet avant de partir : le temps, l'heure d'arrivée, une barre par étape, la liste des étapes. Partir (A), Ajouter à la file (X), Annuler (B, retour à la fiche). R3 et Maj+clic partent toujours tout de suite, sans aperçu.
+- **À la souris**, Alt+clic sur la carte ouvre le menu des actions là où tu as cliqué : itinéraire, file, envoyer au groupe, épingle, liste des épingles, plume, réglages de la carte. Sur une icône, Maj+clic part tout de suite et Ctrl+clic pose une épingle. À la manette, la roue (View) reste la même.
+- Avant, une icône faisait son action dès le premier clic ; elle la fait maintenant depuis sa fiche.
+
+## 0.2.0
+
+**La carte s'ouvre en plein écran**, à la souris comme à la manette. C'est la première étape de la nouvelle interface des maquettes.
+
+- **L'habillage de la carte** :
+  - en haut à gauche, la zone sous le curseur et son continent ;
+  - en haut au milieu, **Aller à…** (LB à la manette, Ctrl+F au clavier), qui ouvre pour l'instant la recherche du navigateur de lieux ;
+  - en haut à droite, Me localiser, Me suivre, le menu de la carte et Fermer ;
+  - en bas à droite, tes coordonnées et celles du curseur ;
+  - au bord, « Toi » quand ta flèche sort de la vue (un clic recentre).
+- **Le rail des calques**, à droite : donjons, maîtres de vol, bateaux et zeppelins, quêtes, citadins, groupe, épingles, dessins. Un clic affiche ou cache un calque, un clic droit montre ses détails. Le dernier bouton, ou Y à la manette, ouvre le panneau des calques avec tous les détails.
+- **À la souris** : Maj+clic trace un itinéraire, Ctrl+clic pose une épingle, Alt+clic ouvre les actions, le clic du milieu te retrouve. La barre d'aide, en bas, montre les clics et les touches ; à la manette, elle montre les boutons.
+- **À la manette**, le curseur parcourt tout l'écran. A presse les boutons de l'habillage et du rail.
+- **L'ancienne carte reste là** : onglet Réglages de `/mmir`, « Carte classique », puis `/reload`. Il lui reste ce que la carte plein écran n'a pas encore : la carte marine, le zoom dans les grottes, la luminosité, le redimensionnement de la fenêtre, et les icônes des addons qui ne passent pas par HereBeDragons.
+- Les trajets à pied **ne font plus de détour** pour rejoindre une route : ils vont au plus court en contournant les obstacles. Le réglage « Suivre les routes » ne fait plus que départager deux chemins presque aussi longs.
+- Toutes les langues ont maintenant les infos-bulles des réglages et la fenêtre Nouveautés.
+
 ## 0.1.0
 
 Première version : **la carte d'OpenMap et tout OpenMap On Gamepad dans un seul addon**.

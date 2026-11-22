@@ -27,7 +27,7 @@ local function Options()
 		set = function(_, v) mod.db.enabled = v; ns:Print(ns.L["Takes effect after a /reload."]) end }
 	args.padWaits = { type = "description", order = 0.5, fontSize = "medium",
 		name = function() return "|cffff8040" .. mod.PadOffText() .. "|r" end,
-		hidden = function() return not mod.padWaits or (mod.PadViewOn and mod.PadViewOn()) or false end }
+		hidden = function() return not mod.padWaits or not mod.db.classicMap or (mod.PadViewOn and mod.PadViewOn()) or false end }
 	return { type = "group", name = "|cff" .. ns.ACCENT .. "My Map Is Rich|r " .. ns.version, args = args }
 end
 
@@ -61,11 +61,13 @@ local function Slash(msg)
 		local onView = { pins = true, draw = true, news = true }
 		if msg == "status" and mod.PadViewDiag then mod.PadViewDiag()
 		elseif onView[msg] and mod[run[msg]] then mod[run[msg]](mod)
+		elseif not mod.db.classicMap then ns:Print(ns.L["That isn't available on the full-screen map yet."])
 		else ns:Print(ns.L["That isn't available with the Gamepad UI yet."]) end
 		return
 	end
 	if run[msg] then
 		if mod.enabled and mod[run[msg]] then mod[run[msg]](mod, takes[msg] and rest or nil)
+		elseif mod.padWaits and not mod.db.classicMap then ns:Print(ns.L["That isn't available on the full-screen map yet."])
 		elseif mod.padWaits then ns:Print(mod.PadOffText())
 		else ns:Print(ns.L["The map is off."]) end
 	else

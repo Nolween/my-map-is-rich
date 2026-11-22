@@ -87,6 +87,12 @@ local function Place()
     frame:ClearAllPoints()
     local map = _G.WorldMapFrame
     local sc = map and map.ScrollContainer
+    -- (la carte plein écran : sous le nom de la zone, à droite du rail des
+    -- calques, UI/MapChrome.lua, UI/Layers.lua)
+    if ns.MapShown() and ns.FullMap() then
+        frame:SetPoint("TOPLEFT", UIParent, "TOPLEFT", 74, -66)
+        return
+    end
     if ns.MapShown() and sc then
         frame:SetPoint("TOPLEFT", sc, "TOPLEFT", 12, -12)
         return

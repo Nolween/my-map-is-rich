@@ -1,4 +1,11 @@
 --------------------------------------------------------------------------------
+-- The full-screen map (Options' classicMap off, the default): this same view, over the whole screen, for
+-- the mouse and the controller alike. Blizzard's map opens and closes as ever (M, Escape, B), open
+-- underneath and unseen; the controller's cursor, which stays on Blizzard's scroll frame, is carried
+-- over to the same place on the view (Project); the mouse's place names the zone and gives the world
+-- point under it; a click with Shift, Ctrl or Alt is Plus's first (mod.OnViewClick), the middle button
+-- finds you. Plus puts its chrome over it (Plus/UI/MapChrome.lua: mod.ViewFrame, mod.ViewPlace).
+--
 -- The controller view (Options' padView, on by default): with the game's Gamepad UI on, OpenMap's
 -- stitched map drawn over Blizzard's world map on a frame of its own, Blizzard's map left as it is.
 --
@@ -53,6 +60,7 @@ local POINTER_LEVEL = 9990      --  fixed, from 2015: Extras.lua) ... and the pa
                                 --  map, Dungeons.lua's, goes to 9840)
 
 local map, sc, view, canvas
+local full = false              -- the full-screen map (Full(), read as the view is set up)
 local pointer                   -- the pad's cursor, drawn again over the art (Blizzard's is under it)
 local built, failed = false, false
 local u, v, zoom                -- the view: world centre (normalized) and zoom (1: the whole world fits)
@@ -78,8 +86,17 @@ local diag = { started = 0, setup = "not yet", shows = 0, why = "not tried yet" 
 
 local function Clamp(x, lo, hi) return math.max(lo, math.min(hi, x)) end
 
+-- The full-screen map (Options' classicMap off, the default): this view is the map for the mouse and the
+-- controller alike, over the whole screen, Blizzard's map open underneath and unseen (WorldMap.lua's
+-- OnEnable doesn't set the usual map up then). Read once, as the view is set up: changed with a reload
+local function Full()
+	return mod.db and not mod.db.classicMap or false
+end
+
 local function On()
-	return mod.db and mod.db.padView and not mod.enabled and mod.PadUI and mod.PadUI() or false
+	if not mod.db or mod.enabled then return false end
+	if Full() then return true end
+	return mod.db.padView and mod.PadUI and mod.PadUI() or false
 end
 
 --------------------------------------------------------------------------------
@@ -131,6 +148,19 @@ local function WorldAt(sx, sy)
 	return u + sx / (W * px), v + sy / (H * px)
 end
 
+-- Blizzard's cursor stays on its map's scroll frame, smaller than the full-screen view: its place there
+-- is carried over to the same place on the view (screen px both), so it reaches the view's four edges
+-- (and the edge Blizzard pans at, its scroll frame's, is the view's)
+local function Project(x, y)
+	if not full then return x, y end
+	local sl, sb, sw, sh = sc:GetRect()
+	local vl, vb, vw, vh = view:GetRect()
+	if not (sl and vl) or sw <= 0 or sh <= 0 then return x, y end
+	local ses, ves = sc:GetEffectiveScale(), view:GetEffectiveScale()
+	local fx, fy = (x / ses - sl) / sw, (y / ses - sb) / sh
+	return (vl + fx * vw) * ves, (vb + fy * vh) * ves
+end
+
 -- the pad's cursor (screen px), while the map has the pad
 local function Cursor()
 	local soft = _G.SoftCursor
@@ -139,7 +169,14 @@ local function Cursor()
 	local l, b, w, h = soft:GetRect()
 	if not l then return end
 	local es = soft:GetEffectiveScale()
-	return (l + w / 2) * es, (b + h / 2) * es
+	return Project((l + w / 2) * es, (b + h / 2) * es)
+end
+
+-- the mouse (screen px), over the view and the controller not on the map: the place under it, its
+-- coordinates. (Not the pad's diamond nor its hover: OpenMap's icons take the mouse themselves)
+local function MouseXY()
+	if not (view and view:IsVisible() and view:IsMouseOver()) then return end
+	return GetCursorPosition()
 end
 
 --------------------------------------------------------------------------------
@@ -282,6 +319,7 @@ local function MakePointer(level)
 	-- (on Blizzard's map, not in the view: the view clips its children, so all of it, the cursor too, is
 	-- drawn as one, at its own level, under a dungeon's map in Blizzard's scroll frame, which clips too)
 	pointer = CreateFrame("Frame", nil, map)
+	if mod.viewStrata then pointer:SetFrameStrata(mod.viewStrata) end   -- (the full-screen map's: over it)
 	pointer:SetAllPoints(view)
 	pointer:SetFrameLevel(level)
 	pointer:Hide()
@@ -312,6 +350,7 @@ local place = {}                -- { frame, name, fish, key (what it says now) }
 
 local function MakePlaceLabel(level)
 	local f = CreateFrame("Frame", nil, map)   -- (on Blizzard's map, as the pointer: the view clips)
+	if mod.viewStrata then f:SetFrameStrata(mod.viewStrata) end
 	f:SetAllPoints(view)
 	f:SetFrameLevel(level)
 	f:Hide()
@@ -331,13 +370,24 @@ function place.Blizzard(alpha)
 	end
 end
 
--- (x, y: the pad's cursor, screen px; nil: no label)
+-- the continent a chain of maps (S.ChainAt's) is on: its name
+local function ContinentOf(chain)
+	for _, id in ipairs(chain) do
+		local info = id ~= WORLD and C_Map.GetMapInfo(id)
+		if info and info.mapType == Enum.UIMapType.Continent then return info.name end
+	end
+end
+
+-- (x, y: the pad's cursor or the mouse, screen px; nil: no label. With the full-screen map's chrome on
+-- (Plus's: mod.viewChrome), the name is its own panel's, and with no cursor it's the view's centre's)
 local function PlaceLabel(x, y)
 	local f = place.frame
 	if not f then return end
-	local text, fishText
-	if x and mod.PlaceLabel then
-		local cu, cv = WorldAt(Offset(x, y))
+	local chrome = full and mod.viewChrome
+	local text, fishText, zone, continent
+	if (x or chrome) and mod.PlaceLabel then
+		local cu, cv
+		if x then cu, cv = WorldAt(Offset(x, y)) else cu, cv = u, v end
 		local chain = S.ChainAt(cu, cv)
 		local id = chain[#chain]
 		if id and id ~= WORLD then
@@ -346,10 +396,15 @@ local function PlaceLabel(x, y)
 				-- (zoomed out past the zone: its name and levels; on it: the area there, as on the usual map)
 				local whole = Stitchable(id) and FitZoom(id) > zoom * 1.05
 				local ok, a, c = pcall(mod.PlaceLabel, id, (cu - l) / (r - l), (cv - t) / (b - t), whole)
-				if ok then text, fishText = a, c end
+				if ok then text, fishText, zone = a, c, id end
 			end
 		end
+		if text then
+			local ok, name = pcall(ContinentOf, chain)
+			continent = ok and name or nil
+		end
 	end
+	place.zone, place.continent = zone, continent
 	if not text then
 		place.key = nil
 		f:Hide()
@@ -361,7 +416,14 @@ local function PlaceLabel(x, y)
 		place.name:SetText(text)
 		place.fish:SetText(fishText)
 	end
-	f:Show()
+	f:SetShown(not chrome)
+end
+
+-- for the full-screen map's chrome (Plus): the place under the cursor, else at the view's centre: its
+-- label (name and levels), the fishing line, its map and its continent's name
+function mod.ViewPlace()
+	if not (built and view and view:IsShown()) then return end
+	return place.key, place.fishKey, place.zone, place.continent
 end
 
 -- The quest's area (Quests.lua's icons), as Blizzard's map shades it for its own quest icons (its
@@ -610,7 +672,15 @@ end
 -- an icon pressed (A, or a click): its own click, but for what would change Blizzard's map (a
 -- dungeon's map, Zephras Isle's): that's OpenMap's doing then, which taints the Gamepad UI. A
 -- dungeon's entrance is zoomed to instead, its tooltip kept up
+local ownPress = false          -- (mod.PinAction: the icon's own press, Plus's card not asked)
+
 function Press(pin)
+	-- (the full-screen map: Plus's card of the point first, or what Shift, Ctrl, Alt ask: mod.OnPinPress;
+	-- an icon with no place in the world, another addon's, goes on as ever)
+	if full and not ownPress and mod.OnPinPress and pin.u and pin.v and not pin.away then
+		local ok, taken = pcall(mod.OnPinPress, pin)
+		if ok and taken then return end
+	end
 	-- your map pin: its card, as a click opens it (its note, colour, Follow, Share ...)
 	local p = pin.data
 	if type(p) == "table" and p.id and p.map and p.x and pin.OnClick and mod.SetupPins then
@@ -722,8 +792,11 @@ local function OnUpdate(_, elapsed)
 		wheelFrame = overWindow and mod.PadWheelAt and mod.PadWheelAt(x, y) or nil
 		if ctl or blocked or dungeon then Enter(ctl)
 		else Enter(x and (S.PinAt(x, y, REACH) or QuestieAt(x, y)) or nil) end
-		-- (the place's name: not over OpenMap's windows or a dungeon's map, whose own names are there)
-		PlaceLabel(not (ctl or blocked or dungeon) and x or nil, y)
+		-- (the place's name: not over OpenMap's windows or a dungeon's map, whose own names are there; the
+		-- mouse's place on the full-screen map, the controller not on it)
+		local px, py = x, y
+		if not px and full then px, py = MouseXY() end
+		PlaceLabel(not (ctl or blocked or dungeon) and px or nil, py)
 	end
 end
 
@@ -756,10 +829,57 @@ local function Fail(why)
 	return false
 end
 
+-- The full-screen map over Blizzard's whole frame: its title bar and buttons, its quest log (which
+-- Blizzard puts in the HIGH strata, over the map's own), the Gamepad UI's footer, other addons'
+-- coordinates on it. The view goes in the highest strata among them, up to HIGH, at a level over theirs
+-- there; OpenMap's windows over the map (DIALOG, or named MyMapIsRich…, or the cursor's: padRoots, or far
+-- above the scroll frame: a dungeon's map, the quill's tray) are left out, and stay over the view
+local STRATA = { BACKGROUND = 1, LOW = 2, MEDIUM = 3, HIGH = 4, DIALOG = 5, FULLSCREEN = 6, FULLSCREEN_DIALOG = 7, TOOLTIP = 8 }
+local STRATA_NAME = {}
+for name, rank in pairs(STRATA) do STRATA_NAME[rank] = name end
+
+local function Cover()
+	local own = {}
+	for _, f in ipairs(mod.padRoots or {}) do own[f] = true end
+	local limit = sc:GetFrameLevel() + 8000
+	local topRank, topLevel = STRATA[map:GetFrameStrata()] or 3, sc.Child:GetFrameLevel()
+	local seen = {}
+	local function Walk(f, depth)
+		if not f or seen[f] or f == view or f == sc or own[f] or not f.GetFrameLevel then return end
+		seen[f] = true
+		local name = f.GetName and f:GetName()
+		if type(name) == "string" and name:find("^MyMapIsRich") then return end
+		local rank = STRATA[f:GetFrameStrata()] or 3
+		local level = f:GetFrameLevel()
+		if rank <= STRATA.HIGH and level < limit then
+			if rank > topRank then topRank, topLevel = rank, level
+			elseif rank == topRank and level > topLevel then topLevel = level end
+		end
+		if depth > 0 then
+			for _, child in ipairs({ f:GetChildren() }) do Walk(child, depth - 1) end
+		end
+	end
+	for _, child in ipairs({ map:GetChildren() }) do Walk(child, 4) end
+	-- (some of Blizzard's map's parts may hang from UIParent: its quest log, the Gamepad UI's footer)
+	Walk(map.worldMapFooter, 4)
+	Walk(_G.QuestMapFrame, 4)
+	return STRATA_NAME[topRank] or map:GetFrameStrata(), topLevel
+end
+mod.viewStrata = nil            -- (the full-screen map's strata, once built: Dungeons.lua, Sketch.lua put theirs there)
+
 local function Build()
 	if built or failed then return built end
 	if S.IsBuilt() then return Fail("the art is on Blizzard's map already (My Map Is Rich's usual map)") end
 	local base = sc.Child:GetFrameLevel() + 2
+	if full then
+		local ok, strata, top = pcall(Cover)
+		if ok and strata then
+			view:SetFrameStrata(strata)
+			mod.viewStrata = strata
+			base = (strata == map:GetFrameStrata()) and math.max(base, top + 2) or (top + 2)
+			diag.cover = strata .. " " .. tostring(top)
+		end
+	end
 	view:SetFrameLevel(base)
 	canvas:SetFrameLevel(base)
 	local ok, err = pcall(S.Build, canvas, base + 1, ART_RANGE, base + ART_RANGE + 4)
@@ -810,6 +930,7 @@ local function Build()
 	-- (as WorldMap.lua's: the world point, and world units per view px, which the quill measures by)
 	mod.CursorWorld = function()
 		local x, y = Cursor()
+		if not x and full then x, y = MouseXY() end   -- (the mouse, on the full-screen map)
 		if not x then x, y = lastX, lastY end
 		if not x then return end
 		local W, H = S.Size()
@@ -934,6 +1055,27 @@ end
 function mod.PadViewBuilt() return built end
 -- for Dungeons.lua: this view is the map now (Blizzard's left as it is)
 function mod.PadViewOn() return built and On() end
+-- for Plus: the full-screen map is on (this view, for the mouse and the controller alike), and its frame,
+-- for the chrome put over it (built: the map has opened once)
+function mod.ViewFull() return full and On() or false end
+function mod.ViewFrame() if built then return view end end
+-- for Plus's card of a point: the icon's own press (a dungeon's map, a flight master's routes, a pin's
+-- card), as it was before the card
+function mod.PinAction(pin)
+	if not pin then return end
+	ownPress = true
+	local ok, err = pcall(Press, pin)
+	ownPress = false
+	if not ok and geterrorhandler then geterrorhandler()(err) end
+end
+-- ... and where a world point (normalized) is on the view: its offset from the view's centre (view px,
+-- y down)
+function mod.ViewOffset(pu, pv)
+	if not (built and u and pu and pv) then return end
+	local W, H = S.Size()
+	local px = FitPx() * zoom
+	return (pu - u) * W * px, (pv - v) * H * px
+end
 -- for the files whose pins are handed out again as they're redrawn (Stitch.lua's sets reuse their frames):
 -- the pin under the controller's cursor, if it's one of `pins`, is left first, as the mouse would leave it,
 -- and entered again if it's back, its tooltip as it is then
@@ -946,10 +1088,10 @@ end
 
 -- /mmir carte padview: how the controller view is getting on
 function mod.PadViewDiag()
-	ns:Print("Controller view: on %s, started %d, set up: %s, map opened %d times, %s; showing %s, size %s; menu %s.",
+	ns:Print("Controller view: on %s, started %d, set up: %s, map opened %d times, %s; showing %s, size %s; menu %s; full screen %s (over: %s).",
 		tostring(On()), diag.started, diag.setup, diag.shows, diag.why, tostring(view and view:IsShown() or false),
 		view and ("%.0f x %.0f"):format(view:GetWidth(), view:GetHeight()) or "-",
-		diag.panel or tostring(mod.PanelBuilt and mod.PanelBuilt() or false))
+		diag.panel or tostring(mod.PanelBuilt and mod.PanelBuilt() or false), tostring(full), diag.cover or "-")
 end
 
 -- The waypoint. Blizzard's own, the left stick pressed (GamepadTryPlaceWaypoint), goes where its cursor is
@@ -1034,8 +1176,10 @@ local function Setup()
 		if not okF then diag.panel = "friends: " .. tostring(errF) end   -- (/mmir carte padview says so)
 	end
 
+	full = Full()
 	view = CreateFrame("Frame", nil, map)
-	view:SetAllPoints(sc)
+	-- (the full-screen map: the whole screen, still Blizzard's map's child, so it opens and closes with it)
+	view:SetAllPoints(full and UIParent or sc)
 	view:SetClipsChildren(true)
 	view:Hide()
 	canvas = CreateFrame("Frame", nil, view)
@@ -1059,8 +1203,19 @@ local function Setup()
 	view:SetScript("OnMouseUp", function(_, button)
 		local d = drag
 		drag = nil
-		if (d and d.moved) or (button ~= "LeftButton" and button ~= "RightButton") then return end
+		if d and d.moved then return end
 		lastX, lastY = GetCursorPosition()
+		-- (the full-screen map: what Plus makes of a click first, with Shift, Ctrl or Alt held: a route, a
+		-- pin, the actions; the middle button finds you)
+		if full and mod.OnViewClick then
+			local ok, taken = pcall(mod.OnViewClick, button)
+			if ok and taken then return end
+		end
+		if full and button == "MiddleButton" then
+			if mod.FindMe then pcall(mod.FindMe, mod, true) end
+			return
+		end
+		if button ~= "LeftButton" and button ~= "RightButton" then return end
 		local h = hovered
 		hovered = nil          -- (the pad's icon isn't the mouse's; OpenMap's icons take their own clicks)
 		Step(button == "LeftButton")

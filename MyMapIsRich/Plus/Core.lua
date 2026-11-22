@@ -32,6 +32,9 @@ end
 local DEFAULTS = {
     enabled = true,        -- l'addon prend la manette carte ouverte
     padView = true,        -- forcer la vue manette d'OpenMap (son option « padView »)
+    classicMap = false,    -- la carte dessinée dans celle du jeu (sinon : la carte plein écran ; après un /reload)
+    layerMemory = {},      -- les clés d'un calque à plusieurs clés, allumées quand on l'a éteint (UI/Layers.lua)
+    questsOpen = true,     -- les quêtes ouvertes avec la carte plein écran (fermées par le joueur : retenu ; UI/QuestPanel.lua)
     jump = true,           -- la croix saute d'icône en icône sur la carte
     magnet = true,         -- le curseur au repos près d'une icône : la vue s'y recale
     magnetRadius = 24,     -- px autour du curseur
@@ -157,7 +160,8 @@ function ns.ViewReady()
     return true
 end
 
--- La vue manette d'OpenMap est affichée (carte ouverte, interface manette)
+-- La vue d'OpenMap est là : la carte plein écran (souris et manette), ou la
+-- vue manette de la carte classique (interface manette)
 function ns.ViewOn()
     local mod = ns.mod
     if not (mod and mod.PadViewOn) then return false end
@@ -198,8 +202,19 @@ end
 ---------------------------------------------------------------------------
 local function WantPadView()
     local mod = ns.mod
-    if not (mod and mod.db and ns.db.options.enabled and ns.db.options.padView) then return end
+    if not (mod and mod.db) then return end
+    -- (la carte plein écran ou la carte classique : lu par la carte à son lancement)
+    mod.db.classicMap = ns.db.options.classicMap and true or false
+    if not (ns.db.options.enabled and ns.db.options.padView) then return end
     if not mod.db.padView then mod.db.padView = true end
+end
+
+-- La carte plein écran est-elle là (PadView.lua) ?
+function ns.FullMap()
+    local mod = ns.mod
+    if not (mod and mod.ViewFull) then return false end
+    local ok, on = pcall(mod.ViewFull)
+    return ok and on or false
 end
 
 ---------------------------------------------------------------------------

@@ -419,6 +419,7 @@ end
 
 local function CreateTray()
 	tray = CreateFrame("Frame", nil, map)
+	if mod.viewStrata then tray:SetFrameStrata(mod.viewStrata) end   -- (over the full-screen map: PadView.lua)
 	mod.padRoots[#mod.padRoots + 1] = tray
 	tray:SetPoint("TOP", sc, "TOP", 0, -8)
 	tray:SetFrameLevel(math.min(sc:GetFrameLevel() + 9400, 9960))

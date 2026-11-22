@@ -6,7 +6,7 @@ Les fonctions citées sont dans [MyMapIsRich/Plus/UI/Widgets.lua](MyMapIsRich/Pl
 
 ## Le périmètre
 
-La charte vaut pour **les fenêtres de l'addon** : le navigateur de lieux, le clavier virtuel, la roue des actions, la fenêtre d'une destination reçue, le panneau de trajet et la barre d'aide en bas de la carte. Le cadre doré de l'élément choisi à la croix est celui de My Guild Is Rich.
+La charte vaut pour **les fenêtres de l'addon** : le navigateur de lieux, le clavier virtuel, la roue des actions, la fenêtre d'une destination reçue, le panneau de trajet, la barre d'aide en bas de la carte, et depuis la 0.2.0 **l'habillage de la carte plein écran** (la zone, « Aller à… », les boutons, le rail des calques, les coordonnées). Le cadre doré de l'élément choisi à la croix est celui de My Guild Is Rich.
 
 Elle ne touche **pas** :
 - les **fenêtres de la carte** venues d'OpenMap (son menu, les épingles, les donjons, la fenêtre de réglages AceConfig...) : en 0.1.0 elles gardent l'apparence d'OpenMap ; les passer à la charte est prévu ;
@@ -88,7 +88,23 @@ Tout texte passe par `L` et existe dans les **10 langues**.
 - **Navigateur de lieux** : trois colonnes de 236 px (des `UI.Inset`), séparées de 6 px, avec des lignes `UI.NavButton` de niveau 2 ; la ligne choisie est dorée.
 - **Clavier virtuel** : touches de 40 × 32 px, rouges pour les lettres, grises pour les accents et les touches spéciales (chacune avec l'icône de son bouton de manette) ; le texte en cours dans une zone en retrait (`UI.Well`), le curseur du texte en or.
 - **Barre d'actions** (View sur la carte) : une rangée de boutons de 118 × 44 px, le premier rouge (le menu d'OpenMap), les autres gris.
-- **Barre d'aide** : bande de 30 px en bas de la vue de la carte, fond de fenêtre, trait doré en haut ; l'icône de chaque bouton puis ce qu'il fait (blanc : l'addon ; gris : le jeu et OpenMap).
+- **Barre d'aide** : bande de 30 px en bas de la vue de la carte (de l'écran, sur la carte plein écran), fond de fenêtre, trait doré en haut ; l'icône de chaque bouton puis ce qu'il fait (blanc : l'addon ; gris : le jeu et OpenMap). À la souris, sur la carte plein écran : les clics (l'icône de souris du jeu) et les touches (un carré de 18 px, fond `inputBg`, liseré `edgeLight`, le nom de la touche donné par le jeu : Maj, Ctrl, Alt, Échap), reliés par un « + » gris.
+
+## L'habillage de la carte plein écran
+
+Tout est posé sur la vue de la carte (`UI/MapChrome.lua`, `UI/Layers.lua`), au-dessus de l'art, à 12 px des bords de l'écran. Chaque bande est un `UI.Overlay` : le fond de la fenêtre, un liseré `windowEdge`, un trait noir dedans, une ombre portée.
+
+- **La zone** (en haut à gauche, 300 × 48) : le nom en or (`GameFontNormalLarge`), le continent en gris dessous. Le rail des calques se pose juste sous elle (à 66 px du haut), le panneau de trajet à droite du rail.
+- **Aller à…** (en haut au milieu, 400 × 36) : une loupe dorée, la phrase en gris, et à droite la pastille LB (manette) ou « Ctrl+F » (clavier).
+- **Les boutons** (en haut à droite) : une bande de cinq carrés de 36 px (`UI.IconToggle`), séparés de 4 px : Quêtes (allumé quand le panneau des quêtes est ouvert, la pastille Menu à la manette, « L » à la souris), Me localiser, Me suivre (allumé quand la carte te suit, avec sa pastille RB), Réglages ; Fermer est la croix rouge cerclée d'or.
+- **Le rail des calques** (à gauche, sous la zone : à 12 px du bord et 66 px du haut, 56 px de large) : l'étiquette « CALQUES » et la pastille Y, puis un `UI.IconToggle` de 44 px par calque, séparés de 6 px ; allumé : dégradé et liseré dorés, pastille verte ; éteint : l'icône à 40 % ; le dernier, « ··· », ouvre le panneau.
+- **La colonne de gauche** : à droite du rail (à 74 px du bord), sous la zone, se posent le panneau de trajet, la fiche d'un point et l'aperçu d'un itinéraire. **La colonne de droite** est au panneau des quêtes. Elles ne se croisent pas.
+- **Le panneau des quêtes** (`UI/QuestPanel.lua`, 400 px, une bande `UI.Overlay`, à droite sous les boutons du haut, jusqu'au-dessus des coordonnées) : le titre doré et le nombre de quêtes en gris ; à droite, deux onglets de tri (`UI.NavButton` de niveau 2, encadrés des pastilles LT / RT) et la croix ; une recherche ; une liste de lignes de 26 px (le niveau dans la couleur de difficulté du jeu, le titre doré, blanc sur la ligne choisie, la progression, verte quand la quête est terminée, la distance en gris), les zones en en-têtes dorés soulignés d'un trait ; en bas, une zone en retrait de 236 px pour la quête choisie (titre, niveau, zone, objectifs « ✓ » en vert ou « • », « environ … · par où »), Itinéraire rouge et Ajouter à la file côte à côte, puis trois petits boutons gris.
+- **Le panneau des calques** (284 px, à droite du rail) : une ligne en retrait de 32 px par calque (icône, nom doré, case dessinée), la choisie en dégradé doré et texte blanc ; dessous, une zone en retrait avec les détails du calque choisi ; en bas, un bouton gris vers les réglages de la carte.
+- **Les coordonnées** (en bas à droite, au-dessus de la barre d'aide) : des `UI.Pill`, fond noir à 80 %, liseré `windowInner`, libellé doré, valeur blanche.
+- **« Toi »** : une pastille au bord de la vue, dans ta direction (fond noir à 70 %, liseré `goldDim`, la flèche du jeu tournée vers toi).
+- **La fiche d'un point** (`UI/PointCard.lua`, 330 px, une bande `UI.Overlay`) : toujours au même endroit, sous la zone et à droite du rail (sous le panneau de trajet s'il est là) ; l'icône du point en 40 px, le nom en or, la zone et les coordonnées en gris, les lignes de l'info-bulle en blanc ; une zone en retrait « Depuis toi : environ 4 min 00 », une pastille ronde par étape à la couleur de son trajet (`R.COLORS`), puis par où en gris ; dessous, les boutons de 30 px l'un sous l'autre : Itinéraire rouge (le seul), les autres gris, chacun avec la pastille de son bouton de manette à gauche. Une croix en haut à droite. Le point choisi est cerclé d'or sur la carte.
+- **L'aperçu d'un itinéraire** (340 px, à la place de la fiche) : le titre, « vers … » en gris ; le temps en grand, « au total », l'heure d'arrivée à droite ; une barre de 8 px découpée par étape (3 px entre deux) ; une zone en retrait par étape (sa pastille, « 1 · à pied » en gris, ce qu'il faut faire, son temps) ; Partir (rouge) et Ajouter à la file côte à côte, Annuler dessous ; une phrase grise pour qui est pressé.
 
 ## La mise en page d'un écran
 
@@ -126,7 +142,11 @@ Tout texte passe par `L` et existe dans les **10 langues**.
 | Curseur | `UI.Slider(...)` | Rail sombre bordé, partie remplie en doré, curseur doré. |
 | Fenêtre par-dessus l'écran | `UI.Dialog(nom, l, h, titre, strate)` | Fond `dialog`, barre de titre de 32 px, titre doré à gauche, croix ; le contenu commence à 40 px du haut. |
 | Petite boîte (confirmation, nom) | `UI.Confirm`, `UI.AskText` | Fond `dialog`, un trait doré en haut. |
-| Menu contextuel | `UI.ShowMenu` | Fond `dialog`, survol en voile doré. |
+| Menu contextuel | `UI.ShowMenu(éléments, x, y, titre)`, `UI.HideMenu()` | 250 px, fond `dialog`, une ligne de titre grise, des lignes de 26 px (libellé doré, raccourci gris à droite), un trait doré avant un groupe ; survol en voile doré ; se ferme au clic ailleurs. |
+| Bande sur la carte | `UI.Overlay(parent)`, `UI.PaintOverlay(cadre)` | Fond de la fenêtre, liseré `windowEdge`, trait noir dedans, ombre portée. |
+| Bouton-icône à allumer | `UI.IconToggle(parent, taille, texture, atlas)` + `:SetOn(true / false / nil)` | Allumé : dégradé et liseré dorés, pastille verte (sauf `b.noDot`) ; éteint : icône à 40 % ; `nil` : un simple bouton. |
+| Icône dans un bouton | `UI.SetIcon(texture, chemin, atlas)` | L'atlas du jeu s'il existe, sinon la texture (une icône d'objet est rognée de son bord). |
+| Pastille de coordonnées | `UI.Pill(parent)` + `:Set(libellé, valeur, précision)` | Fond noir à 80 %, liseré `windowInner`, libellé doré, valeur blanche. |
 
 ## Cases à cocher et champs de saisie
 

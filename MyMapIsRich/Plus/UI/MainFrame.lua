@@ -201,9 +201,10 @@ local function BuildSettings(page)
     local y = -46
     Option(left, "enabled", L.OPT_ENABLED, L.OPT_ENABLED_TIP, y)
     y = y - 70
-    Option(left, "padView", L.OPT_PADVIEW, L.OPT_PADVIEW_TIP, y, function(on)
-        if on and ns.StartPadView then ns.StartPadView() end
-        if not on then ns.Print(L.PADVIEW_OFF_NOTE) end
+    -- (la carte plein écran ou la carte classique : au lancement de la carte, donc après un /reload ;
+    -- la vue manette de la carte classique reste allumée, réglage padView)
+    Option(left, "classicMap", L.OPT_CLASSIC_MAP, L.OPT_CLASSIC_MAP_TIP, y, function()
+        ns.Print(L.CLASSIC_MAP_RELOAD)
     end)
     y = y - 70
     Option(left, "magnet", L.OPT_MAGNET, L.OPT_MAGNET_TIP, y)

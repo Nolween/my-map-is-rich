@@ -643,6 +643,11 @@ Refill = function()
 end
 
 local function OpenKeyboard()
+    -- (à la souris, sur la carte plein écran : le vrai clavier, le champ prend la main)
+    if not ns.PadUI() then
+        box:SetFocus()
+        return
+    end
     if ns.Keyboard then ns.Keyboard.Open(box) end
 end
 

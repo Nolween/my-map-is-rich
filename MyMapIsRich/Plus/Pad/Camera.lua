@@ -185,7 +185,8 @@ events:SetScript("OnEvent", function(_, _, addon, fn)
     end
 end)
 
-ns.On("MAP_SHOW", function() if not blocked then driver:Show() end end)
+-- (la carte plein écran couvre tout : le stick droit y est à la carte, jamais à la caméra)
+ns.On("MAP_SHOW", function() if not blocked and not ns.FullMap() then driver:Show() end end)
 ns.On("MAP_HIDE", function()
     StopAll()
     driver:Hide()

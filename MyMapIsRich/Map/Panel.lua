@@ -800,7 +800,8 @@ function mod.RefreshRail() if mod.db.tabRail and favBar then RefreshFavorites() 
 
 RefreshFavorites = function()
 	if not favBar then return end
-	if not mod.db.mapButtons then
+	-- (the full-screen map: its chrome, Plus's, has the menu's button and the layers' rail instead)
+	if not mod.db.mapButtons or (mod.ViewFull and mod.ViewFull()) then
 		toggle:Hide()
 		trayArrow:Hide()
 		favBar:Hide()
@@ -1083,6 +1084,10 @@ end
 -- or (not moved yet) where it first opens, above the OpenMap button
 local function Place()
 	menu:ClearAllPoints()
+	if mod.ViewFull and mod.ViewFull() then   -- (the full-screen map: under its buttons, left of its layers' rail)
+		menu:SetPoint("TOPRIGHT", UIParent, "TOPRIGHT", -76, -64)
+		return
+	end
 	if PadView() then           -- (in the view, over the OpenMap button: the pad's cursor can't leave the view)
 		menu:SetPoint("BOTTOMLEFT", sc, "BOTTOMLEFT", 4, PAD_ABOVE)
 		return
@@ -1326,7 +1331,7 @@ function mod:SetupPanel(worldMap)
 	pad[#pad + 1], pad[#pad + 2], pad[#pad + 3], pad[#pad + 4] = toggle, trayArrow, favBar, menu
 	W = math.max(MIN_W, math.min(MAX_W, tonumber(mod.db.menuWidth) or 700))
 	-- (the controller view: no wider than the map's view, where the pad's cursor reaches)
-	if PadView() and sc:GetWidth() and sc:GetWidth() > 0 then W = math.max(MIN_W, math.min(W, sc:GetWidth() - 8)) end
+	if PadView() and not (mod.ViewFull and mod.ViewFull()) and sc:GetWidth() and sc:GetWidth() > 0 then W = math.max(MIN_W, math.min(W, sc:GetWidth() - 8)) end
 	COL = (W - 2 * PAD - 16 - SCROLL_GAP) / 2
 	menu:SetWidth(W)
 	-- (over the quest log, which Blizzard puts in the HIGH strata: the map's own is lower, so at any
