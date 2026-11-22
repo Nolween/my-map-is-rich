@@ -613,13 +613,21 @@ local function DrawFoot()
     end
 end
 
+-- Le cadre sur lequel la fenêtre se pose : la carte plein écran ouverte (plein
+-- écran ou réduite), sa vue, pour rester sur la carte ; sinon l'écran
+local function Host()
+    local mod = ns.mod
+    local view = ns.FullMap() and ns.MapShown() and mod and mod.ViewFrame and mod.ViewFrame()
+    return view or UIParent
+end
+
 local function Place()
     frame:ClearAllPoints()
     if tab == "search" then
         -- (le clavier à gauche, les résultats à droite)
-        frame:SetPoint("TOPLEFT", UIParent, "TOP", 4, -60)
+        frame:SetPoint("TOPLEFT", Host(), "TOP", 4, -60)
     else
-        frame:SetPoint("CENTER", UIParent, "CENTER", 0, 20)
+        frame:SetPoint("CENTER", Host(), "CENTER", 0, 20)
     end
 end
 
@@ -738,7 +746,7 @@ local function Build()
     box:SetScript("OnEscapePressed", box.ClearFocus)
     UI.SkinInput(box)
     -- (le clavier à gauche de la fenêtre)
-    box.keyboardPlace = function(kb) kb:SetPoint("TOPRIGHT", UIParent, "TOP", -4, -60) end
+    box.keyboardPlace = function(kb) kb:SetPoint("TOPRIGHT", Host(), "TOP", -4, -60) end
     local pending = false
     box:SetScript("OnTextChanged", function()
         if pending then return end

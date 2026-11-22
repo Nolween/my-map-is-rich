@@ -101,7 +101,6 @@ local MOUSE_HINTS = {
         { { "CTRL", "+", "clickL" }, "HINT_M_PIN" },
         { { "ALT", "+", "clickL" }, "HINT_ACTIONS" },
         { { "CTRL", "+", "F" }, "HINT_GOTO" },
-        { { "L" }, "HINT_QUESTS", true },
         { { "clickR" }, "HINT_ZOOM_OUT", true },
         { { "wheel" }, "HINT_ZOOM", true },
         { { "ESC" }, "HINT_CLOSE", true },
@@ -111,27 +110,15 @@ local MOUSE_HINTS = {
         { { "clickR" }, "HINT_LAYER_DETAILS" },
         { { "ESC" }, "HINT_CLOSE_MAP", true },
     },
+    -- (la liste des quêtes, la souris dessus : UI/QuestPanel.lua)
     quests = {
         { { "clickL" }, "HINT_QUESTS_OPEN" },
         { { "SHIFT", "+", "clickL" }, "HINT_ROUTE_NOW" },
         { { "clickR" }, "ACT_QUEUE" },
-        { { "L" }, "HINT_QUESTS_CLOSE", true },
         { { "ESC" }, "HINT_CLOSE_MAP", true },
     },
-    -- (la fiche d'une quête : UI/QuestPanel.lua)
+    -- (la fiche d'une quête)
     questpage = {
-        { { "wheel" }, "HINT_SCROLL" },
-        { { "L" }, "HINT_QUESTS_CLOSE", true },
-        { { "ESC" }, "HINT_CLOSE_MAP", true },
-    },
-    -- (la carte réduite : la liste des quêtes y reste, L ne la ferme pas)
-    questsDocked = {
-        { { "clickL" }, "HINT_QUESTS_OPEN" },
-        { { "SHIFT", "+", "clickL" }, "HINT_ROUTE_NOW" },
-        { { "clickR" }, "ACT_QUEUE" },
-        { { "ESC" }, "HINT_CLOSE_MAP", true },
-    },
-    questpageDocked = {
         { { "wheel" }, "HINT_SCROLL" },
         { { "ESC" }, "HINT_CLOSE_MAP", true },
     },
@@ -188,19 +175,26 @@ local function MouseSet(ctx)
     if set then return set end
     set = CreateFrame("Frame", nil, bar)
     set:SetAllPoints(bar)
+    -- (une indication : ses morceaux, et sa droite depuis le bord de la barre ;
+    -- H.Refresh cache celles qui ne tiennent pas)
+    set.hints = {}
     local x = 10
     for _, hint in ipairs(MOUSE_HINTS[ctx]) do
+        local parts = {}
         for _, what in ipairs(hint[1]) do
             local piece, w = Piece(set, what)
             piece:SetPoint("LEFT", set, "LEFT", x, 0)
+            parts[#parts + 1] = piece
             x = x + w + 3
         end
         local text = UI.Text(set, "GameFontHighlightSmall", L[hint[2]] or hint[2])
         text:SetPoint("LEFT", set, "LEFT", x + 2, 0)
         if hint[3] then UI.OnTheme(text, function() text:SetTextColor(UI.RGB("textDim")) end) end
-        x = x + 2 + math.ceil(text:GetStringWidth()) + GAP
+        parts[#parts + 1] = text
+        x = x + 2 + math.ceil(text:GetStringWidth())
+        set.hints[#set.hints + 1] = { parts = parts, right = x }
+        x = x + GAP
     end
-    set.width = x - GAP + 10
     set:Hide()
     mouseSets[ctx] = set
     return set
@@ -213,6 +207,15 @@ local function MouseMode()
     return ns.MapShown() and ns.FullMap() and not ns.PadUI()
 end
 
+-- La largeur que la barre peut prendre : celle de la carte réduite, ou de
+-- l'écran (moins une marge), à l'échelle de la barre
+local function MaxWidth()
+    local view = ns.MapSmall() and ns.mod.ViewFrame and ns.mod.ViewFrame()
+    local f = view or UIParent
+    local w = (f:GetWidth() or 0) * f:GetEffectiveScale() / bar:GetEffectiveScale()
+    return math.max(200, w - 24)
+end
+
 function H.Refresh()
     if not ns.db then return end
     local mouse = MouseMode()
@@ -222,43 +225,53 @@ function H.Refresh()
     end
     Build()
     for _, set in pairs(mouseSets) do set:Hide() end
+    -- (la barre ne sort pas de la carte : les indications qui ne tiennent
+    -- plus tombent, les dernières d'abord, celles du jeu en gris)
+    local maxW = MaxWidth()
     if mouse then
         for i = 1, #items do items[i]:Hide() end
         local ctx = "map"
         if ns.Layers and ns.Layers.PanelShown() then ctx = "rail"
-        elseif ns.QuestPanel and ns.QuestPanel.Shown() then
-            -- (la carte réduite : la liste est toujours là, à côté de la carte ;
-            -- son aide quand la souris est dessus, celle de la carte sinon)
-            if not ns.MapSmall() then
-                ctx = ns.QuestPanel.View() == "quest" and "questpage" or "quests"
-            elseif ns.QuestPanel.MouseOver() then
-                ctx = (ns.QuestPanel.View() == "quest" and "questpage" or "quests") .. "Docked"
-            end
+        elseif ns.QuestPanel and ns.QuestPanel.Shown() and ns.QuestPanel.MouseOver() then
+            -- (la liste des quêtes est toujours là : son aide quand la souris
+            -- est dessus, celle de la carte sinon)
+            ctx = ns.QuestPanel.View() == "quest" and "questpage" or "quests"
         end
         local set = MouseSet(ctx)
+        local width, fits = 10, true
+        for _, hint in ipairs(set.hints) do
+            fits = fits and hint.right + 10 <= maxW
+            for _, part in ipairs(hint.parts) do part:SetShown(fits) end
+            if fits then width = hint.right + 10 end
+        end
         set:Show()
-        bar:SetWidth(set.width)
+        bar:SetWidth(width)
         Place()
         bar:Show()
         return
     end
     local hints = P.Hints()
-    local x = 10
+    local x, shown = 10, 0
     for i, h in ipairs(hints) do
         local it = Item(i)
         it.glyph:SetKey(SHOWN_AS[h.key] or h.key)
         it.text:SetText(tostring(h.text or ""))
         if h.passive then it.text:SetTextColor(UI.RGB("textDim")) else it.text:SetTextColor(1, 1, 1) end
         it:SetWidth(GLYPH + 4 + it.text:GetStringWidth())
-        it:ClearAllPoints()
-        it:SetPoint("LEFT", bar, "LEFT", x, 0)
-        it:Show()
-        x = x + it:GetWidth() + GAP
+        if shown == i - 1 and x + it:GetWidth() + 10 <= maxW then
+            it:ClearAllPoints()
+            it:SetPoint("LEFT", bar, "LEFT", x, 0)
+            it:Show()
+            x = x + it:GetWidth() + GAP
+            shown = i
+        else
+            it:Hide()
+        end
     end
     for i = #hints + 1, #items do items[i]:Hide() end
     bar:SetWidth(x - GAP + 10)
     Place()
-    bar:SetShown(#hints > 0)
+    bar:SetShown(shown > 0)
 end
 
 -- (les libellés dépendent de l'état : mode épingle, étages... revus souvent)

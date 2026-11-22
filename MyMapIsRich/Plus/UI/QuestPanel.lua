@@ -2,30 +2,26 @@
 -- plein écran ») : un panneau à droite, sous les boutons du haut, sur toute
 -- la hauteur.
 --
--- Ouvert de base avec la carte ; ensuite, comme le joueur l'a laissé en
--- fermant la carte (ns.db.options.questsShown). Les gestes : L
--- (ToggleQuestLog, le journal du jeu), le bouton du journal de la carte du
--- jeu et sa croix droite (son panneau de côté), le bouton Quêtes de
--- l'habillage, et RT à la manette (Pad/MapNav.lua). Rien n'est écrit dans
--- les cadres du jeu : ses gestes sont seulement observés (hooksecurefunc,
--- HookScript). À la souris, nos boutons basculent aussi le journal du jeu,
--- pour que les deux restent d'accord ; à la manette, jamais (le basculer
--- depuis le code de l'addon bloquerait l'interface manette).
--- À la manette, RT entre dans la liste (et l'affiche si elle était cachée) :
--- plus de curseur sur la carte, la croix va de quête en quête (la carte y
--- glisse), Y, X, LT le tri, RT la ferme ; B en ressort (la croix gauche du
--- jeu redonne ensuite le curseur à la carte). Affichée à l'ouverture de la
--- carte, elle reste au repos (padPassive : la carte garde la manette) ; A sur
--- une quête, au curseur, y entre aussi.
--- La carte réduite (en fenêtre) : la liste hors de la carte, collée à son bord
--- droit, toujours affichée ; la croix gauche, RT ou B en sortent.
+-- Toujours affiché avec la carte, plein écran ou réduite : rien ne le cache,
+-- que la carte qui se ferme. Plein écran, il est sur la carte, à droite ; la
+-- carte réduite le pose dehors, collé à son bord droit.
+-- À la manette, sur la carte plein écran, la manette y entre à l'ouverture
+-- si la carte n'a pas son curseur, et le stick gauche y va de quête en quête
+-- au lieu de faire marcher le personnage (en bas du fichier). Sinon, il reste
+-- au repos (padPassive). RT y entre (Pad/MapNav.lua), comme A sur une quête au
+-- curseur et la croix droite du jeu (son journal) : plus de curseur sur la carte, la
+-- croix va de quête en quête (la carte y glisse), Y, X, LT le tri. RT, B ou la
+-- croix gauche en ressortent (la croix gauche du jeu redonne ensuite le
+-- curseur à la carte). Rien n'est écrit dans les cadres du jeu : ses gestes
+-- sont seulement observés (hooksecurefunc, HookScript).
 --
 -- Le panneau : les quêtes du journal, par zone ou les plus proches (LT / RT),
 -- une recherche. A ou un clic ouvre la fiche d'une quête à la place de la
 -- liste, comme le journal de la carte du jeu : ses objectifs, son histoire,
 -- ses récompenses (les objets, l'argent, l'expérience), le temps depuis toi ;
--- Itinéraire (Y : l'aperçu), Ajouter à la file (X), Suivre (A), Partager
--- (LT). B revient à la liste. La carte glisse jusqu'à la quête.
+-- Itinéraire (Y : part tout de suite), Ajouter à la file (X), Suivre (A), Partager
+-- (LT), Abandonner (View, deux appuis). B revient à la liste. La carte glisse
+-- jusqu'à la quête.
 -- À la souris : clic la fiche, Maj+clic l'itinéraire tout de suite, clic
 -- droit ajouter à la file.
 local _, root = ...
@@ -56,8 +52,8 @@ local selected               -- le questID choisi
 local view = "list"          -- "list" ou "quest" (la fiche de la quête choisie)
 local readCache = {}         -- questID → ce que le journal dit de la quête (Details)
 local openedAt, userAt = -10, -10
-local closing = false
 local focused = false        -- la manette dans le panneau (QP.Focus)
+local armed                  -- le questID dont l'abandon attend sa confirmation (AbandonPress)
 local SetFocused             -- (plus bas)
 
 local function Plain(v)
@@ -201,6 +197,42 @@ local function Share(q)
         return
     end
     WithSelected(q, function() Call(_G.QuestLogPushQuest) end)
+end
+
+-- Abandonner une quête, comme le bouton du journal du jeu : la quête choisie
+-- dans son journal, désignée comme celle à abandonner, puis abandonnée. Rien
+-- n'est abandonné si le jeu ne confirme pas que c'est bien elle (la garde de
+-- Plus/Core.lua qui couperait le choix laisserait une autre quête choisie).
+-- (vrai : abandonnée)
+local function Abandon(q)
+    local CQ = C_QuestLog
+    local set = (CQ and CQ.SetAbandonQuest) or _G.SetAbandonQuest
+    local go = (CQ and CQ.AbandonQuest) or _G.AbandonQuest
+    if type(set) ~= "function" or type(go) ~= "function" or not q.questID then return false end
+    if not ns.Risky("SelectQuest") then return false end
+    local index = q.index
+    if CQ and CQ.GetLogIndexForQuestID then
+        local i = Plain(Call(CQ.GetLogIndexForQuestID, q.questID))
+        if type(i) == "number" and i > 0 then index = i end
+    end
+    -- (les deux journaux, le moderne et celui de Classic : Forever peut mêler
+    -- leurs fonctions)
+    if CQ and CQ.SetSelectedQuest then Call(CQ.SetSelectedQuest, q.questID) end
+    if _G.SelectQuestLogEntry then Call(_G.SelectQuestLogEntry, index) end
+    Call(set)
+    local sure
+    if CQ and CQ.GetAbandonQuest then
+        sure = Plain(Call(CQ.GetAbandonQuest)) == q.questID
+    elseif _G.GetAbandonQuestName then
+        sure = Plain(Call(_G.GetAbandonQuestName)) == q.title
+    elseif _G.GetQuestLogSelection then
+        sure = Plain(Call(_G.GetQuestLogSelection)) == index
+    elseif CQ and CQ.GetSelectedQuest then
+        sure = Plain(Call(CQ.GetSelectedQuest)) == q.questID
+    end
+    if not sure then return false end
+    local ok = pcall(go)
+    return ok
 end
 
 local function Num(v)
@@ -377,20 +409,29 @@ local FillPage           -- (plus bas)
 local function FillRow(row, it)
     row.item = it
     if it.head then
+        -- (le nom d'une zone : en grand, sur son bandeau, avec son nombre de quêtes)
         row:EnableMouse(false)
         row.selected:Hide()
         row.level:SetText("")
-        row.title:SetText(it.head)
-        row.title:SetFontObject("GameFontNormalSmall")
-        row.title:SetTextColor(1, 0.82, 0)
+        row.title:SetText("")
         row.prog:SetText("")
-        row.dist:SetText(tostring(it.count))
+        row.dist:SetText("")
+        row.head:SetText(it.head)
+        row.count:SetText(tostring(it.count))
+        row.band:Show()
+        row.bar:Show()
         row.line:Show()
+        row.head:Show()
+        row.count:Show()
         row:Show()
     else
         local q = it.quest
         row:EnableMouse(true)
+        row.band:Hide()
+        row.bar:Hide()
         row.line:Hide()
+        row.head:Hide()
+        row.count:Hide()
         row.selected:SetShown(q.questID == selected)
         row.level:SetText(q.level and ("[" .. q.level .. "]") or "")
         row.level:SetTextColor(LevelColor(q.level))
@@ -630,6 +671,9 @@ function FillPage(fresh)
     page.route:SetEnabled(canGo)
     page.queue:SetEnabled(canGo)
     page.track:SetText(Watched(q) and L.QUESTS_UNTRACK or L.QUESTS_TRACK)
+    -- (une autre quête : l'abandon demandé pour la précédente est oublié)
+    if armed ~= q.questID then armed = nil end
+    page.abandon:SetText(armed and (UI.Hex("bad") .. L.QUESTS_ABANDON_SURE .. "|r") or L.QUESTS_ABANDON)
     for _, h in ipairs(page.heads) do
         h.fs:Hide()
         h.line:Hide()
@@ -717,7 +761,10 @@ function ShowView(v)
     search:SetShown(isList)
     list:SetShown(isList)
     page:SetShown(not isList)
-    if isList then GameTooltip:Hide() end
+    if isList then
+        GameTooltip:Hide()
+        armed = nil
+    end
     FillHead()
     P.Dirty()
 end
@@ -802,15 +849,59 @@ local function PageReward(dir)
     if F.SetCurrent then F.SetCurrent(b) end
 end
 
+-- Itinéraire : part tout de suite, depuis où tu es (pas d'aperçu à confirmer)
 local function Route()
     local q = Selected()
-    if not (q and q.point and ns.PointCard) then return end
-    ns.PointCard.PreviewPoint(q.point)
+    if q and q.point and T() then T().Go(q.point) end
 end
 
 local function Queue()
     local q = Selected()
     if q and q.point and T() then T().Enqueue(q.point) end
+end
+
+-- Abandonner (View à la manette, ou le bouton) : un premier appui demande de
+-- confirmer (le bouton dit « Vraiment abandonner ? », en rouge, 4 s), le
+-- second abandonne et revient à la liste
+local ABANDON_WAIT = 4       -- s : le temps de confirmer
+
+local function PaintAbandon()
+    if not page then return end
+    local q = Selected()
+    if q and armed == q.questID then
+        page.abandon:SetText(UI.Hex("bad") .. L.QUESTS_ABANDON_SURE .. "|r")
+    else
+        page.abandon:SetText(L.QUESTS_ABANDON)
+    end
+    P.Dirty()
+end
+
+local function Disarm()
+    if not armed then return end
+    armed = nil
+    PaintAbandon()
+end
+
+local function AbandonPress()
+    local q = Selected()
+    if not q then return end
+    if armed ~= q.questID then
+        armed = q.questID
+        PaintAbandon()
+        local id = q.questID
+        C_Timer.After(ABANDON_WAIT, function()
+            if armed == id then Disarm() end
+        end)
+        return
+    end
+    armed = nil
+    PaintAbandon()
+    if Abandon(q) then
+        readCache[q.questID] = nil
+        BackToList()
+    else
+        ns.Print(L.QUESTS_ABANDON_FAILED)
+    end
 end
 
 local function Sort(key)
@@ -856,11 +947,37 @@ local function Row(i)
     local hl = row:CreateTexture(nil, "HIGHLIGHT")
     hl:SetAllPoints()
     hl:SetColorTexture(1, 0.82, 0, 0.07)
+    -- (l'en-tête d'une zone : un bandeau plus clair que la liste, un trait d'or
+    -- à gauche, un liseré d'or dessous ; 3 px de vide au-dessus, qui le
+    -- détachent de la quête d'avant)
+    row.band = row:CreateTexture(nil, "BACKGROUND")
+    row.band:SetPoint("TOPLEFT", 0, -3)
+    row.band:SetPoint("BOTTOMRIGHT", 0, 0)
+    UI.Fade(row.band, "HORIZONTAL", "goldDim", 0.55, "headerTop", 0.9)
+    row.band:Hide()
+    row.bar = row:CreateTexture(nil, "ARTWORK")
+    row.bar:SetPoint("TOPLEFT", row.band, "TOPLEFT", 0, 0)
+    row.bar:SetPoint("BOTTOMLEFT", row.band, "BOTTOMLEFT", 0, 0)
+    row.bar:SetWidth(3)
+    row.bar:SetColorTexture(1, 0.82, 0, 1)
+    row.bar:Hide()
     row.line = row:CreateTexture(nil, "ARTWORK")
-    row.line:SetPoint("BOTTOMLEFT", 2, 0)
-    row.line:SetPoint("BOTTOMRIGHT", -2, 0)
+    row.line:SetPoint("BOTTOMLEFT", 0, 0)
+    row.line:SetPoint("BOTTOMRIGHT", 0, 0)
     row.line:SetHeight(1)
-    row.line:SetColorTexture(1, 0.82, 0, 0.22)
+    row.line:SetColorTexture(1, 0.82, 0, 0.6)
+    row.head = UI.Text(row, "GameFontNormalLarge")
+    row.head:SetPoint("LEFT", 10, -1)
+    row.head:SetTextColor(1, 0.82, 0)
+    row.head:SetJustifyH("LEFT")
+    row.head:SetWordWrap(false)
+    row.head:SetShadowOffset(1, -1)
+    row.head:Hide()
+    row.count = UI.Text(row, "GameFontHighlight")
+    row.count:SetPoint("RIGHT", -8, -1)
+    row.count:SetJustifyH("RIGHT")
+    row.count:Hide()
+    row.head:SetPoint("RIGHT", row.count, "LEFT", -8, 0)
     row.level = UI.Text(row, "GameFontHighlightSmall")
     row.level:SetPoint("LEFT", 4, 0)
     row.level:SetWidth(30)
@@ -900,20 +1017,14 @@ local function Row(i)
     return row
 end
 
--- La carte réduite (en fenêtre : ns.MapSmall) : la liste hors de la carte,
--- collée à son bord droit, toujours affichée (ni L, ni RT, ni le bouton
--- Quêtes ne la cachent ; elle ne touche pas à la mémoire du plein écran)
-local function Docked() return ns.MapSmall() end
-
 -- Sa place : en plein écran, sous les boutons du haut, et sous la bande des
 -- boutons de la manette quand elle est là (UI/MapChrome.lua : ButtonsBottom) ;
--- la carte réduite, contre son bord droit, de toute sa hauteur
+-- la carte réduite (ns.MapSmall), hors de la carte, contre son bord droit, de
+-- toute sa hauteur
 function QP.Place()
     if not (panel and panel.chrome) then return end
     panel:ClearAllPoints()
-    local docked = Docked()
-    panel.close:SetShown(not docked)
-    if docked then
+    if ns.MapSmall() then
         panel:SetPoint("TOPLEFT", panel.chrome, "TOPRIGHT", 4, 0)
         panel:SetPoint("BOTTOMLEFT", panel.chrome, "BOTTOMRIGHT", 4, 0)
         return
@@ -936,17 +1047,14 @@ local function Build(chrome)
     panel.chrome = chrome
     panel:EnableMouse(true)
     panel:SetFrameLevel(chrome:GetFrameLevel() + 20)
-    -- (l'en-tête : le titre, le nombre, le tri, la croix)
+    -- (l'en-tête : le titre, le nombre, le tri ; RT, la manette y entre)
     local title = UI.Text(panel, "GameFontNormalLarge", L.QUESTS_TITLE)
     panel.title = title
     title:SetPoint("TOPLEFT", 12, -12)
     panel.count = UI.DimText(panel, nil, "GameFontHighlightSmall")
     panel.count:SetPoint("LEFT", title, "RIGHT", 8, -1)
-    panel.close = UI.CloseButton(panel, 20, function() QP.Hide(true) end)
-    panel.close:SetPoint("TOPRIGHT", -8, -10)
-    panel.close.noGamepad = true
     panel.rt = UI.CreateGlyph(panel, 16)
-    panel.rt:SetPoint("RIGHT", panel.close, "LEFT", -8, 0)
+    panel.rt:SetPoint("TOPRIGHT", -12, -13)
     panel.rt:SetKey("PADRTRIGGER")
     panel.tabs = { dist = Tab(panel, L.QUESTS_NEAREST, "dist"), zone = Tab(panel, L.QUESTS_BY_ZONE, "zone") }
     panel.tabs.dist:SetPoint("RIGHT", panel.rt, "LEFT", -4, 0)
@@ -999,6 +1107,10 @@ local function Build(chrome)
     page.back = Button(page, L.HINT_BACK, 110, 22, "grey", "PAD2")
     page.back:SetPoint("TOPLEFT", 10, -10)
     page.back:SetScript("OnClick", function() BackToList() end)
+    -- (Abandonner, en haut à droite, loin des autres boutons : deux appuis)
+    page.abandon = Button(page, L.QUESTS_ABANDON, 160, 22, "grey", "PADBACK")
+    page.abandon:SetPoint("TOPRIGHT", -12, -10)
+    page.abandon:SetScript("OnClick", function() AbandonPress() end)
     page.level = UI.Text(page, "GameFontHighlightSmall")
     page.level:SetPoint("TOPRIGHT", -12, -44)
     page.title = UI.Text(page, "GameFontNormalLarge")
@@ -1065,7 +1177,7 @@ local function Build(chrome)
     end)
     -- (à la manette, ses boutons se pressent par leurs pastilles : la croix
     -- fait défiler la fiche et va de récompense en récompense)
-    page.actions = { page.route, page.queue, page.track, page.share }
+    page.actions = { page.route, page.queue, page.track, page.share, page.abandon }
     page.back.noGamepad = true
     page.scroll.bar.noGamepad = true
     for _, b in ipairs(page.actions) do b.noGamepad = true end
@@ -1075,7 +1187,7 @@ local function Build(chrome)
     local roots = ns.mod and ns.mod.padRoots
     if type(roots) == "table" then table.insert(roots, panel) end
     F.RegisterWindow(panel, {
-        onBack = function() QP.Hide(true) end,
+        onBack = function() QP.Blur() end,
         first = function()
             -- (dans la fiche, rien n'est choisi d'avance : la croix fait défiler)
             if view ~= "list" then return nil end
@@ -1098,61 +1210,36 @@ local function SidePanelShown()
     return log and log:IsShown() or false
 end
 
--- (à la souris, hors combat : le journal du jeu suit le nôtre ; jamais à la
--- manette : ce serait le code de l'addon dans la carte du jeu)
-local function MatchGame(open)
-    local map = Map()
-    if ns.PadUI() or InCombatLockdown() or not (map and map.HandleUserActionToggleSidePanel) then return end
-    if SidePanelShown() ~= open and ns.Risky("SidePanel") then Call(map.HandleUserActionToggleSidePanel, map) end
+-- La liste est toujours là, carte plein écran ou réduite : elle s'affiche
+-- avec la carte, et seule la carte qui se ferme la cache
+function QP.Show()
+    if not (panel and ns.FullMap() and ns.MapShown()) or panel:IsShown() then return end
+    QP.Place()
+    panel:Show()
+    QP.Refresh()
+    local q = Selected()
+    if q then ShowOnMap(q) end
+    P.Dirty()
 end
 
--- (ouvert ou fermé par un geste du joueur, et comme il les laisse en fermant
--- la carte : retenu pour la prochaine ouverture)
-local function Remember(open)
-    if ns.db then ns.db.options.questsShown = open and true or false end
-end
-
-function QP.Show(user)
-    if not (panel and ns.FullMap() and ns.MapShown()) then return end
-    if user ~= nil and not Docked() then Remember(true) end
-    if not panel:IsShown() then
-        QP.Place()
-        panel:Show()
-        QP.Refresh()
-        local q = Selected()
-        if q then ShowOnMap(q) end
-        if ns.MapChrome and ns.MapChrome.SetQuestsLit then ns.MapChrome.SetQuestsLit(true) end
-        P.Dirty()
-    end
-    if user then MatchGame(true) end
-end
-
-function QP.Hide(user)
+function QP.Hide()
     if not panel then return end
-    -- (la carte réduite : la liste reste ; seule la carte qui se ferme la cache, user nil)
-    if user ~= nil and Docked() then return end
-    if user ~= nil then Remember(false) end
-    if panel:IsShown() then
-        closing = true
-        SetFocused(false)
-        -- (rouvert, le panneau montre la liste)
-        if view ~= "list" then ShowView("list") end
-        panel:Hide()
-        local mod = ns.mod
-        if mod and mod.PadQuestArea then ns.Call(mod.PadQuestArea, nil) end
-        if ns.MapChrome and ns.MapChrome.SetQuestsLit then ns.MapChrome.SetQuestsLit(false) end
-        P.Dirty()
-        closing = false
-    end
-    if user then MatchGame(false) end
+    SetFocused(false)
+    if not panel:IsShown() then return end
+    -- (rouvert, le panneau montre la liste)
+    if view ~= "list" then ShowView("list") end
+    panel:Hide()
+    local mod = ns.mod
+    if mod and mod.PadQuestArea then ns.Call(mod.PadQuestArea, nil) end
+    P.Dirty()
 end
 
 function QP.Shown() return panel and panel:IsShown() or false end
 function QP.MouseOver() return panel and panel:IsVisible() and panel:IsMouseOver() or false end
 
--- La manette dans le panneau, ou pas : ouvert de base, il reste au repos (la
--- carte garde la manette et son curseur ; Pad/Focus.lua : padPassive) ;
--- Menu y entre, B en ressort
+-- La manette dans le panneau, ou pas : affiché avec la carte, il reste au
+-- repos (la carte garde la manette et son curseur ; Pad/Focus.lua :
+-- padPassive) ; RT y entre, B en ressort
 -- (la manette sort de la liste : nos raccourcis ôtés, la manette revient au
 -- jeu ; sa croix gauche, « Carte », redonne le curseur à la carte. L'addon ne
 -- le fait pas lui-même : voir plus bas, la manette n'est jamais donnée à la
@@ -1167,74 +1254,31 @@ function QP.Focus() if QP.Shown() then SetFocused(true) end end
 function QP.Blur() SetFocused(false) end
 function QP.Focused() return QP.Shown() and focused end
 
--- RT à la manette (Pad/MapNav.lua) : cachée, la liste s'affiche et la manette
--- y entre (plus de curseur : les flèches vont de quête en quête) ; affichée au
--- repos (à l'ouverture de la carte), la manette y entre ; la manette dedans,
--- la liste se cache et la carte retrouve son curseur
+-- RT à la manette (Pad/MapNav.lua) : la manette entre dans la liste (plus de
+-- curseur : la croix va de quête en quête) ; dedans, elle revient à la carte.
+-- La liste reste affichée.
 function QP.PadMenu()
-    if not QP.Shown() then
-        QP.Show(false)
-        QP.Focus()
-    elseif not focused then
-        QP.Focus()
-    elseif Docked() then
-        -- (la carte réduite : la liste reste, la manette revient à la carte)
-        QP.Blur()
-    else
-        QP.Hide(false)
-    end
+    QP.Show()
+    if focused then QP.Blur() else QP.Focus() end
 end
 
-function QP.Toggle()
-    if Docked() then
-        QP.Show(nil)
-        return
-    end
-    if QP.Shown() then QP.Hide(true) else QP.Show(true) end
-end
-
--- L (ToggleQuestLog) : la carte ouverte par lui, nos quêtes avec ; déjà
--- ouverte, nos quêtes basculées
-local function AfterToggleLog()
-    if not ns.FullMap() then return end
-    if not ns.MapShown() then
-        QP.Hide(nil)
-        return
-    end
-    if GetTime() - openedAt < OPEN_QUIET then QP.Show(false) return end
-    if QP.Shown() then QP.Hide(false) else QP.Show(false) end
-end
-
--- Le bouton du journal de la carte du jeu (ou ce que fait la croix droite)
--- (ouvert par un geste du journal à la manette : la manette y va, comme le
--- jeu la donne à son journal)
+-- Le journal du jeu ouvert par un geste du joueur (sa croix droite, son
+-- bouton, L) : la manette va dans notre liste, comme le jeu la donne à son
+-- journal
 local function ShowFromGame()
-    QP.Show(false)
+    QP.Show()
     if ns.PadUI() then QP.Focus() end
 end
 
--- (la manette rendue à la carte par un geste du jeu que l'addon aurait fait : le
--- jeu peut alors cacher ou montrer son journal ; ce n'est pas un geste du
--- joueur, nos quêtes n'en bougent pas)
-local ownAt = -10
-local function Ours() return GetTime() - ownAt < 0.6 end
-
 local function AfterSidePanel()
-    if not ns.FullMap() or Ours() then return end
-    if SidePanelShown() then ShowFromGame() else QP.Hide(false) end
+    if ns.FullMap() and ns.MapShown() and SidePanelShown() then ShowFromGame() end
 end
 
 local function OnLogShow()
-    if not (ns.FullMap() and ns.MapShown()) or Ours() then return end
+    if not (ns.FullMap() and ns.MapShown()) then return end
     -- (rouvert avec la carte, d'après l'état gardé du jeu, sans geste du joueur : rien)
     if GetTime() - openedAt < OPEN_QUIET and GetTime() - userAt > OPEN_QUIET then return end
     ShowFromGame()
-end
-
-local function OnLogHide()
-    -- (la carte qui se ferme ferme aussi le journal : ce n'est pas un geste pour les quêtes)
-    if closing or not ns.FullMap() or not ns.MapShown() or Ours() then return end
-    QP.Hide(false)
 end
 
 local function Hook()
@@ -1243,14 +1287,10 @@ local function Hook()
     QP.hooked = true
     map:HookScript("OnShow", function() openedAt = GetTime() end)
     if type(_G.ToggleQuestLog) == "function" then
-        hooksecurefunc("ToggleQuestLog", function()
-            userAt = GetTime()
-            C_Timer.After(0, AfterToggleLog)
-        end)
+        hooksecurefunc("ToggleQuestLog", function() userAt = GetTime() end)
     end
     if type(map.HandleUserActionToggleSidePanel) == "function" then
         hooksecurefunc(map, "HandleUserActionToggleSidePanel", function()
-            if Ours() then return end
             userAt = GetTime()
             C_Timer.After(0, AfterSidePanel)
         end)
@@ -1258,7 +1298,6 @@ local function Hook()
     local log = map.QuestLog or _G.QuestMapFrame
     if log and log.HookScript then
         log:HookScript("OnShow", function() C_Timer.After(0, OnLogShow) end)
-        log:HookScript("OnHide", function() C_Timer.After(0, OnLogHide) end)
     end
 end
 
@@ -1284,6 +1323,12 @@ ns.On("READY", function()
         EventUtil.ContinueOnAddOnLoaded("Blizzard_WorldMap", Hook)
     end
     C_Timer.After(1, KeepGameLogClosed)
+    -- (les anciennes mémoires des quêtes affichées ou non : la liste est
+    -- désormais toujours là)
+    if ns.db and ns.db.options then
+        ns.db.options.questsOpen = nil
+        ns.db.options.questsShown = nil
+    end
 end)
 -- La manette n'est jamais donnée à la carte par l'addon. Appeler la fonction
 -- FocusMap de la carte du jeu (à son ouverture, à la sortie de notre liste)
@@ -1295,34 +1340,15 @@ end)
 
 ns.On("MAP_CHROME", Build)
 ns.On("MAP_HIDE", function()
-    -- (comme le joueur les laisse en fermant la carte plein écran : affichées
-    -- ou non, retenu ; la carte réduite les a toujours)
-    if panel and ns.FullMap() and not Docked() then Remember(panel:IsShown()) end
-    QP.Hide(nil)
+    QP.Hide()
     C_Timer.After(0, KeepGameLogClosed)
 end)
--- (de base, les quêtes s'affichent avec la carte plein écran ; ensuite, comme
--- le joueur les a laissées la dernière fois ; la carte réduite, toujours)
-local function Wanted()
-    return Docked() or (ns.db and ns.db.options.questsShown ~= false)
-end
-ns.On("MAP_SHOW", function()
-    C_Timer.After(0.1, function()
-        if Wanted() then QP.Show(nil) end
-    end)
-end)
--- (plein écran ou réduite : la liste change de place ; réduite, elle est là ;
--- en plein écran, comme le joueur l'y avait laissée)
+ns.On("MAP_SHOW", function() C_Timer.After(0.1, QP.Show) end)
+-- (plein écran ou réduite : la liste change de place)
 ns.On("MAP_SIZE", function()
     if not (panel and ns.MapShown()) then return end
     QP.Place()
-    if Wanted() then QP.Show(nil) else QP.Hide(nil) end
-end)
--- (l'ancienne mémoire, questsOpen, a pu retenir « fermées » sans geste du
--- joueur : la manette rendue à la carte cachait le journal du jeu. Oubliée :
--- les quêtes repartent affichées)
-ns.On("READY", function()
-    if ns.db and ns.db.options then ns.db.options.questsOpen = nil end
+    QP.Show()
 end)
 
 -- (le journal change : la liste suit, un peu plus tard)
@@ -1347,8 +1373,8 @@ end)
 
 ---------------------------------------------------------------------------
 -- La manette dans la liste : la croix (la carte glisse jusqu'à la quête), A
--- sa fiche, Y l'itinéraire, X la file, LT le tri, RT fermer ; B revient à la
--- carte
+-- sa fiche, Y l'aperçu de l'itinéraire, R3 l'itinéraire tout de suite, X la
+-- file, LT le tri ; B, RT ou la croix gauche reviennent à la carte
 ---------------------------------------------------------------------------
 local function Current()
     local f = F.Current and F.Current()
@@ -1359,11 +1385,9 @@ end
 P.DefineContext("quests", 52.5, function() return QP.Focused() and F.Top() == panel and view == "list" end)
 P.SetAction("quests", "PADDUP", function() F.Move(0, 1) end)
 P.SetAction("quests", "PADDDOWN", function() F.Move(0, -1) end)
--- (la carte réduite : la liste est à droite de la carte, la croix gauche y
--- revient ; la croix gauche du jeu y redonne ensuite le curseur)
-P.SetAction("quests", "PADDLEFT", function()
-    if Docked() then QP.Blur() else F.Move(-1, 0) end
-end)
+-- (la liste est à droite de la carte, plein écran ou réduite : la croix gauche
+-- y revient ; la croix gauche du jeu y redonne ensuite le curseur)
+P.SetAction("quests", "PADDLEFT", function() QP.Blur() end)
 P.SetAction("quests", "PADDRIGHT", function() F.Move(1, 0) end, "HINT_MOVE")
 P.SetAction("quests", "PAD1", function()
     local q = Current()
@@ -1374,23 +1398,38 @@ P.SetAction("quests", "PAD4", function()
     if q then Select(q, false) end
     Route()
 end, "FICHE_ROUTE")
+-- (R3 : l'itinéraire tout de suite, sans aperçu, comme R3 sur la carte et
+-- Maj+clic ; R3 sur la quête du trajet en cours l'annule)
+P.SetAction("quests", "PADRSTICK", function()
+    local q = Current()
+    if not q then return end
+    Select(q, false)
+    if T() then T().AtQuest(q.questID) end
+end, function()
+    if not (ns.db and ns.db.options.travel) then return nil end
+    local q = Current()
+    if not q then return nil end
+    local goal = T() and T().Goal()
+    if goal and goal.questID == q.questID then return "HINT_TRAVEL_CANCEL" end
+    return "HINT_TRAVEL_QUEST"
+end)
 P.SetAction("quests", "PAD3", function()
     local q = Current()
     if q then Select(q, false) end
     Queue()
 end, "ACT_QUEUE")
--- (LT : le tri, par zone ou les plus proches ; RT : fermer, comme sur la carte)
+-- (LT : le tri, par zone ou les plus proches ; RT : revenir à la carte, comme
+-- B ; la liste reste)
 P.SetAction("quests", "PADLTRIGGER", function() Sort(sortBy == "zone" and "dist" or "zone") end, "HINT_QUESTS_SORT")
--- (RT : fermer les quêtes ; sur la carte réduite, où elles restent, revenir à la carte)
-local function RTLabel() return Docked() and "HINT_BACK_MAP" or "HINT_QUESTS_CLOSE" end
-P.SetAction("quests", "PADRTRIGGER", function() QP.PadMenu() end, RTLabel)
+P.SetAction("quests", "PADRTRIGGER", function() QP.PadMenu() end, "HINT_BACK_MAP")
 P.SetAction("quests", "PAD2", function() QP.Blur() end, "HINT_BACK_MAP")
 F.WINDOW_CONTEXTS.quests = true
 
 ---------------------------------------------------------------------------
 -- La manette dans la fiche : la croix haut / bas fait défiler, gauche /
 -- droite va de récompense en récompense ; A suivre, Y l'itinéraire, X la
--- file, LT partager, RT fermer ; B revient à la liste
+-- file, LT partager, View abandonner (deux fois), RT revient à la carte ; B
+-- revient à la liste
 ---------------------------------------------------------------------------
 local function Act(fn)
     return function()
@@ -1416,6 +1455,180 @@ end)
 P.SetAction("questpage", "PAD4", function() Route() end, "FICHE_ROUTE")
 P.SetAction("questpage", "PAD3", function() Queue() end, "ACT_QUEUE")
 P.SetAction("questpage", "PADLTRIGGER", Act(Share), "QUESTS_SHARE")
-P.SetAction("questpage", "PADRTRIGGER", function() QP.PadMenu() end, RTLabel)
+P.SetAction("questpage", "PADBACK", function() AbandonPress() end, function()
+    local q = Selected()
+    return (q and armed == q.questID) and "QUESTS_ABANDON_SURE" or "QUESTS_ABANDON"
+end)
+P.SetAction("questpage", "PADRTRIGGER", function() QP.PadMenu() end, "HINT_BACK_MAP")
 P.SetAction("questpage", "PAD2", function() BackToList() end, "HINT_QUESTS_LIST")
 F.WINDOW_CONTEXTS.questpage = true
+
+---------------------------------------------------------------------------
+-- La carte plein écran sans son curseur : le personnage ne bouge pas
+--
+-- Depuis que l'addon ne donne plus la manette à la carte du jeu (plus haut),
+-- la carte plein écran s'ouvre sans curseur : le jeu met la manette dans son
+-- journal, caché sous la nôtre, et le stick gauche faisait marcher le
+-- personnage derrière la carte. Sur la carte plein écran, le joueur a donc
+-- toujours l'un des deux :
+-- - le curseur de la carte (la croix gauche du jeu, « Carte ») ;
+-- - sinon, notre liste des quêtes : la manette y entre à l'ouverture, et le
+--   stick gauche y va de quête en quête comme la croix (dans la fiche, il la
+--   fait défiler).
+-- Sorti de la liste (B, RT, la croix gauche) sans le curseur, le stick y
+-- ramène, RT aussi, et la croix gauche du jeu donne le curseur.
+-- Le stick est gardé par un cadre de l'addon (EnableGamePadStick, comme la
+-- roue des actions : UI/ActionBar.lua) : il ne va plus au jeu, et il est lu
+-- sur la manette (mod.PadCursorStick). Jamais les boutons. Seulement hors
+-- combat : en combat, le stick revient au personnage. La carte réduite le
+-- laisse au personnage, comme la carte en fenêtre du jeu.
+---------------------------------------------------------------------------
+local STICK_ON = 0.5         -- l'inclinaison du stick qui compte comme un appui
+local STICK_OFF = 0.3        -- ... et sous laquelle il est relâché
+local STICK_DELAY = 0.35     -- s : le stick tenu se répète après...
+local STICK_EVERY = 0.12     -- s : ... puis à ce rythme (plus vite tout incliné)
+local FOCUS_AT = { 0.15, 0.45 }  -- s après l'ouverture : la manette dans la liste, si la carte n'a pas son curseur
+
+local function FullScreen()
+    return ns.FullMap() and ns.MapShown() and not ns.MapSmall()
+end
+
+-- La carte du jeu a-t-elle la manette (son curseur) ? Ce que le jeu en dit
+-- (IsCanvasGamepadFocus), sans attendre que le curseur s'affiche : le stick
+-- doit lui revenir aussitôt, c'est lui qui fait paraître le curseur
+local function CanvasHasPad()
+    local map = Map()
+    if map and map.IsCanvasGamepadFocus then
+        local ok, on = pcall(map.IsCanvasGamepadFocus, map)
+        return ok and on and true or false
+    end
+    return ns.MapNav and ns.MapNav.CursorOnMap() or false
+end
+
+-- La liste peut-elle prendre la manette : aucune autre fenêtre de l'addon ne
+-- l'a (seulement la carte seule, le journal du jeu caché, ou rien)
+local function Free()
+    local current = P.current
+    if current and current ~= "map" and current ~= "questlog" and current ~= "mapidle" then return false end
+    return F.Top() == nil
+end
+
+local keeper = CreateFrame("Frame", nil, UIParent)
+keeper:SetSize(1, 1)
+keeper:SetPoint("TOPLEFT", UIParent, "TOPLEFT", -10, 10)
+keeper:SetFrameStrata("FULLSCREEN_DIALOG")
+-- (les sticks reçus : rien à en faire, ils ne vont simplement pas au jeu)
+pcall(keeper.SetScript, keeper, "OnGamePadStick", function() end)
+keeper:Hide()
+local keeping = false
+
+local function Keep(on)
+    on = on and true or false
+    if on == keeping or not keeper.EnableGamePadStick then return end
+    if on and InCombatLockdown() then return end
+    keeping = on
+    if on then keeper:Show() end
+    pcall(keeper.EnableGamePadStick, keeper, on)
+    if not on then keeper:Hide() end
+end
+
+local function WantKeep()
+    if not (ns.db and ns.db.options.enabled) or InCombatLockdown() then return false end
+    if not (FullScreen() and ns.PadUI()) then return false end
+    return not CanvasHasPad()
+end
+
+-- Le stick gauche lu : -1 (bas), 0, 1 (haut), et son inclinaison
+local stickDir, stickWait = 0, 0
+local function StickY()
+    local mod = ns.mod
+    if not (mod and mod.PadCursorStick) then return 0, 0 end
+    local ok, _, y = pcall(mod.PadCursorStick)
+    if not (ok and type(y) == "number") then return 0, 0 end
+    local a = math.abs(y)
+    local limit = stickDir ~= 0 and STICK_OFF or STICK_ON
+    if a < limit then return 0, a end
+    return y > 0 and 1 or -1, a
+end
+
+-- Un « appui » du stick : dans la liste, la quête d'au-dessus ou d'en
+-- dessous ; dans la fiche, elle défile ; hors de la liste, il y ramène
+local function StickStep(dir)
+    if QP.Focused() then
+        if F.Top() ~= panel then return end
+        if view == "list" then F.Move(0, dir) else PageScroll(-dir) end
+        P.Dirty()
+    elseif QP.Shown() and Free() then
+        QP.Focus()
+    end
+end
+
+local stickDriver = CreateFrame("Frame")
+stickDriver:Hide()
+stickDriver:SetScript("OnUpdate", function(_, elapsed)
+    local want = WantKeep()
+    Keep(want)
+    if not want then
+        stickDir = 0
+        return
+    end
+    local dir, tilt = StickY()
+    if dir == 0 then
+        stickDir = 0
+        return
+    end
+    if dir ~= stickDir then
+        stickDir, stickWait = dir, STICK_DELAY
+        StickStep(dir)
+        return
+    end
+    stickWait = stickWait - elapsed
+    if stickWait <= 0 then
+        -- (tout incliné, deux fois plus vite)
+        stickWait = STICK_EVERY * (1.5 - math.min(1, tilt) * 0.75)
+        StickStep(dir)
+    end
+end)
+
+-- La manette dans la liste à l'ouverture de la carte plein écran, si le jeu
+-- n'a pas donné le curseur à la carte (deux essais : le jeu place sa manette
+-- pendant l'ouverture, parfois un peu après)
+local function FocusAtOpen()
+    if focused or not (FullScreen() and ns.PadUI()) or InCombatLockdown() then return end
+    if not QP.Shown() then QP.Show() end
+    if not QP.Shown() or CanvasHasPad() or not Free() then return end
+    QP.Focus()
+end
+
+ns.On("MAP_SHOW", function()
+    stickDir = 0
+    stickDriver:Show()
+    for _, t in ipairs(FOCUS_AT) do C_Timer.After(t, FocusAtOpen) end
+end)
+ns.On("MAP_HIDE", function()
+    stickDriver:Hide()
+    Keep(false)
+end)
+-- (passée en plein écran : comme à l'ouverture)
+ns.On("MAP_SIZE", function()
+    if ns.MapShown() and not ns.MapSmall() then C_Timer.After(0.15, FocusAtOpen) end
+end)
+
+local keepEvents = CreateFrame("Frame")
+keepEvents:RegisterEvent("PLAYER_REGEN_DISABLED")
+keepEvents:SetScript("OnEvent", function()
+    -- (le combat commence : le stick rendu au personnage tant qu'on le peut encore)
+    Keep(false)
+end)
+
+-- Sorti de la liste, sans le curseur de la carte : la barre d'aide dit
+-- comment revenir à l'une ou à l'autre. Aucun raccourci posé (la croix
+-- gauche et B restent au jeu) ; RT est lu sur la manette, comme sur la carte
+-- seule (Pad/MapNav.lua)
+P.DefineContext("mapidle", 15, function()
+    if not (FullScreen() and QP.Shown()) or focused then return false end
+    return not (ns.MapNav and ns.MapNav.CanvasFocus())
+end, nil, "read")
+P.SetPassive("mapidle", "PADDLEFT", "HINT_BACK_MAP")
+P.SetAction("mapidle", "PADRTRIGGER", function() QP.Focus() end, "HINT_QUESTS")
+P.SetPassive("mapidle", "PAD2", "HINT_CLOSE_MAP")

@@ -35,7 +35,6 @@ local DEFAULTS = {
     classicMap = false,    -- la carte dessinée dans celle du jeu (sinon : la carte plein écran ; après un /reload)
     mapSmall = false,      -- la carte de l'addon réduite, en fenêtre (sinon en plein écran ; X à la manette, le bouton Taille)
     layerMemory = {},      -- les clés d'un calque à plusieurs clés, allumées quand on l'a éteint (UI/Layers.lua)
-    questsShown = true,    -- les quêtes affichées avec la carte plein écran : comme le joueur les a laissées en fermant la carte (UI/QuestPanel.lua)
     jump = true,           -- la croix saute d'icône en icône sur la carte
     magnet = true,         -- le curseur au repos près d'une icône : la vue s'y recale
     magnetRadius = 24,     -- px autour du curseur
@@ -243,6 +242,19 @@ function ns.SetMapSmall(on)
 end
 
 function ns.ToggleMapSize() ns.SetMapSmall(not ns.MapSmall()) end
+
+-- X à la manette : la taille de la carte. L'appui arrive par deux chemins,
+-- le X du jeu sur sa carte (Map/PadView.lua, mod.OnViewOut) et la lecture de
+-- la manette (Pad/MapNav.lua) ; le jeu ne l'envoie pas toujours (sa carte en
+-- fenêtre), et les deux à la fois annuleraient le changement : un seul compte
+local SIZE_PRESS_GAP = 0.4   -- s : un second appui plus proche est le même
+local sizePressAt = -10
+function ns.PadToggleMapSize()
+    local now = GetTime()
+    if now - sizePressAt < SIZE_PRESS_GAP then return end
+    sizePressAt = now
+    ns.ToggleMapSize()
+end
 
 ---------------------------------------------------------------------------
 -- Les gestes de l'addon qui touchent à l'interface du jeu (rendre la manette

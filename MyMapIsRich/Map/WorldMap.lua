@@ -414,6 +414,29 @@ local function PadStickTilt()
 end
 mod.PadStickTilt = PadStickTilt   -- (PadView.lua's zoom too)
 
+-- the cursor's stick (Blizzard's left, "Movement"), read as the zoom stick is: x and y from -1 to 1 (up
+-- and right positive), for PadView.lua's pan at the cursor's edge. nil: not to be read
+function mod.PadCursorStick()
+	if not (PadUI() and C_GamePad and C_GamePad.GetDeviceMappedState and C_GamePad.StickIndexToConfigName) then
+		return nil
+	end
+	local ok, state = pcall(C_GamePad.GetDeviceMappedState)
+	if not ok or type(state) ~= "table" then return nil end
+	local count, sticks = ns.Safe.Value(state.stickCount), ns.Safe.Value(state.sticks)
+	if type(count) ~= "number" or type(sticks) ~= "table" then return nil end
+	for i = 1, count do
+		local okN, name = pcall(C_GamePad.StickIndexToConfigName, i - 1)
+		if okN and name == "Movement" then
+			local stick = sticks[i]
+			local x = type(stick) == "table" and ns.Safe.Value(stick.x)
+			local y = type(stick) == "table" and ns.Safe.Value(stick.y)
+			if type(x) ~= "number" or type(y) ~= "number" then return nil end
+			return x, y
+		end
+	end
+	return nil
+end
+
 -- tilt: the zoom stick, -1 (out) to 1 (in)
 local function PadZoom(elapsed, tilt)
 	local u, v, zoom = View()

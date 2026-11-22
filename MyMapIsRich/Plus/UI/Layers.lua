@@ -2,10 +2,13 @@
 -- carte » et « Le rail des calques ouvert ») : à gauche, sous la zone, un
 -- bouton par calque (donjons, maîtres de vol, bateaux, quêtes, citadins,
 -- groupe, épingles, dessins), allumé quand la carte le montre ; un clic
--- l'allume ou l'éteint, un clic droit ouvre ses détails. Le dernier bouton,
--- et Y à la manette, ouvrent le panneau des calques : chaque calque avec sa
--- case, ses détails dessous, et « Réglages de la carte… » (la fenêtre de
--- réglages de la carte).
+-- l'allume ou l'éteint, un clic droit ouvre ses détails. Sous les calques,
+-- deux boutons : les maîtres de vol découverts seulement, et la fenêtre de
+-- réglages de la carte. Le même rail en plein écran et sur la carte réduite
+-- (trop basse, elle garde les boutons qui tiennent, les réglages toujours).
+-- Le clic droit sur un calque, et Y à la manette, ouvrent le panneau des
+-- calques : chaque calque avec sa case, ses détails dessous, et « Réglages
+-- de la carte… ».
 -- Les calques sont les réglages de la carte (mod.db, ceux de son menu et de sa
 -- fenêtre de réglages) : rien n'est gardé à part, sauf, pour un calque qui en
 -- couvre plusieurs (bateaux et zeppelins, citadins, groupe), lesquels étaient
@@ -254,7 +257,8 @@ end
 ---------------------------------------------------------------------------
 -- Le rail
 ---------------------------------------------------------------------------
-local rail, toggles, more
+local rail, toggles, found, settings
+local FOUND = LAYERS[2].details[1]   -- (les maîtres de vol : seulement les lieux découverts)
 local panel, rows, detailBox, detailTitle, detailEmpty, detailChecks, allSettings
 local chosen = LAYERS[2]     -- (le calque dont le panneau montre les détails)
 
@@ -273,6 +277,14 @@ local function LayerTip(self)
         GameTooltip:AddLine(IsOn(layer) and L.LAYERS_TIP_ON or L.LAYERS_TIP_OFF, 1, 1, 1, true)
     end
     GameTooltip:AddLine(L.LAYERS_TIP_DETAILS, UI.RGB("textDim"))
+    GameTooltip:Show()
+end
+
+local function FoundTip(self)
+    GameTooltip:SetOwner(self, "ANCHOR_RIGHT")
+    GameTooltip:SetText(L.LAYER_D_FOUND, 1, 0.82, 0)
+    GameTooltip:AddLine(L.LAYERS_DETAILS:format(L.LAYER_FLIGHTS), UI.RGB("textDim"))
+    GameTooltip:AddLine(DetailOn(FOUND) and L.LAYERS_TIP_ON or L.LAYERS_TIP_OFF, 1, 1, 1, true)
     GameTooltip:Show()
 end
 
@@ -310,16 +322,54 @@ local function BuildRail(chrome)
         toggles[i] = b
         y = y - TOGGLE - GAP
     end
-    more = UI.IconToggle(rail, TOGGLE)
-    more:SetPoint("TOP", rail, "TOP", 0, y)
-    more.icon:Hide()
-    local dots = UI.Text(more, "GameFontNormalLarge", "···")
-    dots:SetPoint("CENTER", 0, 2)
-    more:SetScript("OnClick", function() LY.TogglePanel() end)
-    UI.Tip(more, L.LAYERS_ALL, L.LAYERS_ALL_TIP)
-    y = y - TOGGLE - 6
-    rail:SetHeight(-y)
+    -- (sous les calques : les maîtres de vol découverts seulement…)
+    found = UI.IconToggle(rail, TOGGLE,
+        Faction() == "Horde" and Icon("Ability_Mount_Wyvern_01") or Icon("Ability_Mount_Gryphon_01"))
+    found:SetScript("OnClick", function(self)
+        SetDetail(FOUND, not DetailOn(FOUND))
+        if GameTooltip:GetOwner() == self then FoundTip(self) end
+    end)
+    found:SetScript("OnEnter", FoundTip)
+    found:SetScript("OnLeave", GameTooltip_Hide)
+    -- (… et la fenêtre de réglages de la carte)
+    settings = UI.IconToggle(rail, TOGGLE, Icon("Trade_Engineering"))
+    settings:SetScript("OnClick", function()
+        if ns.OM and ns.OM.OpenSettingsWindow then ns.OM.OpenSettingsWindow() end
+    end)
+    UI.Tip(settings, L.MAP_SETTINGS, L.MAP_SETTINGS_TIP)
     Roots(rail)
+end
+
+-- Le rail selon la hauteur de la carte (plein écran ou réduite) : les
+-- boutons des calques puis celui des maîtres de vol découverts, ceux qui
+-- tiennent au-dessus des coordonnées, dans l'ordre, puis les réglages,
+-- toujours là (le clic droit sur un calque et Y ouvrent le panneau, qui a
+-- tous les calques)
+local RAIL_BOTTOM = 80       -- px : les coordonnées et la barre d'aide, en bas de la carte
+local shownButtons
+local function Layout()
+    local chrome = rail and rail:GetParent()
+    local h = chrome and chrome:GetHeight() or 0
+    if h <= 0 then return end
+    local buttons = {}
+    for i, b in ipairs(toggles) do buttons[i] = b end
+    buttons[#buttons + 1] = found
+    local room = h - RAIL_TOP - RAIL_BOTTOM - 28 - TOGGLE - 6
+    local n = math.max(0, math.min(#buttons, math.floor(room / (TOGGLE + GAP))))
+    if n == shownButtons then return end
+    shownButtons = n
+    local y = -28
+    for i, b in ipairs(buttons) do
+        b:ClearAllPoints()
+        b:SetShown(i <= n)
+        if i <= n then
+            b:SetPoint("TOP", rail, "TOP", 0, y)
+            y = y - TOGGLE - GAP
+        end
+    end
+    settings:ClearAllPoints()
+    settings:SetPoint("TOP", rail, "TOP", 0, y)
+    rail:SetHeight(-(y - TOGGLE - 6))
 end
 
 ---------------------------------------------------------------------------
@@ -462,10 +512,12 @@ end
 ---------------------------------------------------------------------------
 function LY.Refresh()
     if toggles then
+        Layout()
         for _, b in ipairs(toggles) do
             b:SetOn(Available(b.layer) and IsOn(b.layer) or false)
             b:SetEnabled(Available(b.layer))
         end
+        found:SetOn(DetailOn(FOUND))
         rail.glyph:SetShown(ns.PadUI())
     end
     if panel and panel:IsShown() then FillRows() end
@@ -476,14 +528,12 @@ Show = function(layer)
     if layer then chosen = layer end
     panel:Show()
     FillRows()
-    if more then more:SetOn(true) end
     P.Dirty()
 end
 LY.ShowPanel = Show
 
 function LY.HidePanel()
     if panel then panel:Hide() end
-    if more then more:SetOn(nil) end
     P.Dirty()
 end
 
@@ -497,10 +547,13 @@ ns.On("MAP_CHROME", function(chrome)
     if rail then return end
     BuildRail(chrome)
     BuildPanel(chrome)
+    -- (la carte change de taille : le rail suit)
+    chrome:HookScript("OnSizeChanged", function() Layout() end)
     LY.Refresh()
 end)
 ns.On("MAP_SHOW", function() C_Timer.After(0.05, LY.Refresh) end)
 ns.On("MAP_HIDE", function() if panel then LY.HidePanel() end end)
+ns.On("MAP_SIZE", LY.Refresh)
 ns.On("OPTIONS", LY.Refresh)
 
 -- (un réglage changé ailleurs : le menu de la carte, sa fenêtre de réglages)

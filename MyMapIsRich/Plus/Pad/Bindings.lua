@@ -10,6 +10,7 @@
 --   sketch    (45) : la plume d'OpenMap sortie (Pad/MapNav.lua)
 --   dungeon   (40) : la carte d'un donjon (Pad/Dungeon.lua)
 --   questlog  (20) : une quête de la liste de droite a le focus (Travel/Quests.lua)
+--   mapidle   (15) : la carte plein écran sans son curseur, hors de nos quêtes (UI/QuestPanel.lua)
 --   map       (10) : la carte seule (Pad/MapNav.lua)
 --
 -- Comment les boutons sont pris : par des raccourcis prioritaires
@@ -36,8 +37,9 @@ local KEYS = {
     "PADDUP", "PADDDOWN", "PADDLEFT", "PADDRIGHT",
     "PADLSHOULDER", "PADRSHOULDER", "PADLTRIGGER", "PADRTRIGGER",
     "PADFORWARD", "PADBACK",
-    -- (R3 : pris seulement sur la liste des quêtes, où le jeu en fait un
-    -- ping ; sur la carte, il est lu : Travel/Quests.lua, Pad/MapNav.lua)
+    -- (R3 : pris seulement sur les listes de quêtes, celle de l'addon et le
+    -- journal du jeu, où le jeu en fait un ping ; sur la carte, il est lu :
+    -- UI/QuestPanel.lua, Travel/Quests.lua, Pad/MapNav.lua)
     "PADRSTICK",
 }
 P.KEYS = KEYS

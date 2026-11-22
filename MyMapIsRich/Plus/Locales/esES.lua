@@ -263,6 +263,9 @@ ns.AddLocale("esES", {
     QUESTS_TRACK = "Seguir",
     QUESTS_UNTRACK = "Dejar de seguir",
     QUESTS_SHARE = "Compartir con el grupo",
+    QUESTS_ABANDON = "Abandonar",
+    QUESTS_ABANDON_SURE = "¿Abandonar de verdad?",
+    QUESTS_ABANDON_FAILED = "No se pudo abandonar esta misión desde aquí.",
     QUESTS_OBJECTIVES_HEAD = "Objetivos de la misión",
     QUESTS_STORY = "Descripción",
     QUESTS_REWARDS = "Recompensas",
@@ -270,9 +273,7 @@ ns.AddLocale("esES", {
     QUESTS_RECEIVE = "Recibirás:",
     QUESTS_ALSO = "También recibirás:",
     QUESTS_XP = "%s de experiencia",
-    QUESTS_BUTTON_TIP = "Tus misiones en el mapa, visibles al abrirlo: L o este botón con teclado y ratón, RT con mando (B vuelve al mapa).",
     HINT_QUESTS = "Misiones",
-    HINT_QUESTS_CLOSE = "Cerrar las misiones",
     HINT_QUESTS_SORT = "Por zona / las más cercanas",
     HINT_QUESTS_OPEN = "Ver la misión",
     HINT_QUESTS_LIST = "Volver a la lista",
@@ -280,7 +281,7 @@ ns.AddLocale("esES", {
     HINT_MAP_SMALL = "Mapa reducido",
     HINT_MAP_FULL = "Pantalla completa",
     HINT_ROUTE_NOW = "Ruta al instante",
-    WHATSNEW_MMIR_0_4_0 = "• |cffffd100Tus misiones en el mapa a pantalla completa|r, a la derecha, visibles en cuanto se abre el mapa. L o el nuevo botón Misiones (arriba a la derecha) las muestra u oculta; con mando, RT entra en la lista (y la muestra si estaba oculta): el cursor del mapa desaparece, la cruceta va de misión en misión y el mapa se desliza hasta cada una; B vuelve al mapa (la cruceta izquierda del juego le devuelve el cursor) (LT salta ahora de icono en icono). Cerradas, siguen cerradas la vez siguiente. Por zona o las más cercanas, una búsqueda, los objetivos de la misión elegida y el tiempo desde ti; el mapa se desliza hasta ella y muestra su zona. Ruta (Y), Añadir a la cola (X), Seguir, Compartir. A o un clic abre la ficha de una misión, como en el registro del juego: sus objetivos, su historia, sus recompensas (objetos, dinero, experiencia); B vuelve a la lista.\n• |cffffd100En el mapa a pantalla completa, tu personaje ya no se mueve|r: las teclas de movimiento deslizan el mapa, saltar y correr automáticamente no hacen nada (en combate, vuelves a moverte). El stick derecho ya no gira la cámara ahí.\n• |cffffd100La barra de capas pasa a la izquierda|r, bajo la zona; la ficha de un punto, la vista previa y el panel de ruta se colocan a su derecha.\n• |cffffd100Pantalla completa o ventana|r: el nuevo botón de arriba a la derecha, o X con mando, pone el mapa en una ventana con el juego alrededor, donde tu personaje puede moverse, con tus misiones siempre pegadas a la derecha; otra vez para pantalla completa. Se recuerda para la próxima vez.\n• |cffffd100El panel de ruta|r ya no aparece en el mapa; en el juego, la flecha de su esquina lo pliega a su título y el tiempo restante (con mando: pestaña Rutas de /mmir).",
+    WHATSNEW_MMIR_0_4_0 = "• |cffffd100Tus misiones en el mapa|r, a la derecha, siempre visibles con él. Con mando, RT entra en la lista: el cursor del mapa desaparece, la cruceta va de misión en misión y el mapa se desliza hasta cada una; B, RT o la cruceta izquierda vuelven al mapa (la cruceta izquierda del juego le devuelve el cursor) (LT salta ahora de icono en icono). Por zona o las más cercanas, una búsqueda, los objetivos de la misión elegida y el tiempo desde ti; el mapa se desliza hasta ella y muestra su zona. Ruta (Y), Añadir a la cola (X), Seguir, Compartir. A o un clic abre la ficha de una misión, como en el registro del juego: sus objetivos, su historia, sus recompensas (objetos, dinero, experiencia); B vuelve a la lista.\n• |cffffd100En el mapa a pantalla completa, tu personaje ya no se mueve|r: las teclas de movimiento deslizan el mapa, saltar y correr automáticamente no hacen nada (en combate, vuelves a moverte). El stick derecho ya no gira la cámara ahí, y el stick izquierdo ya no te hace caminar: sin el cursor del mapa, el mando está en tus misiones (desde que se abre el mapa) y el stick pasa de misión en misión.\n• |cffffd100La barra de capas pasa a la izquierda|r, bajo la zona; la ficha de un punto y la vista previa se colocan a su derecha.\n• |cffffd100Pantalla completa o mapa reducido|r: el nuevo botón de arriba a la derecha, o X con mando, reduce el mapa, con el juego alrededor, donde tu personaje puede moverse; tus misiones quedan pegadas a su derecha, la barra de capas y la ayuda siguen iguales. Otra vez para pantalla completa. Se recuerda para la próxima vez.\n• |cffffd100El panel de ruta|r ya no aparece en el mapa a pantalla completa (con el mapa reducido se queda en su sitio); en el juego, la flecha de su esquina lo pliega a su título y el tiempo restante (con mando: pestaña Rutas de /mmir).",
 })
 
 -- /mmir focus ouverture (Diag.lua)

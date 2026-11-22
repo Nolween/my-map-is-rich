@@ -4,8 +4,9 @@
 --                       son continent (le panneau de trajet est caché carte ouverte : UI/RouteHud.lua)
 --   en haut au milieu : « Aller à… » (pour l'instant le navigateur de lieux,
 --                       sur sa recherche) ; LB à la manette, Ctrl+F au clavier
---   en haut à droite  : Quêtes (UI/QuestPanel.lua), Me localiser, Me suivre,
---                       le menu de la carte, Fermer
+--   en haut à droite  : Me localiser, Me suivre, le menu de la carte, la
+--                       taille (plein écran ou réduite), Fermer
+--   à droite          : les quêtes, toujours là (UI/QuestPanel.lua)
 --   en bas à droite   : les coordonnées (toi ; le curseur et sa zone)
 --   au bord           : « Toi », quand ta flèche sort de la vue (clic : recentre)
 -- Le rail des calques est à part (UI/Layers.lua) ; la barre d'aide aussi
@@ -36,7 +37,7 @@ local YOU_X, YOU_Y = 90, 80  -- px : le repère « Toi », loin des bords (les b
 
 local chrome                 -- le cadre de l'habillage, sur la vue
 local zone, goTo, buttons, pills, you
-local quests, locate, follow, menu, size, closeButton
+local locate, follow, menu, size, closeButton
 local SIZE_ICONS = {         -- le bouton Taille : réduire (en plein écran), ou plein écran (réduite)
     small = { "Interface\\Buttons\\UI-Panel-SmallerButton-Up", "RedButton-Condense" },
     full = { "Interface\\Buttons\\UI-Panel-BiggerButton-Up", "RedButton-Expand" },
@@ -282,28 +283,22 @@ end
 C.PlaceClose = PlaceClose
 
 local function BuildButtons()
-    -- (six carrés : la croix sécurisée se pose à la place du sixième)
+    -- (cinq carrés : la croix sécurisée se pose à la place du cinquième. Pas
+    -- de bouton des quêtes : leur liste est toujours là, UI/QuestPanel.lua)
     buttons = UI.Overlay(chrome)
-    buttons:SetSize(4 + 6 * SQUARE + 5 * 4 + 4, SQUARE + 8)
+    buttons:SetSize(4 + 5 * SQUARE + 4 * 4 + 4, SQUARE + 8)
     buttons:SetPoint("TOPRIGHT", chrome, "TOPRIGHT", -EDGE, -EDGE)
-    -- (les quêtes : le bouton du journal, comme celui de la carte du jeu ; UI/QuestPanel.lua)
-    quests = Square("Interface\\QuestFrame\\UI-QuestLog-BookIcon", L.QUESTS_TITLE, L.QUESTS_BUTTON_TIP, function()
-        if ns.QuestPanel then ns.QuestPanel.Toggle() end
-    end, true)
-    quests:SetPoint("LEFT", 4, 0)
-    quests.key = UI.Text(quests, "GameFontHighlightSmall", "L")
-    quests.key:SetPoint("BOTTOMRIGHT", -3, 3)
     locate = Square("Interface\\Icons\\Ability_Hunter_SniperShot", L.MAP_LOCATE, L.MAP_LOCATE_TIP, C.Locate)
-    locate:SetPoint("LEFT", quests, "RIGHT", 4, 0)
+    locate:SetPoint("LEFT", 4, 0)
     follow = Square("Interface\\Icons\\Ability_Tracking", L.MAP_FOLLOW, L.MAP_FOLLOW_TIP, C.ToggleFollow, true)
     follow:SetPoint("LEFT", locate, "RIGHT", 4, 0)
     -- (à la manette : sous les carrés, une bande avec le bouton à presser sous
-    -- chacun, en grand : RT les quêtes, RB me suivre, X la taille, B fermer la carte)
+    -- chacun, en grand : RB me suivre, X la taille, B fermer la carte)
     legend = UI.Overlay(chrome)
     legend:SetSize(buttons:GetWidth(), LEGEND_H)
     legend:SetPoint("TOPRIGHT", buttons, "BOTTOMRIGHT", 0, -2)
     legend:EnableMouse(false)
-    for slot, key in pairs({ [1] = "PADRTRIGGER", [3] = "PADRSHOULDER", [5] = "PAD3", [6] = "PAD2" }) do
+    for slot, key in pairs({ [2] = "PADRSHOULDER", [4] = "PAD3", [5] = "PAD2" }) do
         local g = UI.CreateGlyph(legend, LEGEND_GLYPH)
         g:SetPoint("CENTER", legend, "LEFT", 4 + (slot - 1) * (SQUARE + 4) + SQUARE / 2, 0)
         g:SetKey(key)
@@ -472,19 +467,12 @@ local function UpdateButtons()
     legend:SetShown(pad)
     goTo.glyph:SetShown(pad)
     goTo.keys:SetShown(not pad and not goTo.narrow)
-    quests.key:SetShown(not pad)
-    quests:SetOn((ns.QuestPanel and ns.QuestPanel.Shown()) and true or nil)
     -- (le bouton Taille : ce qu'il fera, réduire ou plein écran)
     local icon = ns.MapSmall() and SIZE_ICONS.full or SIZE_ICONS.small
     if size.shownIcon ~= icon then
         size.shownIcon = icon
         size:SetIcon(icon[1], icon[2])
     end
-end
-
--- Le bouton Quêtes allumé quand le panneau des quêtes est ouvert (UI/QuestPanel.lua)
-function C.SetQuestsLit(on)
-    if quests then quests:SetOn(on and true or nil) end
 end
 
 local function Update()
@@ -625,9 +613,10 @@ local function Build()
     mod.viewChrome = true
     mod.OnViewClick = OnViewClick
     -- (X à la manette, rien d'OpenMap ouvert : la taille de la carte, au lieu
-    -- de dézoomer ; le stick droit zoome. En combat, un message : ns.SetMapSmall)
+    -- de dézoomer ; le stick droit zoome. En combat, un message : ns.SetMapSmall.
+    -- X est aussi lu sur la manette, Pad/MapNav.lua : un seul des deux compte)
     mod.OnViewOut = function()
-        ns.ToggleMapSize()
+        ns.PadToggleMapSize()
         return true
     end
     -- (la carte change de taille : la croix sécurisée la suit)

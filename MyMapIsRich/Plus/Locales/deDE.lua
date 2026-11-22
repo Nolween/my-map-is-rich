@@ -263,6 +263,9 @@ ns.AddLocale("deDE", {
     QUESTS_TRACK = "Verfolgen",
     QUESTS_UNTRACK = "Nicht verfolgen",
     QUESTS_SHARE = "Mit Gruppe teilen",
+    QUESTS_ABANDON = "Aufgeben",
+    QUESTS_ABANDON_SURE = "Wirklich aufgeben?",
+    QUESTS_ABANDON_FAILED = "Diese Quest konnte hier nicht aufgegeben werden.",
     QUESTS_OBJECTIVES_HEAD = "Questziele",
     QUESTS_STORY = "Beschreibung",
     QUESTS_REWARDS = "Belohnungen",
@@ -270,9 +273,7 @@ ns.AddLocale("deDE", {
     QUESTS_RECEIVE = "Du bekommst:",
     QUESTS_ALSO = "Du bekommst außerdem:",
     QUESTS_XP = "%s Erfahrung",
-    QUESTS_BUTTON_TIP = "Deine Quests auf der Karte, beim Öffnen angezeigt: L oder diese Schaltfläche mit Tastatur und Maus, RT mit dem Controller (B zurück zur Karte).",
     HINT_QUESTS = "Quests",
-    HINT_QUESTS_CLOSE = "Quests schließen",
     HINT_QUESTS_SORT = "Nach Gebiet / die nächsten",
     HINT_QUESTS_OPEN = "Quest ansehen",
     HINT_QUESTS_LIST = "Zurück zur Liste",
@@ -280,7 +281,7 @@ ns.AddLocale("deDE", {
     HINT_MAP_SMALL = "Kleine Karte",
     HINT_MAP_FULL = "Vollbild",
     HINT_ROUTE_NOW = "Sofort losgehen",
-    WHATSNEW_MMIR_0_4_0 = "• |cffffd100Deine Quests auf der Vollbildkarte|r, rechts, sobald die Karte sich öffnet. L oder die neue Schaltfläche Quests (oben rechts) zeigt oder verbirgt sie; mit dem Controller geht RT in die Liste (und zeigt sie, wenn sie verborgen war): der Kartencursor verschwindet, das Steuerkreuz geht von Quest zu Quest und die Karte gleitet zu jeder; B führt zurück zur Karte (Steuerkreuz links des Spiels gibt ihr den Cursor) (LT springt jetzt von Symbol zu Symbol). Geschlossen bleiben sie es beim nächsten Mal. Nach Gebiet oder die nächsten, eine Suche, die Ziele der gewählten Quest und die Zeit von dir aus; die Karte gleitet dorthin und zeigt ihr Gebiet. Route (Y), Zur Liste hinzufügen (X), Verfolgen, Teilen. A oder ein Klick öffnet die Seite einer Quest wie im Questlog des Spiels: Ziele, Geschichte, Belohnungen (Gegenstände, Geld, Erfahrung); B führt zurück zur Liste.\n• |cffffd100Auf der Vollbildkarte bewegt sich deine Figur nicht mehr|r: die Bewegungstasten verschieben die Karte, Springen und automatisches Laufen tun nichts (im Kampf bewegst du dich wieder). Der rechte Stick dreht dort nicht mehr die Kamera.\n• |cffffd100Die Ebenenleiste wandert nach links|r, unter das Gebiet; die Karte eines Punkts, die Routenvorschau und die Routenanzeige stehen rechts daneben.\n• |cffffd100Vollbild oder Fenster|r: die neue Schaltfläche oben rechts oder X mit dem Controller macht die Karte zum Fenster mit dem Spiel drumherum, in dem sich deine Figur bewegen kann, deine Quests immer rechts daneben; noch einmal für Vollbild. Wird für das nächste Mal gemerkt.\n• |cffffd100Die Routenanzeige|r erscheint nicht mehr auf der Karte; im Spiel klappt der Pfeil in ihrer Ecke sie auf Titel und Restzeit ein (mit dem Controller: Reiter Routen in /mmir).",
+    WHATSNEW_MMIR_0_4_0 = "• |cffffd100Deine Quests auf der Karte|r, rechts, immer mit ihr angezeigt. Mit dem Controller geht RT in die Liste: der Kartencursor verschwindet, das Steuerkreuz geht von Quest zu Quest und die Karte gleitet zu jeder; B, RT oder Steuerkreuz links führen zurück zur Karte (Steuerkreuz links des Spiels gibt ihr den Cursor) (LT springt jetzt von Symbol zu Symbol). Nach Gebiet oder die nächsten, eine Suche, die Ziele der gewählten Quest und die Zeit von dir aus; die Karte gleitet dorthin und zeigt ihr Gebiet. Route (Y), Zur Liste hinzufügen (X), Verfolgen, Teilen. A oder ein Klick öffnet die Seite einer Quest wie im Questlog des Spiels: Ziele, Geschichte, Belohnungen (Gegenstände, Geld, Erfahrung); B führt zurück zur Liste.\n• |cffffd100Auf der Vollbildkarte bewegt sich deine Figur nicht mehr|r: die Bewegungstasten verschieben die Karte, Springen und automatisches Laufen tun nichts (im Kampf bewegst du dich wieder). Der rechte Stick dreht dort nicht mehr die Kamera, und der linke Stick lässt dich nicht mehr laufen: ohne den Kartencursor ist der Controller in deinen Quests (gleich beim Öffnen der Karte), und der Stick geht von Quest zu Quest.\n• |cffffd100Die Ebenenleiste wandert nach links|r, unter das Gebiet; die Karte eines Punkts und die Routenvorschau stehen rechts daneben.\n• |cffffd100Vollbild oder kleine Karte|r: die neue Schaltfläche oben rechts oder X mit dem Controller verkleinert die Karte, mit dem Spiel drumherum, in dem sich deine Figur bewegen kann; deine Quests stehen rechts daneben, Ebenenleiste und Hilfe bleiben gleich. Noch einmal für Vollbild. Wird für das nächste Mal gemerkt.\n• |cffffd100Die Routenanzeige|r erscheint nicht mehr auf der Vollbildkarte (mit der kleinen Karte bleibt sie an ihrem Platz); im Spiel klappt der Pfeil in ihrer Ecke sie auf Titel und Restzeit ein (mit dem Controller: Reiter Routen in /mmir).",
 })
 
 -- /mmir focus ouverture (Diag.lua)

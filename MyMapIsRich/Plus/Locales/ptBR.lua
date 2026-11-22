@@ -263,6 +263,9 @@ ns.AddLocale("ptBR", {
     QUESTS_TRACK = "Seguir",
     QUESTS_UNTRACK = "Parar de seguir",
     QUESTS_SHARE = "Compartilhar com o grupo",
+    QUESTS_ABANDON = "Abandonar",
+    QUESTS_ABANDON_SURE = "Abandonar mesmo?",
+    QUESTS_ABANDON_FAILED = "Não foi possível abandonar esta missão daqui.",
     QUESTS_OBJECTIVES_HEAD = "Objetivos da missão",
     QUESTS_STORY = "Descrição",
     QUESTS_REWARDS = "Recompensas",
@@ -270,9 +273,7 @@ ns.AddLocale("ptBR", {
     QUESTS_RECEIVE = "Você receberá:",
     QUESTS_ALSO = "Você também receberá:",
     QUESTS_XP = "%s de experiência",
-    QUESTS_BUTTON_TIP = "Suas missões no mapa, mostradas ao abri-lo: L ou este botão com teclado e mouse, RT no controle (B volta ao mapa).",
     HINT_QUESTS = "Missões",
-    HINT_QUESTS_CLOSE = "Fechar as missões",
     HINT_QUESTS_SORT = "Por zona / as mais próximas",
     HINT_QUESTS_OPEN = "Ver a missão",
     HINT_QUESTS_LIST = "Voltar à lista",
@@ -280,7 +281,7 @@ ns.AddLocale("ptBR", {
     HINT_MAP_SMALL = "Mapa reduzido",
     HINT_MAP_FULL = "Tela cheia",
     HINT_ROUTE_NOW = "Rota na hora",
-    WHATSNEW_MMIR_0_4_0 = "• |cffffd100Suas missões no mapa em tela cheia|r, à direita, mostradas assim que o mapa abre. L ou o novo botão Missões (canto superior direito) as mostra ou esconde; no controle, RT entra na lista (e a mostra se estava escondida): o cursor do mapa some, o direcional vai de missão em missão e o mapa desliza até cada uma; B volta ao mapa (o direcional esquerdo do jogo devolve o cursor) (LT agora pula de ícone em ícone). Fechadas, continuam fechadas na vez seguinte. Por zona ou as mais próximas, uma busca, os objetivos da missão escolhida e o tempo a partir de você; o mapa desliza até ela e mostra a sua zona. Rota (Y), Adicionar à fila (X), Seguir, Compartilhar. A ou um clique abre a ficha de uma missão, como no registro do jogo: objetivos, história, recompensas (itens, dinheiro, experiência); B volta à lista.\n• |cffffd100No mapa em tela cheia, seu personagem não se move mais|r: as teclas de movimento deslizam o mapa, pular e correr automaticamente não fazem nada (em combate, você volta a se mover). O analógico direito não gira mais a câmera ali.\n• |cffffd100A barra de camadas passa para a esquerda|r, sob a zona; a ficha de um ponto, a prévia e o painel da rota ficam à direita dela.\n• |cffffd100Tela cheia ou janela|r: o novo botão no canto superior direito, ou X no controle, põe o mapa numa janela com o jogo em volta, onde seu personagem pode se mover, com suas missões sempre coladas à direita; de novo para tela cheia. Lembrado para a próxima vez.\n• |cffffd100O painel de rota|r não aparece mais no mapa; no jogo, a seta no canto o recolhe ao título e ao tempo restante (no controle: aba Rotas do /mmir).",
+    WHATSNEW_MMIR_0_4_0 = "• |cffffd100Suas missões no mapa|r, à direita, sempre mostradas com ele. No controle, RT entra na lista: o cursor do mapa some, o direcional vai de missão em missão e o mapa desliza até cada uma; B, RT ou o direcional esquerdo voltam ao mapa (o direcional esquerdo do jogo devolve o cursor) (LT agora pula de ícone em ícone). Por zona ou as mais próximas, uma busca, os objetivos da missão escolhida e o tempo a partir de você; o mapa desliza até ela e mostra a sua zona. Rota (Y), Adicionar à fila (X), Seguir, Compartilhar. A ou um clique abre a ficha de uma missão, como no registro do jogo: objetivos, história, recompensas (itens, dinheiro, experiência); B volta à lista.\n• |cffffd100No mapa em tela cheia, seu personagem não se move mais|r: as teclas de movimento deslizam o mapa, pular e correr automaticamente não fazem nada (em combate, você volta a se mover). O analógico direito não gira mais a câmera ali, e o analógico esquerdo não faz mais você andar: sem o cursor do mapa, o controle fica nas suas missões (assim que o mapa abre) e o analógico passa de missão em missão.\n• |cffffd100A barra de camadas passa para a esquerda|r, sob a zona; a ficha de um ponto e a prévia ficam à direita dela.\n• |cffffd100Tela cheia ou mapa reduzido|r: o novo botão no canto superior direito, ou X no controle, reduz o mapa, com o jogo em volta, onde seu personagem pode se mover; suas missões ficam coladas à direita, a barra de camadas e a ajuda continuam iguais. De novo para tela cheia. Lembrado para a próxima vez.\n• |cffffd100O painel de rota|r não aparece mais no mapa em tela cheia (com o mapa reduzido, fica no seu lugar); no jogo, a seta no canto o recolhe ao título e ao tempo restante (no controle: aba Rotas do /mmir).",
 })
 
 -- /mmir focus ouverture (Diag.lua)

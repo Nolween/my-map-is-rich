@@ -14,8 +14,9 @@
 -- connaît), et une alerte s'affiche avant l'atterrissage. En fantôme, le
 -- panneau mène au corps. Pendant un ralliement (Travel/Share.lua), le temps
 -- de chaque membre du groupe s'ajoute en dessous.
--- En jeu seulement, à la place choisie (on le glisse à la souris) : la carte
--- ouverte le cache (le tracé et la fiche y disent déjà le trajet). Masqué en
+-- En jeu, à la place choisie (on le glisse à la souris) : la carte plein
+-- écran le cache (le tracé et la fiche y disent déjà le trajet) ; la carte
+-- réduite le laisse, puisqu'on marche avec elle ouverte. Masqué en
 -- combat ; réglage « Panneau de trajet » (onglet Trajets).
 -- Repliable : la flèche de son coin (ou le bouton de l'onglet Trajets, à la
 -- manette, ou /mmir panneau replier) ne laisse que l'en-tête et le temps qu'il
@@ -79,8 +80,15 @@ end
 ---------------------------------------------------------------------------
 -- Le cadre
 ---------------------------------------------------------------------------
+-- La carte ouverte cache-t-elle le jeu (plein écran, ou la carte classique) ?
+-- La carte réduite le laisse visible : le panneau y reste, à sa place, comme
+-- en jeu (on y marche carte ouverte)
+local function MapCovers()
+    return ns.MapShown() and not ns.MapSmall()
+end
+
 local function SavePos()
-    if not (frame and ns.db) or ns.MapShown() then return end
+    if not (frame and ns.db) or MapCovers() then return end
     local point, _, _, x, y = frame:GetPoint(1)
     ns.db.options.hudPos = { point or "TOPLEFT", math.floor(x or 0), math.floor(y or 0) }
 end
@@ -88,24 +96,6 @@ end
 local function Place()
     if not frame then return end
     frame:ClearAllPoints()
-    local map = _G.WorldMapFrame
-    local sc = map and map.ScrollContainer
-    -- (la carte plein écran : sous le nom de la zone, à droite du rail des
-    -- calques, UI/MapChrome.lua, UI/Layers.lua)
-    if ns.MapShown() and ns.FullMap() then
-        -- (plein écran ou réduite : depuis le coin de la carte)
-        local chrome = ns.MapChrome and ns.MapChrome.Frame()
-        if chrome then
-            frame:SetPoint("TOPLEFT", chrome, "TOPLEFT", 74, -66)
-        else
-            frame:SetPoint("TOPLEFT", UIParent, "TOPLEFT", 74, -66)
-        end
-        return
-    end
-    if ns.MapShown() and sc then
-        frame:SetPoint("TOPLEFT", sc, "TOPLEFT", 12, -12)
-        return
-    end
     local pos = ns.db and ns.db.options.hudPos
     if type(pos) ~= "table" then pos = DEFAULT_POS end
     frame:SetPoint(pos[1] or "TOPLEFT", UIParent, pos[1] or "TOPLEFT", pos[2] or 20, pos[3] or -170)
@@ -127,7 +117,7 @@ local function Build()
     f:EnableMouse(true)
     f:SetMovable(true)
     f:RegisterForDrag("LeftButton")
-    f:SetScript("OnDragStart", function(self) if not ns.MapShown() then self:StartMoving() end end)
+    f:SetScript("OnDragStart", function(self) if not MapCovers() then self:StartMoving() end end)
     f:SetScript("OnDragStop", function(self)
         self:StopMovingOrSizing()
         SavePos()
@@ -352,8 +342,8 @@ end
 local function Wanted()
     if not (ns.db and ns.db.options.travelHud ~= false and ns.Ready()) then return false end
     if InCombatLockdown() then return false end
-    -- (carte ouverte : caché ; le tracé et la fiche disent le trajet)
-    if ns.MapShown() then return false end
+    -- (carte plein écran ouverte : caché ; le tracé et la fiche disent le trajet)
+    if MapCovers() then return false end
     local share = ns.TravelShare
     return (T() and T().Active()) or (share and share.Rally() ~= nil) or false
 end
@@ -542,6 +532,7 @@ ns.On("TRAVEL", H.Refresh)
 ns.On("OPTIONS", H.Refresh)
 ns.On("MAP_SHOW", function() Place() H.Refresh() end)
 ns.On("MAP_HIDE", function() Place() H.Refresh() end)
+ns.On("MAP_SIZE", function() Place() H.Refresh() end)
 
 local events = CreateFrame("Frame")
 events:RegisterEvent("PLAYER_REGEN_DISABLED")

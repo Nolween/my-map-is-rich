@@ -4,7 +4,7 @@
 --
 -- La fiche : A (ou un clic) sur une icône de la carte ne fait plus son action
 -- tout de suite, il ouvre sa fiche, toujours au même endroit, sous le nom de la
--- zone (sous le panneau de trajet s'il est là) ; le point est cerclé d'or.
+-- zone, à droite du rail des calques ; le point est cerclé d'or.
 -- Elle dit ce qu'est le point (le titre et les lignes de son info-bulle, sa
 -- zone et ses coordonnées), le temps pour y aller depuis toi et par où, et
 -- propose : Itinéraire (Y : l'aperçu), Ajouter à la file (X), l'action de
@@ -171,16 +171,12 @@ local function ShowGlyphs(frame)
     end
 end
 
--- Le haut d'un panneau : à sa place, sous la zone (et sous le panneau de trajet)
+-- Le haut d'un panneau : à sa place, sous la zone, à droite du rail (le
+-- panneau de trajet n'est jamais sur la carte : UI/RouteHud.lua)
 local function Place(f)
     local chrome = ns.MapChrome and ns.MapChrome.Frame()
     f:ClearAllPoints()
-    local hud = _G.MyMapIsRichPlusRouteHud
-    if hud and hud:IsVisible() then
-        f:SetPoint("TOPLEFT", hud, "BOTTOMLEFT", 0, -UI.PAGE_GAP)
-    elseif chrome then
-        f:SetPoint("TOPLEFT", chrome, "TOPLEFT", EDGE, -TOP)
-    end
+    if chrome then f:SetPoint("TOPLEFT", chrome, "TOPLEFT", EDGE, -TOP) end
 end
 
 local function Roots(f)
@@ -511,17 +507,6 @@ function Route()
     P.Dirty()
 end
 PC.Route = Route
-
--- L'aperçu du trajet jusqu'à un point donné (une quête du panneau des
--- quêtes : UI/QuestPanel.lua), sans fiche : Annuler le ferme
-function PC.PreviewPoint(point)
-    if not (point and card) then return end
-    if not (point.u and point.v) then point.u, point.v = Pl().UV(point) end
-    if not point.u then return end
-    current = { point = point, lines = {} }
-    card:Hide()
-    Route()
-end
 
 function Queue()
     if not current then return end

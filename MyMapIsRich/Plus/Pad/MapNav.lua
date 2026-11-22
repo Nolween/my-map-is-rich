@@ -415,7 +415,8 @@ end
 -- restent les siens et ceux d'OpenMap.
 -- La barre d'aide, comme la maquette de la carte plein écran : A Choisir,
 -- R3, LB, RB, Y (les calques : UI/Layers.lua), View, LT (l'icône
--- suivante), RT (les quêtes : UI/QuestPanel.lua), puis X et B (du jeu, en gris).
+-- suivante), RT (les quêtes : UI/QuestPanel.lua), X (la taille de la carte),
+-- puis A et B (du jeu, en gris).
 P.DefineContext("map", 10, CanvasFocus, nil, "read")
 P.SetPassive("map", "PAD1", function()
     local mod = ns.mod
@@ -461,8 +462,13 @@ end, function()
     if not ns.FullMap() then return nil end
     return "HINT_QUESTS"
 end)
--- (X : la taille de la carte, plein écran ou réduite ; UI/MapChrome.lua, mod.OnViewOut)
-P.SetPassive("map", "PAD3", function()
+-- (X : la taille de la carte, plein écran ou réduite. Lu ici, car le X du jeu
+-- (UI/MapChrome.lua, mod.OnViewOut) ne vient pas sur sa carte en fenêtre,
+-- sous la carte réduite ; s'il vient aussi, ns.PadToggleMapSize n'en compte
+-- qu'un. La carte classique : le X du jeu, dézoomer)
+P.SetAction("map", "PAD3", function()
+    if ns.FullMap() then ns.PadToggleMapSize() end
+end, function()
     if not ns.FullMap() then return nil end
     return ns.MapSmall() and "HINT_MAP_FULL" or "HINT_MAP_SMALL"
 end)

@@ -464,7 +464,7 @@ ns.AddLocale("frFR", {
     MAP_CLOSE = "Fermer la carte",
     MAP_SIZE_SMALL = "Carte réduite",
     MAP_SIZE_FULL = "Plein écran",
-    MAP_SIZE_TIP = "En plein écran, ou en fenêtre avec le jeu autour : là, ton personnage peut bouger. X à la manette.",
+    MAP_SIZE_TIP = "En plein écran, ou réduite, le jeu visible autour : là, ton personnage peut bouger. X à la manette.",
     MAP_SIZE_COMBAT = "La taille de la carte ne change pas en combat.",
     BLOCKED_CUT = "le jeu a bloqué My Map Is Rich (%s). Ce qu'il venait de faire, %s, est coupé jusqu'au prochain /reload.",
     BLOCKED_SEEN = "le jeu a bloqué My Map Is Rich (%s).",
@@ -565,6 +565,9 @@ ns.AddLocale("frFR", {
     QUESTS_TRACK = "Suivre",
     QUESTS_UNTRACK = "Ne plus suivre",
     QUESTS_SHARE = "Partager au groupe",
+    QUESTS_ABANDON = "Abandonner",
+    QUESTS_ABANDON_SURE = "Vraiment abandonner ?",
+    QUESTS_ABANDON_FAILED = "Cette quête n'a pas pu être abandonnée d'ici.",
     QUESTS_OBJECTIVES_HEAD = "Objectifs de la quête",
     QUESTS_STORY = "Description",
     QUESTS_REWARDS = "Récompenses",
@@ -572,9 +575,7 @@ ns.AddLocale("frFR", {
     QUESTS_RECEIVE = "Tu recevras :",
     QUESTS_ALSO = "Tu recevras aussi :",
     QUESTS_XP = "%s points d'expérience",
-    QUESTS_BUTTON_TIP = "Tes quêtes sur la carte, affichées à son ouverture : L ou ce bouton au clavier et à la souris, RT à la manette (B revient à la carte).",
     HINT_QUESTS = "Quêtes",
-    HINT_QUESTS_CLOSE = "Fermer les quêtes",
     HINT_QUESTS_SORT = "Par zone / les plus proches",
     HINT_QUESTS_OPEN = "Voir la quête",
     HINT_QUESTS_LIST = "Retour à la liste",
@@ -582,7 +583,7 @@ ns.AddLocale("frFR", {
     HINT_MAP_SMALL = "Carte réduite",
     HINT_MAP_FULL = "Plein écran",
     HINT_ROUTE_NOW = "Itinéraire tout de suite",
-    WHATSNEW_MMIR_0_4_0 = "• |cffffd100Tes quêtes sur la carte plein écran|r, à droite, affichées dès que la carte s'ouvre. L ou le nouveau bouton Quêtes (en haut à droite) les affiche ou les cache ; à la manette, RT entre dans la liste (et l'affiche si elle était cachée) : le curseur de la carte s'efface, la croix va de quête en quête et la carte glisse vers chacune ; B revient à la carte (la croix gauche du jeu lui rend le curseur) (LT saute désormais d'icône en icône). Fermées, elles le restent la fois suivante. Par zone ou les plus proches, une recherche, les objectifs de la quête choisie et le temps depuis toi ; la carte y glisse et montre sa zone. Itinéraire (Y), Ajouter à la file (X), Suivre, Partager. A ou un clic ouvre la fiche d'une quête, comme dans le journal du jeu : ses objectifs, son histoire, ses récompenses (objets, argent, expérience) ; B revient à la liste.\n• |cffffd100Sur la carte plein écran, ton personnage ne bouge plus|r : les touches de déplacement font glisser la carte, le saut et la course automatique ne font rien (en combat, tu te déplaces de nouveau). Le stick droit n'y tourne plus la caméra.\n• |cffffd100Le rail des calques passe à gauche|r, sous la zone ; la fiche d'un point, l'aperçu et le panneau de trajet se posent à sa droite.\n• |cffffd100Plein écran ou fenêtre|r : le nouveau bouton en haut à droite, ou X à la manette, met la carte en fenêtre, le jeu visible autour, où ton personnage peut bouger, tes quêtes toujours collées à sa droite ; de nouveau pour le plein écran. Retenu pour la fois suivante.\n• |cffffd100Le panneau de trajet|r ne s'affiche plus sur la carte ; en jeu, la flèche de son coin le replie sur son titre et le temps qu'il reste (à la manette : l'onglet Trajets de /mmir).",
+    WHATSNEW_MMIR_0_4_0 = "• |cffffd100Tes quêtes sur la carte|r, à droite, toujours affichées avec elle. À la manette, RT entre dans la liste : le curseur de la carte s'efface, la croix va de quête en quête et la carte glisse vers chacune ; B, RT ou la croix gauche reviennent à la carte (la croix gauche du jeu lui rend le curseur) (LT saute désormais d'icône en icône). Par zone ou les plus proches, une recherche, les objectifs de la quête choisie et le temps depuis toi ; la carte y glisse et montre sa zone. Itinéraire (Y), Ajouter à la file (X), Suivre, Partager. A ou un clic ouvre la fiche d'une quête, comme dans le journal du jeu : ses objectifs, son histoire, ses récompenses (objets, argent, expérience) ; B revient à la liste.\n• |cffffd100Sur la carte plein écran, ton personnage ne bouge plus|r : les touches de déplacement font glisser la carte, le saut et la course automatique ne font rien (en combat, tu te déplaces de nouveau). Le stick droit n'y tourne plus la caméra, et le stick gauche ne te fait plus marcher : sans le curseur de la carte, la manette est dans tes quêtes (dès l'ouverture de la carte) et le stick y va de quête en quête.\n• |cffffd100Le rail des calques passe à gauche|r, sous la zone ; la fiche d'un point et l'aperçu se posent à sa droite.\n• |cffffd100Plein écran ou carte réduite|r : le nouveau bouton en haut à droite, ou X à la manette, réduit la carte, le jeu visible autour, où ton personnage peut bouger ; tes quêtes y sont collées à sa droite, le rail des calques et l'aide restent les mêmes. De nouveau pour le plein écran. Retenu pour la fois suivante.\n• |cffffd100Le panneau de trajet|r ne s'affiche plus sur la carte plein écran (il reste à sa place avec la carte réduite) ; en jeu, la flèche de son coin le replie sur son titre et le temps qu'il reste (à la manette : l'onglet Trajets de /mmir).",
 })
 
 -- /mmir focus ouverture (Diag.lua)

@@ -263,6 +263,9 @@ ns.AddLocale("itIT", {
     QUESTS_TRACK = "Segui",
     QUESTS_UNTRACK = "Non seguire",
     QUESTS_SHARE = "Condividi col gruppo",
+    QUESTS_ABANDON = "Abbandona",
+    QUESTS_ABANDON_SURE = "Abbandonare davvero?",
+    QUESTS_ABANDON_FAILED = "Impossibile abbandonare questa missione da qui.",
     QUESTS_OBJECTIVES_HEAD = "Obiettivi della missione",
     QUESTS_STORY = "Descrizione",
     QUESTS_REWARDS = "Ricompense",
@@ -270,9 +273,7 @@ ns.AddLocale("itIT", {
     QUESTS_RECEIVE = "Riceverai:",
     QUESTS_ALSO = "Riceverai anche:",
     QUESTS_XP = "%s punti esperienza",
-    QUESTS_BUTTON_TIP = "Le tue missioni sulla mappa, mostrate all'apertura: L o questo pulsante con tastiera e mouse, RT con il controller (B torna alla mappa).",
     HINT_QUESTS = "Missioni",
-    HINT_QUESTS_CLOSE = "Chiudi le missioni",
     HINT_QUESTS_SORT = "Per zona / le più vicine",
     HINT_QUESTS_OPEN = "Vedi la missione",
     HINT_QUESTS_LIST = "Torna alla lista",
@@ -280,7 +281,7 @@ ns.AddLocale("itIT", {
     HINT_MAP_SMALL = "Mappa ridotta",
     HINT_MAP_FULL = "Schermo intero",
     HINT_ROUTE_NOW = "Percorso subito",
-    WHATSNEW_MMIR_0_4_0 = "• |cffffd100Le tue missioni sulla mappa a schermo intero|r, a destra, mostrate appena la mappa si apre. L o il nuovo pulsante Missioni (in alto a destra) le mostra o le nasconde; con il controller, RT entra nella lista (e la mostra se era nascosta): il cursore della mappa sparisce, la croce va da una missione all'altra e la mappa scorre fino a ciascuna; B torna alla mappa (la croce sinistra del gioco le ridà il cursore) (LT ora salta da un'icona all'altra). Chiuse, restano chiuse la volta dopo. Per zona o le più vicine, una ricerca, gli obiettivi della missione scelta e il tempo da te; la mappa ci scorre e ne mostra la zona. Percorso (Y), Aggiungi alla coda (X), Segui, Condividi. A o un clic apre la scheda di una missione, come nel registro del gioco: obiettivi, storia, ricompense (oggetti, denaro, esperienza); B torna alla lista.\n• |cffffd100Sulla mappa a schermo intero il tuo personaggio non si muove più|r: i tasti di movimento fanno scorrere la mappa, saltare e la corsa automatica non fanno nulla (in combattimento ti muovi di nuovo). Lo stick destro lì non gira più la telecamera.\n• |cffffd100La barra dei livelli passa a sinistra|r, sotto la zona; la scheda di un punto, l'anteprima e il pannello del percorso stanno alla sua destra.\n• |cffffd100Schermo intero o finestra|r: il nuovo pulsante in alto a destra, o X con il controller, mette la mappa in una finestra con il gioco attorno, dove il tuo personaggio può muoversi, con le tue missioni sempre accanto a destra; di nuovo per lo schermo intero. Ricordato per la volta successiva.\n• |cffffd100Il pannello del percorso|r non appare più sulla mappa; in gioco, la freccia nel suo angolo lo comprime al titolo e al tempo rimasto (con il controller: scheda Percorsi di /mmir).",
+    WHATSNEW_MMIR_0_4_0 = "• |cffffd100Le tue missioni sulla mappa|r, a destra, sempre mostrate con essa. Con il controller, RT entra nella lista: il cursore della mappa sparisce, la croce va da una missione all'altra e la mappa scorre fino a ciascuna; B, RT o la croce sinistra tornano alla mappa (la croce sinistra del gioco le ridà il cursore) (LT ora salta da un'icona all'altra). Per zona o le più vicine, una ricerca, gli obiettivi della missione scelta e il tempo da te; la mappa ci scorre e ne mostra la zona. Percorso (Y), Aggiungi alla coda (X), Segui, Condividi. A o un clic apre la scheda di una missione, come nel registro del gioco: obiettivi, storia, ricompense (oggetti, denaro, esperienza); B torna alla lista.\n• |cffffd100Sulla mappa a schermo intero il tuo personaggio non si muove più|r: i tasti di movimento fanno scorrere la mappa, saltare e la corsa automatica non fanno nulla (in combattimento ti muovi di nuovo). Lo stick destro lì non gira più la telecamera, e lo stick sinistro non ti fa più camminare: senza il cursore della mappa, il controller è nelle tue missioni (appena si apre la mappa) e lo stick passa da una missione all'altra.\n• |cffffd100La barra dei livelli passa a sinistra|r, sotto la zona; la scheda di un punto e l'anteprima stanno alla sua destra.\n• |cffffd100Schermo intero o mappa ridotta|r: il nuovo pulsante in alto a destra, o X con il controller, riduce la mappa, con il gioco attorno, dove il tuo personaggio può muoversi; le tue missioni stanno accanto a destra, la barra dei livelli e l'aiuto restano uguali. Di nuovo per lo schermo intero. Ricordato per la volta successiva.\n• |cffffd100Il pannello del percorso|r non appare più sulla mappa a schermo intero (con la mappa ridotta resta al suo posto); in gioco, la freccia nel suo angolo lo comprime al titolo e al tempo rimasto (con il controller: scheda Percorsi di /mmir).",
 })
 
 -- /mmir focus ouverture (Diag.lua)

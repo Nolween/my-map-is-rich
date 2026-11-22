@@ -51,6 +51,9 @@ local PLAYER_EVERY = 0.1        -- seconds between moves of your arrow
 local GROUP_EVERY = 0.5         -- ... and of your party's and raid's dots (Nav.lua's)
 local REACH = 12                -- px from the cursor that an icon counts as under it (Gamepad.lua's)
 local HOVER_EVERY = 0.05        -- seconds between looks at what's under the cursor
+local EDGE_NEAR = 2             -- the cursor this near its bounds' edge (its own units) is at it
+local EDGE_PUSH = 0.3           -- the left stick's tilt toward that edge that pans there
+local EDGE_PAN = 700            -- view px a second at full tilt, till Blizzard's own speed has been seen
 local QUESTIE_LIB = "HereBeDragonsQuestie-Pins-2.0"
 local QUESTIE_FROM = 2.5        -- the zoom Questie's icons come in at (a continent's worth of quests is too many)
 local QUESTIE_EVERY = 0.5       -- seconds between looks at which icons Questie has on the map
@@ -77,6 +80,7 @@ local questieShown = {}         -- icon -> true: placed on this view now
 local questieWait = 0
 local PlaceQuestie, QuestieTip -- (below: Apply calls the one, the other the other)
 local overWindow, wheelFrame    -- the pad's cursor over one of OpenMap's windows (its menu ...), and what scrolls there
+local edgePan = EDGE_PAN        -- view px a second at the cursor's edge, at full tilt: Blizzard's, as fast as it's been seen
 local wheelWait = 0
 local stickZoomAt = -10         -- when the right stick last zoomed the view (GetTime)
 local WHEEL_EVERY = 0.12        -- seconds between the right stick's wheel notches at full tilt
@@ -148,16 +152,47 @@ local function WorldAt(sx, sy)
 	return u + sx / (W * px), v + sy / (H * px)
 end
 
--- Blizzard's cursor stays on its map's scroll frame, smaller than the full-screen view: its place there
--- is carried over to the same place on the view (screen px both), so it reaches the view's four edges
--- (and the edge Blizzard pans at, its scroll frame's, is the view's)
-local function Project(x, y)
-	if not full then return x, y end
+-- Blizzard's cursor's bounds (its own units, as its GetCenter): where it can go on its map. Not always all
+-- of the scroll frame: the Gamepad UI's footer over the frame's bottom, or a canvas smaller than the frame,
+-- keep it short of an edge (and Blizzard's pan at that edge never comes). Read as Blizzard clamps to them
+-- (KeepPadCursor's ClampPointInBounds): a point far off each way, clamped, is a corner. nil: not known
+local function Bounds(soft)
+	local bd = soft.bounds
+	if not (bd and bd.ClampPointInBounds) then return end
+	local ok1, l, b = pcall(bd.ClampPointInBounds, bd, -1e6, -1e6)
+	local ok2, r, t = pcall(bd.ClampPointInBounds, bd, 1e6, 1e6)
+	if not (ok1 and ok2) or type(l) ~= "number" or type(b) ~= "number" or type(r) ~= "number" or type(t) ~= "number" then return end
+	-- (no more than the scroll frame, in the cursor's units: what's seen of Blizzard's map)
 	local sl, sb, sw, sh = sc:GetRect()
+	if sl then
+		local k = sc:GetEffectiveScale() / soft:GetEffectiveScale()
+		l, b = math.max(l, sl * k), math.max(b, sb * k)
+		r, t = math.min(r, (sl + sw) * k), math.min(t, (sb + sh) * k)
+	end
+	if r - l < 20 or t - b < 20 then return end
+	return l, b, r, t
+end
+
+-- Blizzard's cursor stays on its map's scroll frame, smaller than the full-screen view: its place within
+-- its bounds (else the scroll frame) is carried over to the same place on the view (screen px both), so it
+-- reaches the view's four edges (and the edge Blizzard pans at is the view's)
+local function Project(soft, cx, cy)
+	local es = soft:GetEffectiveScale()
+	if not full then return cx * es, cy * es end
 	local vl, vb, vw, vh = view:GetRect()
-	if not (sl and vl) or sw <= 0 or sh <= 0 then return x, y end
-	local ses, ves = sc:GetEffectiveScale(), view:GetEffectiveScale()
-	local fx, fy = (x / ses - sl) / sw, (y / ses - sb) / sh
+	if not vl then return cx * es, cy * es end
+	local fx, fy
+	local l, b, r, t = Bounds(soft)
+	if l then
+		fx, fy = (cx - l) / (r - l), (cy - b) / (t - b)
+	else
+		local sl, sb, sw, sh = sc:GetRect()
+		if not sl or sw <= 0 or sh <= 0 then return cx * es, cy * es end
+		local ses = sc:GetEffectiveScale()
+		fx, fy = (cx * es / ses - sl) / sw, (cy * es / ses - sb) / sh
+	end
+	fx, fy = math.max(0, math.min(1, fx)), math.max(0, math.min(1, fy))
+	local ves = view:GetEffectiveScale()
 	return (vl + fx * vw) * ves, (vb + fy * vh) * ves
 end
 
@@ -166,10 +201,26 @@ local function Cursor()
 	local soft = _G.SoftCursor
 	if not (soft and soft:IsShown()) then return end
 	if map.IsCanvasGamepadFocus and not map:IsCanvasGamepadFocus() then return end
-	local l, b, w, h = soft:GetRect()
-	if not l then return end
-	local es = soft:GetEffectiveScale()
-	return Project((l + w / 2) * es, (b + h / 2) * es)
+	local cx, cy = soft:GetCenter()
+	if not cx then return end
+	return Project(soft, cx, cy)
+end
+
+-- The left stick pushing the cursor against its bounds' edge: the pan that way, -1 to 1 each way (right and
+-- up positive), for where Blizzard's own (its gamepadScrollSpeed) doesn't come, its cursor kept short of
+-- its scroll frame's edge. 0, 0: not pushed against an edge, or not known
+local function EdgePush()
+	local soft = _G.SoftCursor
+	if not (soft and mod.PadCursorStick) then return 0, 0 end
+	local cx, cy = soft:GetCenter()
+	local l, b, r, t = Bounds(soft)
+	if not (cx and l) then return 0, 0 end
+	local ok, sx, sy = pcall(mod.PadCursorStick)
+	if not (ok and sx) then return 0, 0 end
+	local px, py = 0, 0
+	if (sx <= -EDGE_PUSH and cx <= l + EDGE_NEAR) or (sx >= EDGE_PUSH and cx >= r - EDGE_NEAR) then px = math.max(-1, math.min(1, sx)) end
+	if (sy <= -EDGE_PUSH and cy <= b + EDGE_NEAR) or (sy >= EDGE_PUSH and cy >= t - EDGE_NEAR) then py = math.max(-1, math.min(1, sy)) end
+	return px, py
 end
 
 -- the mouse (screen px), over the view and the controller not on the map: the place under it, its
@@ -774,6 +825,14 @@ local function OnUpdate(_, elapsed)
 	-- the cursor at the view's edge: Blizzard's pan speed for its map (view px a second), ours too
 	local speed = x and not dungeon and not overWindow and sc.gamepadScrollSpeed
 	local sxs, sys = speed and tonumber(speed.X) or 0, speed and tonumber(speed.Y) or 0
+	-- (and ours, the left stick pushing the cursor against an edge where Blizzard's doesn't come: its cursor
+	-- kept short of its scroll frame's edge. At Blizzard's speed, as fast as it's been seen)
+	edgePan = math.max(edgePan, math.abs(sxs), math.abs(sys))
+	if x and not dungeon and not overWindow and (sxs == 0 or sys == 0) then
+		local px, py = EdgePush()
+		if sxs == 0 then sxs = px * edgePan end
+		if sys == 0 then sys = py * edgePan end
+	end
 	if sxs ~= 0 or sys ~= 0 then
 		glide = nil
 		local W, H = S.Size()
@@ -1193,7 +1252,13 @@ local function PlaceView()
 	elseif not small then
 		view:SetAllPoints(UIParent)
 	elseif not (map.IsMaximized and map:IsMaximized()) then
-		view:SetAllPoints(map)
+		-- (Blizzard's window, but not its quest log: the D-pad right opens that log beside the map and the
+		-- window widens; the view keeps to the map, from the window's top left to the canvas's right, down to
+		-- the window's bottom. Plus's quest list, docked there, covers the log)
+		view:SetPoint("TOPLEFT", map, "TOPLEFT", 0, 0)
+		local mb, sb = map:GetBottom(), sc:GetBottom()
+		local gap = (mb and sb) and math.max(0, sb - mb) or 0
+		view:SetPoint("BOTTOMRIGHT", sc, "BOTTOMRIGHT", 0, -gap)
 	else
 		view:SetPoint("CENTER", UIParent, "CENTER", 0, 0)
 		view:SetSize(math.floor(UIParent:GetWidth() * SMALL_W), math.floor(UIParent:GetHeight() * SMALL_H))
@@ -1270,7 +1335,11 @@ local function Setup()
 		Step(button == "LeftButton")
 		hovered = h
 	end)
-	map:HookScript("OnShow", PlaceView)
+	map:HookScript("OnShow", function()
+		PlaceView()
+		-- (the window laid out by then: the gap under its canvas, PlaceView)
+		if small then C_Timer.After(0, PlaceView) end
+	end)
 	map:HookScript("OnShow", Show)
 	map:HookScript("OnHide", Hide)
 	for _, method in ipairs({ "Maximize", "Minimize" }) do
