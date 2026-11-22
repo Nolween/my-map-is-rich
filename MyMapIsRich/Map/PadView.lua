@@ -234,7 +234,7 @@ end
 local Press
 -- A: into the zone (or continent) under the cursor, or the icon under it pressed; X: out a level (as a
 -- click and right-click)
-local function Step(inward)
+local function Step(inward, pad)
 	local dungeon = mod.DungeonViewShown and mod.DungeonViewShown()
 	-- (OpenMap's windows over the map first, a dungeon's map's buttons: Gamepad.lua's presses)
 	if inward and lastX and mod.PadPress and mod.PadPress(lastX, lastY, true) then return end
@@ -262,6 +262,12 @@ local function Step(inward)
 	if not inward and mod.MenuShown and mod.MenuShown() then
 		mod.CloseMenu()
 		return
+	end
+	-- (the controller's X on the full-screen map, nothing of OpenMap's up: Plus's first, the map's size,
+	-- full screen or a window (mod.OnViewOut); else out a level, as before. Not the mouse's right click)
+	if not inward and pad and full and mod.OnViewOut then
+		local ok, taken = pcall(mod.OnViewOut)
+		if ok and taken then return end
 	end
 	-- (the icon under the cursor pressed. One marked as having nothing to press (openmapNoPress, and no
 	-- OnClick given it) lets A through: the zone under it is zoomed into, as beside it)
@@ -307,11 +313,23 @@ local function Pointer(x, y)
 	local d, gap = pointer.diamond, 16
 	d:ClearAllPoints()
 	d:SetPoint("CENTER", view, "CENTER", sx, -sy)
+	-- (each line only as far as the view's edge: the pointer isn't clipped, and the map made a window has
+	-- the game round it)
 	local L = pointer.lines
-	L[1]:ClearAllPoints() L[1]:SetSize(w, 2) L[1]:SetPoint("RIGHT", view, "CENTER", sx - gap, -sy)
-	L[2]:ClearAllPoints() L[2]:SetSize(w, 2) L[2]:SetPoint("LEFT", view, "CENTER", sx + gap, -sy)
-	L[3]:ClearAllPoints() L[3]:SetSize(2, h) L[3]:SetPoint("BOTTOM", view, "CENTER", sx, -sy + gap)
-	L[4]:ClearAllPoints() L[4]:SetSize(2, h) L[4]:SetPoint("TOP", view, "CENTER", sx, -sy - gap)
+	local lens = { w / 2 + sx - gap, w / 2 - sx - gap, h / 2 + sy - gap, h / 2 - sy - gap }
+	L[1]:ClearAllPoints() L[1]:SetPoint("RIGHT", view, "CENTER", sx - gap, -sy)
+	L[2]:ClearAllPoints() L[2]:SetPoint("LEFT", view, "CENTER", sx + gap, -sy)
+	L[3]:ClearAllPoints() L[3]:SetPoint("BOTTOM", view, "CENTER", sx, -sy + gap)
+	L[4]:ClearAllPoints() L[4]:SetPoint("TOP", view, "CENTER", sx, -sy - gap)
+	for i = 1, 4 do
+		local len = lens[i]
+		if len >= 1 then
+			if i <= 2 then L[i]:SetSize(len, 2) else L[i]:SetSize(2, len) end
+			L[i]:Show()
+		else
+			L[i]:Hide()
+		end
+	end
 	pointer:Show()
 end
 
@@ -1088,10 +1106,11 @@ end
 
 -- /mmir carte padview: how the controller view is getting on
 function mod.PadViewDiag()
-	ns:Print("Controller view: on %s, started %d, set up: %s, map opened %d times, %s; showing %s, size %s; menu %s; full screen %s (over: %s).",
+	ns:Print("Controller view: on %s, started %d, set up: %s, map opened %d times, %s; showing %s, size %s; menu %s; full screen %s (over: %s); a window %s (Blizzard's map maximized: %s).",
 		tostring(On()), diag.started, diag.setup, diag.shows, diag.why, tostring(view and view:IsShown() or false),
 		view and ("%.0f x %.0f"):format(view:GetWidth(), view:GetHeight()) or "-",
-		diag.panel or tostring(mod.PanelBuilt and mod.PanelBuilt() or false), tostring(full), diag.cover or "-")
+		diag.panel or tostring(mod.PanelBuilt and mod.PanelBuilt() or false), tostring(full), diag.cover or "-",
+		tostring(small), tostring(map and map.IsMaximized and map:IsMaximized() or false))
 end
 
 -- The waypoint. Blizzard's own, the left stick pressed (GamepadTryPlaceWaypoint), goes where its cursor is
@@ -1159,6 +1178,35 @@ local function PadPressed()
 	end
 end
 
+-- The full-screen map made a window (Plus's mapSmall: mod.ViewSetSmall), the game seen round it: the view
+-- over Blizzard's windowed map, which it covers as it covered the screen (Plus keeps that map windowed:
+-- its miniWorldMap CVar, set while it's closed). Blizzard's map full screen all the same (the CVar not
+-- read yet): a window in the screen's middle. Placed again as Blizzard's map changes size or opens
+local SMALL_W, SMALL_H = 0.66, 0.72
+local small = false
+
+local function PlaceView()
+	if not view then return end
+	view:ClearAllPoints()
+	if not full then
+		view:SetAllPoints(sc)
+	elseif not small then
+		view:SetAllPoints(UIParent)
+	elseif not (map.IsMaximized and map:IsMaximized()) then
+		view:SetAllPoints(map)
+	else
+		view:SetPoint("CENTER", UIParent, "CENTER", 0, 0)
+		view:SetSize(math.floor(UIParent:GetWidth() * SMALL_W), math.floor(UIParent:GetHeight() * SMALL_H))
+	end
+	dirty = true
+end
+
+function mod.ViewSetSmall(on)
+	small = on and true or false
+	PlaceView()
+end
+function mod.ViewSmall() return full and small or false end
+
 local function Setup()
 	map = _G.WorldMapFrame
 	sc = map and map.ScrollContainer
@@ -1178,8 +1226,9 @@ local function Setup()
 
 	full = Full()
 	view = CreateFrame("Frame", nil, map)
-	-- (the full-screen map: the whole screen, still Blizzard's map's child, so it opens and closes with it)
-	view:SetAllPoints(full and UIParent or sc)
+	-- (the full-screen map: the whole screen, or a window (PlaceView), still Blizzard's map's child, so it
+	-- opens and closes with it)
+	PlaceView()
 	view:SetClipsChildren(true)
 	view:Hide()
 	canvas = CreateFrame("Frame", nil, view)
@@ -1221,14 +1270,18 @@ local function Setup()
 		Step(button == "LeftButton")
 		hovered = h
 	end)
+	map:HookScript("OnShow", PlaceView)
 	map:HookScript("OnShow", Show)
 	map:HookScript("OnHide", Hide)
+	for _, method in ipairs({ "Maximize", "Minimize" }) do
+		if type(map[method]) == "function" then hooksecurefunc(map, method, PlaceView) end
+	end
 	-- A and X: after Blizzard's own (GamepadMapClick, GamepadMapUp) on its map underneath
 	if map.NavigateToGamepadCursor then
 		hooksecurefunc(map, "NavigateToGamepadCursor", function() if view:IsShown() then Step(true) end end)
 	end
 	if map.NavigateToParentMap then
-		hooksecurefunc(map, "NavigateToParentMap", function() if view:IsShown() then Step(false) end end)
+		hooksecurefunc(map, "NavigateToParentMap", function() if view:IsShown() then Step(false, true) end end)
 	end
 	-- the left stick pressed: its waypoint put again where this view's cursor is (PadPressed)
 	if map.GamepadTryPlaceWaypoint then

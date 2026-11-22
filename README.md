@@ -8,16 +8,16 @@ My Map Is Rich réunit dans un seul addon :
 
 ## La carte plein écran
 
-Depuis la 0.2.0, M (ou le bouton carte de la manette) ouvre la carte **en plein écran**, à la souris comme à la manette :
-- en haut à gauche, la zone sous le curseur ; dessous, le panneau de trajet ;
+Depuis la 0.2.0, M (ou le bouton carte de la manette) ouvre la carte **en plein écran**, à la souris comme à la manette (ou en fenêtre : le bouton en haut à droite, ou X à la manette, passe de l'un à l'autre ; en fenêtre, le jeu reste visible, le personnage peut bouger, et la liste des quêtes est toujours là, collée au bord droit de la carte) :
+- en haut à gauche, la zone sous le curseur (le panneau de trajet, lui, reste en jeu : la carte ouverte le cache) ;
 - en haut au milieu, **Aller à…** (LB, Ctrl+F) ;
-- en haut à droite, Quêtes, Me localiser, Me suivre, le menu de la carte et Fermer ;
+- en haut à droite, Quêtes, Me localiser, Me suivre, le menu de la carte, Plein écran / Carte réduite et Fermer ;
 - à gauche, sous la zone, **le rail des calques** (donjons, maîtres de vol, bateaux et zeppelins, quêtes, citadins, groupe, épingles, dessins) : un clic affiche ou cache un calque, un clic droit (ou Y, ou « ··· ») ouvre le panneau des calques et leurs détails ;
 - à droite, **tes quêtes**, affichées de base (L ou le bouton Quêtes les cachent ou les rouvrent ; à la manette, RT entre dans la liste, où la croix va de quête en quête, et B revient à la carte) : par zone ou les plus proches, la fiche d'une quête (A ou un clic : ses objectifs, son histoire, ses récompenses, comme dans le journal du jeu), l'itinéraire, la file, suivre, partager ;
 - en bas à droite, tes coordonnées et celles du curseur ; au bord, « Toi » quand ta flèche sort de la vue ;
 - en bas, la barre d'aide : les boutons de la manette, ou les clics et les touches à la souris.
 
-Carte ouverte (hors combat), le personnage ne bouge pas : les touches de déplacement font glisser la carte.
+Carte ouverte en plein écran (hors combat), le personnage ne bouge pas : les touches de déplacement font glisser la carte. En fenêtre, il bouge comme d'habitude.
 
 À la souris : clic gauche choisir ou zoomer, clic droit dézoomer, molette zoom, glisser pour déplacer, Maj+clic itinéraire, Ctrl+clic épingle, Alt+clic le menu des actions, clic du milieu me localiser, Échap ou M fermer.
 
@@ -35,13 +35,13 @@ La carte du jeu reste ouverte dessous, invisible : c'est elle que M, Échap et B
 | Carte | Y | Le panneau des calques (carte plein écran) |
 | Carte | View | La roue, autour du curseur : ajouter à la file, envoyer au groupe, poser une épingle, épingles, plume, menu de la carte (stick droit pour choisir, A pour valider, View pour fermer) |
 | Carte | LT / RT | Carte plein écran : LT l'icône suivante autour du curseur, RT entre dans la liste des quêtes (la croix y va de quête en quête). Carte classique : icône précédente / suivante |
-| Carte | Stick gauche, A, X, B, croix, L3, stick droit | Ceux du jeu et de la carte : curseur (sur tout l'écran, carte plein écran), appuyer / zoomer, dézoomer, fermer, Carte standard, marqueur, zoom |
+| Carte | Stick gauche, A, X, B, croix, L3, stick droit | Ceux du jeu et de la carte : curseur (sur tout l'écran, carte plein écran), appuyer / zoomer, plein écran ou fenêtre (X, carte de l'addon ; ailleurs dézoomer), fermer, Carte standard, marqueur, zoom |
 | Liste des quêtes (carte réduite) | R3 | Itinéraire jusqu'à la quête qui a le focus ; stick droit : tourner la caméra |
 | Fenêtre | Croix, A / X / B, LB / RB | D'un élément à l'autre, valider / clic droit / retour, onglets |
 | Lieux | Y / X | Itinéraire jusqu'au lieu / l'ajouter à la file ; dans la file : LT / RT monter / descendre |
 | Champ de texte | A | Clavier virtuel |
 
-Pendant un itinéraire, le **panneau de trajet** dit l'étape, le temps restant et l'heure d'arrivée (en vol : la barre de vol et l'alerte d'atterrissage), une **flèche GPS** dessous montre où aller, et la manette **vibre** à chaque étape. En fantôme, l'itinéraire mène au corps.
+Pendant un itinéraire, en jeu (la carte ouverte le cache), le **panneau de trajet** dit l'étape, le temps restant et l'heure d'arrivée (en vol : la barre de vol et l'alerte d'atterrissage), une **flèche GPS** dessous montre où aller, et la manette **vibre** à chaque étape. En fantôme, l'itinéraire mène au corps.
 
 ## Commandes
 
@@ -66,7 +66,8 @@ MyMapIsRich/                le dossier de l'addon
   Plus/                     la couche reprise d'OpenMap On Gamepad
     Init.lua Core.lua Diag.lua Locales/ Pad/ Travel/ UI/ Data/
   LICENSE  LICENSES/ (OpenMap.txt, Ace3.txt)
-tools/                      roads/ et nav/ : les données de marche (voir plus bas)
+tools/                      roads/ et nav/ : les données de marche (voir plus bas) ;
+                            media/Arrow.ps1 : la flèche GPS (Media/Arrow.tga)
 ```
 
 - **La carte** est le code d'OpenMap 0.8.11, copié tel qu'il est installé puis renommé : ses globaux (`MyMapIsRich`, `MyMapIsRichAPI`, les cadres `MyMapIsRich…`), ses sauvegardes (`MyMapIsRichDB`, `MyMapIsRichCharDB`), ses textes (« My Map Is Rich »). Les commentaires gardent le nom d'OpenMap : ils disent d'où vient le code.

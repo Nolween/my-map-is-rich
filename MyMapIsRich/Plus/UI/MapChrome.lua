@@ -1,7 +1,7 @@
 -- L'habillage de la carte plein écran (maquettes « La carte en plein écran »
 -- et « L'habillage de la carte ») :
 --   en haut à gauche  : la zone sous le curseur (sinon au centre de la vue),
---                       son continent ; dessous, le panneau de trajet
+--                       son continent (le panneau de trajet est caché carte ouverte : UI/RouteHud.lua)
 --   en haut au milieu : « Aller à… » (pour l'instant le navigateur de lieux,
 --                       sur sa recherche) ; LB à la manette, Ctrl+F au clavier
 --   en haut à droite  : Quêtes (UI/QuestPanel.lua), Me localiser, Me suivre,
@@ -36,7 +36,11 @@ local YOU_X, YOU_Y = 90, 80  -- px : le repère « Toi », loin des bords (les b
 
 local chrome                 -- le cadre de l'habillage, sur la vue
 local zone, goTo, buttons, pills, you
-local quests, locate, follow, menu, closeButton
+local quests, locate, follow, menu, size, closeButton
+local SIZE_ICONS = {         -- le bouton Taille : réduire (en plein écran), ou plein écran (réduite)
+    small = { "Interface\\Buttons\\UI-Panel-SmallerButton-Up", "RedButton-Condense" },
+    full = { "Interface\\Buttons\\UI-Panel-BiggerButton-Up", "RedButton-Expand" },
+}
 local legend                 -- (à la manette : les boutons à presser, sous les carrés)
 local LEGEND_H, LEGEND_GLYPH = 30, 22
 local wait = 0
@@ -171,6 +175,9 @@ function C.OpenMenu()
     if mod.MenuShown and mod.MenuShown() then ns.Call(mod.CloseMenu) else ns.Call(mod.OpenMenu, mod) end
 end
 
+-- Plein écran ou réduite (Plus/Core.lua : ns.SetMapSmall ; pas en combat)
+function C.ToggleSize() ns.ToggleMapSize() end
+
 ---------------------------------------------------------------------------
 -- La construction
 ---------------------------------------------------------------------------
@@ -242,7 +249,7 @@ local function MakeClose()
     b:SetAttribute("clickbutton", target)
     b:RegisterForClicks("AnyUp", "AnyDown")
     b:SetSize(SQUARE, SQUARE)
-    b:SetPoint("TOPRIGHT", UIParent, "TOPRIGHT", -(EDGE + 4), -(EDGE + 4))
+    b:SetPoint("TOPRIGHT", UIParent, "TOPRIGHT", -(EDGE + 4), -(EDGE + 4))   -- (puis au coin de la carte : PlaceClose)
     -- (la strate de la vue, au-dessus de la carte du jeu : Map/PadView.lua)
     if ns.mod.viewStrata then b:SetFrameStrata(ns.mod.viewStrata) end
     b:SetFrameLevel(LEVEL + 10)
@@ -261,10 +268,23 @@ local function MakeClose()
     closeButton = b
 end
 
+-- La croix sécurisée au coin haut droit de la carte, plein écran ou réduite :
+-- posée sur l'écran (pas sur la carte, qui n'est pas un cadre protégé), d'après
+-- la place de la carte ; hors combat seulement (en combat, la carte ne change
+-- ni de taille ni de place : ns.SetMapSmall)
+local function PlaceClose()
+    if not (closeButton and chrome) or InCombatLockdown() then return end
+    local right, top = chrome:GetRight(), chrome:GetTop()
+    if not (right and top) then return end
+    closeButton:ClearAllPoints()
+    closeButton:SetPoint("TOPRIGHT", UIParent, "BOTTOMLEFT", right - (EDGE + 4), top - (EDGE + 4))
+end
+C.PlaceClose = PlaceClose
+
 local function BuildButtons()
-    -- (cinq carrés : la croix sécurisée se pose à la place du cinquième)
+    -- (six carrés : la croix sécurisée se pose à la place du sixième)
     buttons = UI.Overlay(chrome)
-    buttons:SetSize(4 + 5 * SQUARE + 4 * 4 + 4, SQUARE + 8)
+    buttons:SetSize(4 + 6 * SQUARE + 5 * 4 + 4, SQUARE + 8)
     buttons:SetPoint("TOPRIGHT", chrome, "TOPRIGHT", -EDGE, -EDGE)
     -- (les quêtes : le bouton du journal, comme celui de la carte du jeu ; UI/QuestPanel.lua)
     quests = Square("Interface\\QuestFrame\\UI-QuestLog-BookIcon", L.QUESTS_TITLE, L.QUESTS_BUTTON_TIP, function()
@@ -278,12 +298,12 @@ local function BuildButtons()
     follow = Square("Interface\\Icons\\Ability_Tracking", L.MAP_FOLLOW, L.MAP_FOLLOW_TIP, C.ToggleFollow, true)
     follow:SetPoint("LEFT", locate, "RIGHT", 4, 0)
     -- (à la manette : sous les carrés, une bande avec le bouton à presser sous
-    -- chacun, en grand : RT les quêtes, RB me suivre, B fermer la carte)
+    -- chacun, en grand : RT les quêtes, RB me suivre, X la taille, B fermer la carte)
     legend = UI.Overlay(chrome)
     legend:SetSize(buttons:GetWidth(), LEGEND_H)
     legend:SetPoint("TOPRIGHT", buttons, "BOTTOMRIGHT", 0, -2)
     legend:EnableMouse(false)
-    for slot, key in pairs({ [1] = "PADRTRIGGER", [3] = "PADRSHOULDER", [5] = "PAD2" }) do
+    for slot, key in pairs({ [1] = "PADRTRIGGER", [3] = "PADRSHOULDER", [5] = "PAD3", [6] = "PAD2" }) do
         local g = UI.CreateGlyph(legend, LEGEND_GLYPH)
         g:SetPoint("CENTER", legend, "LEFT", 4 + (slot - 1) * (SQUARE + 4) + SQUARE / 2, 0)
         g:SetKey(key)
@@ -291,9 +311,42 @@ local function BuildButtons()
     legend:Hide()
     menu = Square("Interface\\Icons\\INV_Misc_Gear_01", L.MAP_SETTINGS, L.MAP_MENU_TIP, C.OpenMenu)
     menu:SetPoint("LEFT", follow, "RIGHT", 4, 0)
+    -- (la taille : réduire la carte en fenêtre, ou la remettre en plein écran ; X à la manette)
+    size = Square(SIZE_ICONS.small[1], function()
+        return ns.MapSmall() and L.MAP_SIZE_FULL or L.MAP_SIZE_SMALL
+    end, L.MAP_SIZE_TIP, C.ToggleSize)
+    size:SetPoint("LEFT", menu, "RIGHT", 4, 0)
     Roots(buttons)
     MakeClose()
 end
+
+-- La bande du haut selon la largeur de la carte (plein écran ou réduite) : la
+-- zone un peu plus étroite sur une petite carte ; « Aller à… » au milieu s'il
+-- y tient, sinon entre la zone et les boutons ; trop étroit, il ne garde que
+-- la loupe (et la pastille LB à la manette)
+local GOTO_W, GOTO_MIN, GOTO_TEXT = 400, 64, 150
+
+local function Layout()
+    if not (chrome and zone and goTo and buttons) then return end
+    local w = chrome:GetWidth() or 0
+    if w <= 0 then return end
+    local zoneW = math.min(300, math.max(180, math.floor(w * 0.24)))
+    zone:SetWidth(zoneW)
+    local leftEdge = EDGE + zoneW + 8
+    local rightEdge = w - EDGE - buttons:GetWidth() - 8
+    goTo:ClearAllPoints()
+    if w / 2 - GOTO_W / 2 >= leftEdge and w / 2 + GOTO_W / 2 <= rightEdge then
+        goTo:SetWidth(GOTO_W)
+        goTo:SetPoint("TOP", chrome, "TOP", 0, -EDGE)
+    else
+        goTo:SetWidth(math.max(GOTO_MIN, math.min(GOTO_W, rightEdge - leftEdge)))
+        goTo:SetPoint("TOPLEFT", chrome, "TOPLEFT", leftEdge, -EDGE)
+    end
+    goTo.narrow = goTo:GetWidth() < GOTO_TEXT
+    goTo.text:SetShown(not goTo.narrow)
+    goTo.keys:SetShown(not ns.PadUI() and not goTo.narrow)
+end
+C.Layout = Layout
 
 local function BuildPills()
     pills = CreateFrame("Frame", nil, chrome)
@@ -418,9 +471,15 @@ local function UpdateButtons()
     end
     legend:SetShown(pad)
     goTo.glyph:SetShown(pad)
-    goTo.keys:SetShown(not pad)
+    goTo.keys:SetShown(not pad and not goTo.narrow)
     quests.key:SetShown(not pad)
     quests:SetOn((ns.QuestPanel and ns.QuestPanel.Shown()) and true or nil)
+    -- (le bouton Taille : ce qu'il fera, réduire ou plein écran)
+    local icon = ns.MapSmall() and SIZE_ICONS.full or SIZE_ICONS.small
+    if size.shownIcon ~= icon then
+        size.shownIcon = icon
+        size:SetIcon(icon[1], icon[2])
+    end
 end
 
 -- Le bouton Quêtes allumé quand le panneau des quêtes est ouvert (UI/QuestPanel.lua)
@@ -458,6 +517,7 @@ local keyOwner = CreateFrame("Frame")
 -- nord, reculer : vers le sud, à gauche et à droite) ; sauter, la course
 -- automatique, s'asseoir ne font rien. Posé hors combat seulement, ôté au
 -- début d'un combat : en combat, le personnage se déplace comme toujours.
+-- La carte réduite les laisse au personnage, comme la carte en fenêtre du jeu.
 -- (Ni les boutons de la souris ni ceux de la manette : la carte en a besoin.)
 ---------------------------------------------------------------------------
 local MOVES = {
@@ -513,7 +573,7 @@ local function BindKeys()
     wipe(held)
     if chrome and chrome:IsVisible() and goTo then
         SetOverrideBindingClick(keyOwner, true, "CTRL-F", goTo:GetName(), "LeftButton")
-        for action, dir in pairs(MOVES) do
+        for action, dir in pairs(ns.MapSmall() and {} or MOVES) do
             for _, key in ipairs({ GetBindingKey(action) }) do
                 if Keyboard(key) and key ~= "CTRL-F" then
                     SetOverrideBindingClick(keyOwner, true, key, PanButton(dir):GetName(), "LeftButton")
@@ -526,6 +586,23 @@ end
 local function UnbindKeys()
     wipe(held)
     if not InCombatLockdown() then ClearOverrideBindings(keyOwner) end
+end
+
+-- La croix bas du jeu agrandit sa carte en fenêtre, celle qui est sous la
+-- nôtre. La neutraliser par un raccourci de l'addon brouillait l'interface
+-- manette (le jeu bloquait ensuite SetPreferredGamepadInteractTarget) : elle
+-- reste au jeu. Si elle agrandit la carte du jeu sous la carte réduite, la
+-- nôtre passe aussi en plein écran, plutôt que de rester une fenêtre sur fond
+-- noir ; X reste le bouton pour passer de l'une à l'autre.
+local sizeHooked = false
+local function HookGameSize()
+    local map = _G.WorldMapFrame
+    if sizeHooked or not (map and type(map.Maximize) == "function") then return end
+    sizeHooked = true
+    hooksecurefunc(map, "Maximize", function()
+        if not (ns.FullMap() and ns.MapShown() and ns.MapSmall()) or InCombatLockdown() then return end
+        C_Timer.After(0, function() ns.SetMapSmall(false) end)
+    end)
 end
 
 ---------------------------------------------------------------------------
@@ -547,6 +624,18 @@ local function Build()
     -- (le nom de la zone est le nôtre, en haut à gauche : PadView.lua n'écrit plus le sien)
     mod.viewChrome = true
     mod.OnViewClick = OnViewClick
+    -- (X à la manette, rien d'OpenMap ouvert : la taille de la carte, au lieu
+    -- de dézoomer ; le stick droit zoome. En combat, un message : ns.SetMapSmall)
+    mod.OnViewOut = function()
+        ns.ToggleMapSize()
+        return true
+    end
+    -- (la carte change de taille : la croix sécurisée la suit)
+    chrome:HookScript("OnSizeChanged", function()
+        Layout()
+        C_Timer.After(0, PlaceClose)
+    end)
+    Layout()
     ns.Fire("MAP_CHROME", chrome)
     return chrome
 end
@@ -568,8 +657,10 @@ local function OnShow()
     if not ns.FullMap() then return end
     if not Build() then return end
     wait = 0
+    HookGameSize()
     BindKeys()
     MakeClose()
+    PlaceClose()
 end
 
 ns.On("MAP_SHOW", function()
@@ -578,6 +669,39 @@ ns.On("MAP_SHOW", function()
     C_Timer.After(0, OnShow)
 end)
 ns.On("MAP_HIDE", UnbindKeys)
+
+-- Plein écran ou réduite : la croix au coin, les touches de déplacement
+-- (rendues au personnage sur la carte réduite), le bouton Taille
+ns.On("MAP_SIZE", function()
+    if not chrome then return end
+    if ns.MapShown() then BindKeys() end
+    wait = 0
+    C_Timer.After(0, function()
+        Layout()
+        PlaceClose()
+    end)
+end)
+
+-- La carte du jeu gardée en fenêtre sous la nôtre (son réglage miniWorldMap,
+-- seulement lui, carte fermée et hors combat) : la carte réduite se pose
+-- dessus et la couvre (Map/PadView.lua) ; en plein écran, elle est couverte
+-- de toute façon
+local function KeepGameWindowed()
+    if not ns.FullMap() or InCombatLockdown() or ns.MapShown() then return end
+    local get = (C_CVar and C_CVar.GetCVar) or GetCVar
+    local set = (C_CVar and C_CVar.SetCVar) or SetCVar
+    if not (get and set) then return end
+    local ok, now = pcall(get, "miniWorldMap")
+    if ok and now ~= nil and now ~= "1" then pcall(set, "miniWorldMap", "1") end
+end
+
+ns.On("READY", function()
+    -- (la taille choisie, pour la carte : Map/PadView.lua)
+    local mod = ns.mod
+    if mod and mod.ViewSetSmall then ns.Call(mod.ViewSetSmall, ns.db.options.mapSmall) end
+    C_Timer.After(1, KeepGameWindowed)
+end)
+ns.On("MAP_HIDE", function() C_Timer.After(0, KeepGameWindowed) end)
 
 local events = CreateFrame("Frame")
 events:RegisterEvent("PLAYER_REGEN_DISABLED")
@@ -591,5 +715,8 @@ events:SetScript("OnEvent", function(_, event)
     elseif ns.MapShown() then
         BindKeys()
         MakeClose()
+        PlaceClose()
+    else
+        KeepGameWindowed()
     end
 end)

@@ -72,7 +72,9 @@ local function Wanted()
     -- surtout : posée sous le curseur, il n'est plus « sur la carte », et la
     -- caméra tournait pendant qu'on choisissait)
     local current = ns.Pad and ns.Pad.current
-    if current and current ~= "questlog" then return false end
+    -- (la carte réduite de l'addon : aussi sur sa liste de quêtes, UI/QuestPanel.lua)
+    local ours = ns.MapSmall() and (current == "quests" or current == "questpage")
+    if current and current ~= "questlog" and not ours then return false end
     if ns.ActionBar and ns.ActionBar.Shown() then return false end
     -- (le curseur sur la carte : le stick y zoome, OpenMap ; Pad/MapNav.lua)
     return not ns.MapNav.CursorOnMap()
@@ -185,8 +187,18 @@ events:SetScript("OnEvent", function(_, _, addon, fn)
     end
 end)
 
--- (la carte plein écran couvre tout : le stick droit y est à la carte, jamais à la caméra)
-ns.On("MAP_SHOW", function() if not blocked and not ns.FullMap() then driver:Show() end end)
+-- (la carte plein écran couvre tout : le stick droit y est à la carte, jamais à
+-- la caméra ; réduite, le jeu est visible autour, comme la carte en fenêtre)
+local function Drives() return not ns.FullMap() or ns.MapSmall() end
+ns.On("MAP_SHOW", function() if not blocked and Drives() then driver:Show() end end)
+ns.On("MAP_SIZE", function()
+    if not blocked and ns.MapShown() and Drives() then
+        driver:Show()
+    else
+        StopAll()
+        driver:Hide()
+    end
+end)
 ns.On("MAP_HIDE", function()
     StopAll()
     driver:Hide()

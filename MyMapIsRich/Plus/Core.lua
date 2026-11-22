@@ -33,8 +33,9 @@ local DEFAULTS = {
     enabled = true,        -- l'addon prend la manette carte ouverte
     padView = true,        -- forcer la vue manette d'OpenMap (son option « padView »)
     classicMap = false,    -- la carte dessinée dans celle du jeu (sinon : la carte plein écran ; après un /reload)
+    mapSmall = false,      -- la carte de l'addon réduite, en fenêtre (sinon en plein écran ; X à la manette, le bouton Taille)
     layerMemory = {},      -- les clés d'un calque à plusieurs clés, allumées quand on l'a éteint (UI/Layers.lua)
-    questsOpen = true,     -- les quêtes ouvertes avec la carte plein écran (fermées par le joueur : retenu ; UI/QuestPanel.lua)
+    questsShown = true,    -- les quêtes affichées avec la carte plein écran : comme le joueur les a laissées en fermant la carte (UI/QuestPanel.lua)
     jump = true,           -- la croix saute d'icône en icône sur la carte
     magnet = true,         -- le curseur au repos près d'une icône : la vue s'y recale
     magnetRadius = 24,     -- px autour du curseur
@@ -52,6 +53,7 @@ local DEFAULTS = {
     travelTerrain = true,  -- les chemins à pied contournent les obstacles (Travel/Nav.lua)
     travelMinimap = true,  -- l'itinéraire aussi sur la minimap
     travelHud = true,      -- le panneau de trajet (UI/RouteHud.lua)
+    hudFolded = false,     -- ... replié : l'en-tête et le temps qu'il reste seulement
     travelArrow = true,    -- la flèche GPS sous le panneau de trajet
     travelRumble = true,   -- la manette vibre à chaque étape (Pad/Rumble.lua)
     travelSound = true,    -- un son à chaque étape et à l'arrivée
@@ -217,6 +219,66 @@ function ns.FullMap()
     return ok and on or false
 end
 
+-- La carte de l'addon réduite : une fenêtre, le jeu visible autour, le
+-- personnage libre de bouger (ns.db.options.mapSmall ; sinon, le plein
+-- écran). Le bouton Taille de l'habillage ou X à la manette passent de l'une
+-- à l'autre (UI/MapChrome.lua) ; pas en combat (la croix sécurisée de la
+-- carte se déplace avec elle). La carte (Map/PadView.lua) se pose en
+-- conséquence, puis « MAP_SIZE » prévient l'habillage.
+function ns.MapSmall()
+    return ns.FullMap() and ns.db and ns.db.options.mapSmall and true or false
+end
+
+function ns.SetMapSmall(on)
+    if not (ns.db and ns.FullMap()) then return end
+    on = on and true or false
+    if InCombatLockdown() then
+        ns.Print(L.MAP_SIZE_COMBAT)
+        return
+    end
+    ns.db.options.mapSmall = on
+    local mod = ns.mod
+    if mod and mod.ViewSetSmall then ns.Call(mod.ViewSetSmall, on) end
+    ns.Fire("MAP_SIZE", on)
+end
+
+function ns.ToggleMapSize() ns.SetMapSmall(not ns.MapSmall()) end
+
+---------------------------------------------------------------------------
+-- Les gestes de l'addon qui touchent à l'interface du jeu (rendre la manette
+-- à sa carte, choisir une quête dans son journal, reposer nos raccourcis
+-- après les siens) : chacun est noté juste avant (ns.Risky). Si le jeu bloque
+-- l'addon (« bloqué à cause d'une action qui n'est utilisable que par l'IU de
+-- Blizzard ») dans la seconde qui suit, ce geste est coupé jusqu'au /reload,
+-- et la discussion dit lequel : la fenêtre du jeu ne revient plus pour lui.
+---------------------------------------------------------------------------
+local RISKY_WINDOW = 1.0
+local riskyAt, riskyOff = {}, {}
+
+-- (vrai : le geste peut se faire, et il est noté ; faux : il a été coupé)
+function ns.Risky(name)
+    if riskyOff[name] then return false end
+    riskyAt[name] = GetTime()
+    return true
+end
+
+local blockedEvents = CreateFrame("Frame")
+blockedEvents:RegisterEvent("ADDON_ACTION_BLOCKED")
+blockedEvents:RegisterEvent("ADDON_ACTION_FORBIDDEN")
+blockedEvents:SetScript("OnEvent", function(_, _, addon, fn)
+    if addon ~= ADDON then return end
+    local now, culprit, at = GetTime(), nil, -1
+    for name, t in pairs(riskyAt) do
+        if now - t <= RISKY_WINDOW and t > at and not riskyOff[name] then culprit, at = name, t end
+    end
+    if culprit then
+        riskyOff[culprit] = true
+        ns.Print(L.BLOCKED_CUT, tostring(fn or "?"), culprit)
+    else
+        ns.Print(L.BLOCKED_SEEN, tostring(fn or "?"))
+    end
+end)
+
 ---------------------------------------------------------------------------
 -- Les maîtres de vol appris : OpenMap les retient (mod.char.flightsKnown)
 -- quand on ouvre la carte d'un maître de vol, et mesure les temps de vol ;
@@ -338,6 +400,11 @@ SlashCmdList.MYMAPISRICH = function(msg)
         if ns.Travel then
             ns.Travel.ClearQueue()
             ns.Print(L.TRAVEL_QUEUE_CLEARED)
+        end
+    elseif cmd == "panneau replier" or cmd == "hud fold" then
+        -- (le panneau de trajet replié ou déplié : UI/RouteHud.lua)
+        if ns.RouteHud then
+            ns.Print(ns.RouteHud.ToggleFold() and L.HUD_FOLDED or L.HUD_UNFOLDED)
         end
     elseif cmd == "panneau" or cmd == "hud" then
         -- (le panneau de trajet remis à sa place : UI/RouteHud.lua)

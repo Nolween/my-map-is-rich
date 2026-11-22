@@ -461,7 +461,11 @@ end, function()
     if not ns.FullMap() then return nil end
     return "HINT_QUESTS"
 end)
-P.SetPassive("map", "PAD3", function() return ns.FullMap() and "HINT_ZOOM_OUT" or nil end)
+-- (X : la taille de la carte, plein écran ou réduite ; UI/MapChrome.lua, mod.OnViewOut)
+P.SetPassive("map", "PAD3", function()
+    if not ns.FullMap() then return nil end
+    return ns.MapSmall() and "HINT_MAP_FULL" or "HINT_MAP_SMALL"
+end)
 P.SetPassive("map", "PAD2", function() return ns.FullMap() and "HINT_CLOSE_MAP" or nil end)
 
 -- La plume sortie : A pose et lève la plume, X la range (OpenMap) ; View

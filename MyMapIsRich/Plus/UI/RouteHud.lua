@@ -14,9 +14,12 @@
 -- connaît), et une alerte s'affiche avant l'atterrissage. En fantôme, le
 -- panneau mène au corps. Pendant un ralliement (Travel/Share.lua), le temps
 -- de chaque membre du groupe s'ajoute en dessous.
--- Carte ouverte, il est en haut à gauche de la vue ; carte fermée, à la place
--- choisie (on le glisse à la souris). Masqué en combat ; réglage « Panneau de
--- trajet » (onglet Trajets).
+-- En jeu seulement, à la place choisie (on le glisse à la souris) : la carte
+-- ouverte le cache (le tracé et la fiche y disent déjà le trajet). Masqué en
+-- combat ; réglage « Panneau de trajet » (onglet Trajets).
+-- Repliable : la flèche de son coin (ou le bouton de l'onglet Trajets, à la
+-- manette, ou /mmir panneau replier) ne laisse que l'en-tête et le temps qu'il
+-- reste (ns.db.options.hudFolded) ; la flèche GPS reste.
 local _, root = ...
 local ns = root.Plus
 local L = ns.L
@@ -90,7 +93,13 @@ local function Place()
     -- (la carte plein écran : sous le nom de la zone, à droite du rail des
     -- calques, UI/MapChrome.lua, UI/Layers.lua)
     if ns.MapShown() and ns.FullMap() then
-        frame:SetPoint("TOPLEFT", UIParent, "TOPLEFT", 74, -66)
+        -- (plein écran ou réduite : depuis le coin de la carte)
+        local chrome = ns.MapChrome and ns.MapChrome.Frame()
+        if chrome then
+            frame:SetPoint("TOPLEFT", chrome, "TOPLEFT", 74, -66)
+        else
+            frame:SetPoint("TOPLEFT", UIParent, "TOPLEFT", 74, -66)
+        end
         return
     end
     if ns.MapShown() and sc then
@@ -129,11 +138,21 @@ local function Build()
     UI.Border(f, "panelEdge", 1)
     UI.Border(f, 0, 0, 0, 0.7, 1)
 
+    -- (replier / déplier : une flèche dans le coin)
+    f.fold = UI.Button(f, "", 20, 20, "grey")
+    f.fold:SetPoint("TOPRIGHT", -8, -8)
+    f.fold.arrow = f.fold:CreateTexture(nil, "ARTWORK")
+    f.fold.arrow:SetSize(10, 9)
+    f.fold.arrow:SetPoint("CENTER")
+    f.fold.arrow:SetTexture("Interface\\Buttons\\UI-SortArrow")
+    f.fold:SetScript("OnClick", function() H.ToggleFold() end)
+    UI.Tip(f.fold, function() return ns.db.options.hudFolded and L.HUD_UNFOLD or L.HUD_FOLD end)
+
     f.title = UI.Text(f, "GameFontNormalLarge")
     f.title:SetPoint("TOPLEFT", PAD, -PAD)
     f.dest = UI.DimText(f, "")
     f.dest:SetPoint("LEFT", f.title, "RIGHT", 10, 0)
-    f.dest:SetPoint("RIGHT", f, "RIGHT", -PAD, 0)
+    f.dest:SetPoint("RIGHT", f.fold, "LEFT", -6, 0)
     f.dest:SetJustifyH("RIGHT")
     f.dest:SetWordWrap(false)
 
@@ -193,21 +212,23 @@ local function Build()
     -- (le ralliement)
     f.rallyHead = UI.Text(f, "GameFontNormal")
 
-    -- (la flèche GPS, sous le panneau : un disque cerclé d'or, la flèche qui
-    -- tourne dedans ; verte quand on va dans la bonne direction)
+    -- (la flèche GPS, sous le panneau : un disque sombre au liseré du panneau,
+    -- un cran doré en haut pour « devant toi », et la flèche de l'addon
+    -- (Media/Arrow.tga, tools/media/Arrow.ps1) qui tourne dedans ; dorée,
+    -- verte quand on va dans la bonne direction)
     local a = CreateFrame("Frame", nil, f)
     a:SetSize(ARROW, ARROW)
-    a:SetPoint("TOP", f, "BOTTOM", 0, -6)
-    UI.Fill(UI.Disc(a, ARROW, "BACKGROUND", 0), "goldDim", 0.95)
-    UI.Fill(UI.Disc(a, ARROW - 4, "BACKGROUND", 1), "panelTop", 0.95)
+    a:SetPoint("TOP", f, "BOTTOM", 0, -UI.PAGE_GAP)
+    UI.Fill(UI.Disc(a, ARROW, "BACKGROUND", 0), "panelEdge", 1)
+    UI.Fade(UI.Disc(a, ARROW - 2, "BACKGROUND", 1), "VERTICAL", "panelBottom", 0.95, "panelTop", 0.95)
+    a.notch = a:CreateTexture(nil, "BORDER")
+    a.notch:SetSize(2, 6)
+    a.notch:SetPoint("TOP", 0, -3)
+    UI.Fill(a.notch, "goldDim", 1)
     a.tex = a:CreateTexture(nil, "ARTWORK")
-    a.tex:SetSize(ARROW - 22, ARROW - 22)
+    a.tex:SetSize(ARROW - 14, ARROW - 14)
     a.tex:SetPoint("CENTER")
-    if UI.HasAtlas("Navigation-Tracked-Arrow") then
-        a.tex:SetAtlas("Navigation-Tracked-Arrow")
-    else
-        a.tex:SetTexture("Interface\\Minimap\\MinimapArrow")
-    end
+    a.tex:SetTexture("Interface\\AddOns\\MyMapIsRich\\Media\\Arrow")
     a:Hide()
     a:SetScript("OnUpdate", function(self, elapsed) H.UpdateArrow(self, elapsed) end)
     f.arrow = a
@@ -331,6 +352,8 @@ end
 local function Wanted()
     if not (ns.db and ns.db.options.travelHud ~= false and ns.Ready()) then return false end
     if InCombatLockdown() then return false end
+    -- (carte ouverte : caché ; le tracé et la fiche disent le trajet)
+    if ns.MapShown() then return false end
     local share = ns.TravelShare
     return (T() and T().Active()) or (share and share.Rally() ~= nil) or false
 end
@@ -474,8 +497,36 @@ function H.Refresh()
     end
     for i = n + 1, #members do members[i]:Hide() end
 
+    -- (replié : l'en-tête seul, le temps qu'il reste à la place de la destination)
+    local folded = ns.db.options.hudFolded and true or false
+    if folded then
+        f.well:Hide()
+        f.time:Hide()
+        f.timeSub:SetText("")
+        f.arrival:SetText("")
+        f.bar:Hide()
+        f.alert:Hide()
+        f.rule:Hide()
+        f.foot:Hide()
+        f.rallyHead:Hide()
+        for i = 1, #members do members[i]:Hide() end
+        local left = st and (st.flight and st.flight.left or st.remaining)
+        f.dest:SetText(left and H.Duration(left) or "")
+        y = -(PAD + 22)
+    end
+    -- (la flèche : vers le bas pour déplier, vers le haut pour replier)
+    if folded then f.fold.arrow:SetTexCoord(0, 0.5625, 0, 1) else f.fold.arrow:SetTexCoord(0, 0.5625, 1, 0) end
+
     f:SetHeight(-y + PAD)
     f:Show()
+end
+
+-- Replier ou déplier le panneau (la flèche, l'onglet Trajets, /mmir panneau replier)
+function H.ToggleFold()
+    if not ns.db then return end
+    ns.db.options.hudFolded = not ns.db.options.hudFolded
+    if frame and frame:IsShown() then H.Refresh() end
+    return ns.db.options.hudFolded
 end
 
 local ticker = CreateFrame("Frame")

@@ -4,7 +4,7 @@
 
 **Tes quêtes sur la carte plein écran.**
 
-- **Affichées de base** quand la carte plein écran s'ouvre. Si tu les fermes, elles restent fermées les fois suivantes.
+- **Affichées de base** quand la carte plein écran s'ouvre. Ensuite, elles restent comme tu les as laissées en fermant la carte : affichées ou cachées.
   - Au clavier et à la souris, **L** ou le nouveau bouton **Quêtes** (le premier en haut à droite) les affiche ou les cache.
   - À la manette, **RT** entre dans la liste (et l'affiche si elle était cachée ; Start reste au menu en cercle). Dans la liste, le curseur de la carte s'efface : **la croix** va de quête en quête, et la carte glisse vers chacune. LT y change le tri, RT ferme les quêtes, **B** revient à la carte, qui retrouve son curseur. À l'ouverture de la carte, la liste affichée reste au repos : la carte garde son curseur, et **A** sur une quête, au curseur, entre aussi dans la liste.
   - Sur la carte plein écran, **LT** saute d'icône en icône autour du curseur (c'était RT).
@@ -14,7 +14,9 @@
   - **A, ou un clic, ouvre la fiche d'une quête** à la place de la liste, comme dans le journal du jeu : ses objectifs, son histoire, ses récompenses (les objets au choix ou donnés, avec leur info-bulle, l'argent, l'expérience) et le temps pour y aller depuis toi. **B** (ou Retour) revient à la liste ;
   - à la manette, dans la fiche : la croix haut / bas fait défiler, gauche / droite va de récompense en récompense, A suit la quête, Y l'itinéraire, X la file, LT la partage.
 - **Choisir une quête** fait glisser la carte jusqu'à elle et montre sa zone. Itinéraire (Y) ouvre l'aperçu du trajet, Ajouter à la file (X), Suivre, Partager au groupe. À la souris : Maj+clic sur une quête part tout de suite, clic droit l'ajoute à la file.
-- **Le rail des calques passe à gauche**, sous la zone. La fiche d'un point, l'aperçu d'un itinéraire et le panneau de trajet se posent à sa droite.
+- **Plein écran ou fenêtre.** Le nouveau bouton en haut à droite (à côté de la croix), ou **X** à la manette, met la carte en fenêtre : le jeu reste visible autour et ton personnage peut bouger, comme avec la carte en fenêtre du jeu. Tes quêtes y sont toujours affichées, hors de la carte, collées à son bord droit (la croix gauche, RT ou B rendent la manette et le curseur à la carte). Le même geste la remet en plein écran (la croix bas du jeu, qui agrandit sa propre carte, y met aussi celle de l'addon). Le choix est retenu pour la fois suivante. Pas en combat. (X ferme toujours d'abord une fenêtre de la carte ouverte, comme la carte d'un donjon ou la plume ; le stick droit zoome.)
+- **Le panneau de trajet** ne s'affiche plus sur la carte (le tracé et la fiche y disent déjà le trajet) ; en jeu, **il se replie** : la flèche de son coin ne laisse que l'en-tête et le temps qu'il reste. À la manette : le bouton « Replier / déplier le panneau » de l'onglet Trajets (`/mmir`), ou `/mmir panneau replier`. **La flèche GPS** sous le panneau est redessinée : une flèche nette, dorée (verte dans la bonne direction), dans un disque sombre marqué d'un cran doré pour « devant toi ».
+- **Le rail des calques passe à gauche**, sous la zone. La fiche d'un point et l'aperçu d'un itinéraire se posent à sa droite.
 - **Sur la carte plein écran, ton personnage ne bouge plus.** Les touches de déplacement font glisser la carte ; le saut, la course automatique et s'asseoir ne font rien. En combat, tout redevient normal. À la manette, le stick droit n'y tourne plus la caméra.
 
 ## 0.3.0

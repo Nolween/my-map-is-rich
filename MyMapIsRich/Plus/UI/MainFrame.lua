@@ -297,6 +297,13 @@ local function BuildTravel(page)
     end)
     y = y - 58
     Option(right, "travelArrow", L.OPT_TRAVEL_ARROW, L.OPT_TRAVEL_ARROW_TIP, y)
+    -- (sur la même ligne, à droite : replier ou déplier le panneau, à la
+    -- manette aussi ; à la souris, la flèche de son coin le fait)
+    local fold = UI.Button(right, L.OPT_TRAVEL_HUD_FOLD, 210, 22, "grey")
+    fold:SetPoint("TOPRIGHT", -16, y)
+    fold:SetScript("OnClick", function()
+        if ns.RouteHud then ns.RouteHud.ToggleFold() end
+    end)
     y = y - 52
     Option(right, "travelMinimap", L.OPT_TRAVEL_MINIMAP, L.OPT_TRAVEL_MINIMAP_TIP, y)
     y = y - 52

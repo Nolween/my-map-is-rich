@@ -62,8 +62,12 @@ local function Place()
     local footer = map and map.worldMapFooter
     local above = type(footer) == "table" and footer.isShown and FOOTER_H or 0
     bar:ClearAllPoints()
-    -- (la carte plein écran : en bas de l'écran, le pied de la carte du jeu caché dessous)
-    if ns.FullMap() then
+    -- (la carte plein écran : en bas de l'écran, le pied de la carte du jeu caché
+    -- dessous ; réduite, en bas de sa fenêtre)
+    local view = ns.MapSmall() and ns.mod.ViewFrame and ns.mod.ViewFrame()
+    if view then
+        bar:SetPoint("BOTTOM", view, "BOTTOM", 0, 6)
+    elseif ns.FullMap() then
         bar:SetPoint("BOTTOM", UIParent, "BOTTOM", 0, 6)
     elseif sc then
         bar:SetPoint("BOTTOM", sc, "BOTTOM", 0, 6 + above)
@@ -118,6 +122,17 @@ local MOUSE_HINTS = {
     questpage = {
         { { "wheel" }, "HINT_SCROLL" },
         { { "L" }, "HINT_QUESTS_CLOSE", true },
+        { { "ESC" }, "HINT_CLOSE_MAP", true },
+    },
+    -- (la carte réduite : la liste des quêtes y reste, L ne la ferme pas)
+    questsDocked = {
+        { { "clickL" }, "HINT_QUESTS_OPEN" },
+        { { "SHIFT", "+", "clickL" }, "HINT_ROUTE_NOW" },
+        { { "clickR" }, "ACT_QUEUE" },
+        { { "ESC" }, "HINT_CLOSE_MAP", true },
+    },
+    questpageDocked = {
+        { { "wheel" }, "HINT_SCROLL" },
         { { "ESC" }, "HINT_CLOSE_MAP", true },
     },
 }
@@ -212,7 +227,13 @@ function H.Refresh()
         local ctx = "map"
         if ns.Layers and ns.Layers.PanelShown() then ctx = "rail"
         elseif ns.QuestPanel and ns.QuestPanel.Shown() then
-            ctx = ns.QuestPanel.View() == "quest" and "questpage" or "quests"
+            -- (la carte réduite : la liste est toujours là, à côté de la carte ;
+            -- son aide quand la souris est dessus, celle de la carte sinon)
+            if not ns.MapSmall() then
+                ctx = ns.QuestPanel.View() == "quest" and "questpage" or "quests"
+            elseif ns.QuestPanel.MouseOver() then
+                ctx = (ns.QuestPanel.View() == "quest" and "questpage" or "quests") .. "Docked"
+            end
         end
         local set = MouseSet(ctx)
         set:Show()
