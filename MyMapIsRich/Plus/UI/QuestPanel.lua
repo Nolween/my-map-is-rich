@@ -13,13 +13,12 @@
 -- depuis le code de l'addon bloquerait l'interface manette).
 -- À la manette, RT entre dans la liste (et l'affiche si elle était cachée) :
 -- plus de curseur sur la carte, la croix va de quête en quête (la carte y
--- glisse), Y, X, LT le tri, RT la ferme ; B en ressort, et la carte retrouve
--- son curseur. Affichée à l'ouverture de la carte, elle reste au repos
--- (padPassive : la carte garde la manette et son curseur) ; A sur une quête,
--- au curseur, y entre aussi.
+-- glisse), Y, X, LT le tri, RT la ferme ; B en ressort (la croix gauche du
+-- jeu redonne ensuite le curseur à la carte). Affichée à l'ouverture de la
+-- carte, elle reste au repos (padPassive : la carte garde la manette) ; A sur
+-- une quête, au curseur, y entre aussi.
 -- La carte réduite (en fenêtre) : la liste hors de la carte, collée à son bord
--- droit, toujours affichée ; la croix gauche, RT ou B y rendent la manette à
--- la carte, et son curseur.
+-- droit, toujours affichée ; la croix gauche, RT ou B en sortent.
 --
 -- Le panneau : les quêtes du journal, par zone ou les plus proches (LT / RT),
 -- une recherche. A ou un clic ouvre la fiche d'une quête à la place de la
@@ -1154,15 +1153,14 @@ function QP.MouseOver() return panel and panel:IsVisible() and panel:IsMouseOver
 -- La manette dans le panneau, ou pas : ouvert de base, il reste au repos (la
 -- carte garde la manette et son curseur ; Pad/Focus.lua : padPassive) ;
 -- Menu y entre, B en ressort
-local GiveMapFocus           -- (plus bas)
-
+-- (la manette sort de la liste : nos raccourcis ôtés, la manette revient au
+-- jeu ; sa croix gauche, « Carte », redonne le curseur à la carte. L'addon ne
+-- le fait pas lui-même : voir plus bas, la manette n'est jamais donnée à la
+-- carte par l'addon)
 function SetFocused(on)
-    local was = focused
     focused = on and true or false
     if panel then panel.padPassive = not focused end
     P.Dirty()
-    -- (la manette sort de la liste : le curseur rendu à la carte, une fois nos raccourcis ôtés)
-    if was and not focused and GiveMapFocus then C_Timer.After(0.15, GiveMapFocus) end
 end
 
 function QP.Focus() if QP.Shown() then SetFocused(true) end end
@@ -1215,7 +1213,7 @@ local function ShowFromGame()
     if ns.PadUI() then QP.Focus() end
 end
 
--- (la manette rendue à la carte par l'addon, FocusMapNow ou GiveMapFocus : le
+-- (la manette rendue à la carte par un geste du jeu que l'addon aurait fait : le
 -- jeu peut alors cacher ou montrer son journal ; ce n'est pas un geste du
 -- joueur, nos quêtes n'en bougent pas)
 local ownAt = -10
@@ -1287,42 +1285,15 @@ ns.On("READY", function()
     end
     C_Timer.After(1, KeepGameLogClosed)
 end)
--- La manette à la carte dès son ouverture. Sur Forever, le jeu met la
--- manette dans son journal de quêtes en ouvrant la carte, même journal fermé
--- (IsQuestFocused vrai, IsMapFocused faux : /mmir focus ouverture) ; caché
--- sous la carte plein écran, il la garde, et la carte n'a pas de curseur avant
--- la croix gauche (« Carte »), qui appelle la fonction FocusMap de la carte du
--- jeu. On fait de même, une fois, juste après l'ouverture : seulement hors
--- combat, sur la carte plein écran, quand le journal a la manette et la carte
--- non, et pas quand L vient d'ouvrir la carte (le joueur voulait ses quêtes).
-local function FocusMapNow()
-    local map = Map()
-    if not (map and ns.FullMap() and ns.MapShown()) or InCombatLockdown() then return end
-    if GetTime() - userAt < OPEN_QUIET then return end
-    if not (map.FocusMap and map.IsMapFocused and map.IsQuestFocused) then return end
-    if Call(map.IsMapFocused, map) or not Call(map.IsQuestFocused, map) then return end
-    if not ns.Risky("FocusMap") then return end
-    ownAt = GetTime()
-    Call(map.FocusMap, map)
-end
-
--- (la manette sortie de notre liste : la carte retrouve son curseur, comme à
--- son ouverture ; mêmes précautions, sans regarder le journal du jeu)
-function GiveMapFocus()
-    local map = Map()
-    if not (map and ns.FullMap() and ns.MapShown() and ns.PadUI()) or InCombatLockdown() or focused then return end
-    if not (map.FocusMap and map.IsMapFocused) or Call(map.IsMapFocused, map) then return end
-    if not ns.Risky("FocusMap") then return end
-    ownAt = GetTime()
-    Call(map.FocusMap, map)
-end
+-- La manette n'est jamais donnée à la carte par l'addon. Appeler la fonction
+-- FocusMap de la carte du jeu (à son ouverture, à la sortie de notre liste)
+-- faisait écrire à l'interface manette son état de focus depuis le code de
+-- l'addon : ensuite, le jeu se croyait contaminé chaque fois qu'il le
+-- relisait (l'ouverture de la carte, un changement de focus) et bloquait
+-- SetPreferredGamepadInteractTarget, jusqu'au /reload (taint.log). Le curseur
+-- vient de la croix gauche du jeu (« Carte »), comme dans le jeu.
 
 ns.On("MAP_CHROME", Build)
-ns.On("MAP_SHOW", function()
-    -- (le jeu donne la manette à son journal pendant l'ouverture, parfois un peu après)
-    C_Timer.After(0.05, FocusMapNow)
-    C_Timer.After(0.3, FocusMapNow)
-end)
 ns.On("MAP_HIDE", function()
     -- (comme le joueur les laisse en fermant la carte plein écran : affichées
     -- ou non, retenu ; la carte réduite les a toujours)
@@ -1389,7 +1360,7 @@ P.DefineContext("quests", 52.5, function() return QP.Focused() and F.Top() == pa
 P.SetAction("quests", "PADDUP", function() F.Move(0, 1) end)
 P.SetAction("quests", "PADDDOWN", function() F.Move(0, -1) end)
 -- (la carte réduite : la liste est à droite de la carte, la croix gauche y
--- revient, son curseur rendu : SetFocused, GiveMapFocus)
+-- revient ; la croix gauche du jeu y redonne ensuite le curseur)
 P.SetAction("quests", "PADDLEFT", function()
     if Docked() then QP.Blur() else F.Move(-1, 0) end
 end)
