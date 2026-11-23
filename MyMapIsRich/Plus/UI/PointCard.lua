@@ -579,7 +579,7 @@ local function OnPinPress(pin)
         local point = PointAt(pin.u, pin.v, title)
         if point and T() then T().Go(point) end
         return true
-    elseif IsControlKeyDown() then
+    elseif IsControlKeyDown() and ns.Map.Settings.Get("ctrlClickPin") ~= false then
         local point = PointAt(pin.u, pin.v)
         if point and point.map then ns.Map.MyPins.Add(point.map, point.mx, point.my) end
         return true

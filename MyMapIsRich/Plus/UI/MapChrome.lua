@@ -119,6 +119,8 @@ local function OnViewClick(button)
         if ns.Travel then ns.Travel.AtCursor() end
         return true
     elseif IsControlKeyDown() then
+        -- (le réglage éteint : le Ctrl+clic laissé à un autre addon, Map Pin Enhanced)
+        if ns.Map.Settings.Get("ctrlClickPin") == false then return false end
         return PinHere()
     elseif IsAltKeyDown() then
         -- (le menu des actions là où l'on a cliqué : UI/PointCard.lua ; sinon la roue)

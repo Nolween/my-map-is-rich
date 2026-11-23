@@ -51,4 +51,5 @@ end
 
 local events = CreateFrame("Frame")
 events:RegisterEvent("PLAYER_LOGIN")
-events:SetScript("OnEvent", Register)
+-- (en veille, pas de page : la carte est à OpenMap)
+events:SetScript("OnEvent", function() if not ns.Conflict() then Register() end end)

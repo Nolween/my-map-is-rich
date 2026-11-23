@@ -2127,20 +2127,20 @@ function Shade.Colour(mapID, z)
     if z.coloured and z.cS == strength and z.cD == desat and z.cU == un and z.cK == Shade.k then return end
     z.coloured, z.cS, z.cD, z.cU, z.cK = true, strength, desat, un, Shade.k
     local m = D.MapGrade and D.MapGrade[mapID]
-    local D = Shade.DIMK
+    local DK = Shade.DIMK
     for piece, list in pairs(z.pieces) do
         local dark = piece.unexplored and true or false
         for _, e in ipairs(list) do
             local r, g, b = 1, 1, 1
             if e.twin and m then r, g, b = 1 + (m[1] - 1) * strength, 1 + (m[2] - 1) * strength, 1 + (m[3] - 1) * strength end
-            if dark then r, g, b = D[1], D[2], D[3] end
+            if dark then r, g, b = DK[1], DK[2], DK[3] end
             local tex = e[1]
             if z.dimLand and not e.twin and e.landed ~= dark then
                 e.landed = dark
                 if dark then tex:AddMaskTexture(z.dimLand) else tex:RemoveMaskTexture(z.dimLand) end
             end
             tex:SetVertexColor(r, g, b, 1)
-            tex:SetDesaturation(dark and math.max(desat, D[4]) or desat)
+            tex:SetDesaturation(dark and math.max(desat, DK[4]) or desat)
             tex:SetDrawLayer("ARTWORK", (dark and 0 or 2) + (e.twin and 1 or 0))
             tex:SetShown(not (e.twin and (dark or strength <= 0)))
         end
@@ -2772,7 +2772,7 @@ end
 -- assombries comme l'art inexploré de la zone (Shade.DIM). Les deux sont dessinées sur l'assombrissement (la bannière
 -- sur tout, la ville sur les morceaux assombris d'une zone visitée) : il ne les atteint pas
 cities.Dim = function()
-    local D = Shade.DIMK
+    local DK = Shade.DIMK
     local strength, desat = gradeNow[1], gradeNow[2]
     for _, c in ipairs(cities) do
         local dark = Shade.on and c.piece and c.piece.unexplored and true or false
@@ -2782,13 +2782,13 @@ cities.Dim = function()
             for _, e in ipairs(zoneTex[c.mapID] or NONE) do
                 local r, g, b = 1, 1, 1
                 if e.twin and m then r, g, b = 1 + (m[1] - 1) * strength, 1 + (m[2] - 1) * strength, 1 + (m[3] - 1) * strength end
-                if dark then r, g, b = r * D[1], g * D[2], b * D[3] end
+                if dark then r, g, b = r * DK[1], g * DK[2], b * DK[3] end
                 e[1]:SetVertexColor(r, g, b, 1)
-                e[1]:SetDesaturation(dark and math.max(desat, D[4]) or desat)
+                e[1]:SetDesaturation(dark and math.max(desat, DK[4]) or desat)
             end
             if c.bannerTex then
-                c.bannerTex:SetVertexColor(dark and D[1] or 1, dark and D[2] or 1, dark and D[3] or 1, 1)
-                c.bannerTex:SetDesaturation(dark and D[4] or 0)
+                c.bannerTex:SetVertexColor(dark and DK[1] or 1, dark and DK[2] or 1, dark and DK[3] or 1, 1)
+                c.bannerTex:SetDesaturation(dark and DK[4] or 0)
             end
         end
     end

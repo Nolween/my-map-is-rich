@@ -2,7 +2,8 @@
 -- Depuis la 0.6.0, ils remplacent le menu et la fenêtre de réglages venus
 -- d'OpenMap. Trois panneaux, d'après la charte (CHARTE.md) :
 --   L'aspect     : les zones inexplorées, les couleurs, le zoom, les icônes
---   Au plus près : la minimap du jeu mêlée à la carte, les grottes
+--   Au plus près : la minimap du jeu mêlée à la carte, les grottes ; les
+--                  détails (les niveaux des zones, la teinte de l'ombre)
 --   Épingles et donjons : ce que les autres partagent, les cartes des donjons
 -- Ce que la carte montre (les calques) reste sur son rail, à gauche de la
 -- carte (UI/Layers.lua). Chaque réglage passe par ns.Map (Map/Api.lua,
@@ -46,6 +47,31 @@ local function Times(v) return ("×%g"):format(v) end
 local function TimesOrAuto(v)
     if v == 0 then return L.OPT_AUTO end
     return Times(v)
+end
+
+-- La teinte de l'ombre sur la terre inexplorée assombrie (« darkenColor ») :
+-- celle du jeu (false), quelques teintes, ou celle que le joueur avait choisie
+-- sous OpenMap (gardée tant qu'il ne la change pas). Ce sont des couleurs du
+-- dessin de la carte, pas de l'interface : elles ne suivent pas les thèmes.
+local TINTS = {
+    { "sepia", { 0.22, 0.14, 0.06 } },
+    { "night", { 0.03, 0.05, 0.16 } },
+    { "grey", { 0.16, 0.16, 0.16 } },
+}
+local function SameColor(a, b)
+    for i = 1, 3 do
+        if math.abs((tonumber(a[i]) or -1) - b[i]) > 0.002 then return false end
+    end
+    return true
+end
+-- (le nom de la teinte du moment, et la couleur elle-même si elle n'est d'aucune liste)
+local function TintNow()
+    local c = ns.Map.Settings.Get("darkenColor")
+    if type(c) ~= "table" then return "game" end
+    for _, t in ipairs(TINTS) do
+        if SameColor(c, t[2]) then return t[1] end
+    end
+    return "own", c
 end
 
 -- Les curseurs remis à leur valeur d'origine (le bouton du bas)
@@ -156,7 +182,9 @@ function UI.BuildMapPage(page, width, onRefresh)
     end
 
     -- Un choix parmi plusieurs : son nom au-dessus, puis un bouton gris qui passe au suivant
-    local function Cycle(c, label, tip, choices, get, set)
+    -- (opts.enabled : grisé quand il ne sert à rien)
+    local function Cycle(c, label, tip, choices, get, set, opts)
+        opts = opts or {}
         local fs = UI.Text(c.p, "GameFontNormal", label)
         fs:SetPoint("TOPLEFT", 18, c.y)
         fs:SetWidth(colW - 32)
@@ -171,6 +199,10 @@ function UI.BuildMapPage(page, width, onRefresh)
             end
             b:SetText(choices[1][2])
         end
+        local function Refresh1()
+            Show()
+            if opts.enabled then Enable(b, opts.enabled(), fs) end
+        end
         b:SetScript("OnClick", function()
             local now, at = get(), 1
             for i, ch in ipairs(choices) do if ch[1] == now then at = i end end
@@ -179,7 +211,7 @@ function UI.BuildMapPage(page, width, onRefresh)
             C_Timer.After(0.2, Refresh)
         end)
         UI.Tip(b, label, tip)
-        refreshers[#refreshers + 1] = Show
+        refreshers[#refreshers + 1] = Refresh1
         c.y = c.y - CYCLE_ROW
         return b
     end
@@ -238,10 +270,31 @@ function UI.BuildMapPage(page, width, onRefresh)
     Slider(close, "minimapDeep", L.OPT_MAP_MINIMAP_DEEP, L.OPT_MAP_MINIMAP_DEEP_TIP, 0, 1, 0.05, Percent,
         { enabled = MinimapOn })
     Check(close, "cityMinimap", L.OPT_MAP_CITY_MINIMAP, L.OPT_MAP_CITY_MINIMAP_TIP, { enabled = MinimapOn })
+    Check(close, "gapMinimap", L.OPT_MAP_GAP_MINIMAP, L.OPT_MAP_GAP_MINIMAP_TIP, { enabled = MinimapOn })
     Check(close, "soften", L.OPT_MAP_SOFTEN, L.OPT_MAP_SOFTEN_TIP)
     Check(close, "underground", L.OPT_MAP_UNDERGROUND, L.OPT_MAP_UNDERGROUND_TIP, {
         get = function() return Get("underground") ~= false end,
     })
+    Section(close, L.SET_MAP_DETAILS)
+    Check(close, "zoneLevels", L.OPT_MAP_ZONE_LEVELS, L.OPT_MAP_ZONE_LEVELS_TIP, {
+        get = function() return Get("zoneLevels") ~= false end,
+    })
+    if grade then
+        -- (« Ta couleur » seulement si le joueur en avait une à lui en ouvrant la fenêtre)
+        local _, own = TintNow()
+        local tints = { { "game", L.OPT_MAP_DARKEN_GAME }, { "sepia", L.OPT_MAP_DARKEN_SEPIA },
+            { "night", L.OPT_MAP_DARKEN_NIGHT }, { "grey", L.OPT_MAP_DARKEN_GREY } }
+        if own then tints[#tints + 1] = { "own", L.OPT_MAP_DARKEN_OWN } end
+        Cycle(close, L.OPT_MAP_DARKEN_COLOR, L.OPT_MAP_DARKEN_COLOR_TIP, tints, function() return (TintNow()) end,
+            function(v)
+                local color = false
+                if v == "own" then color = own end
+                for _, t in ipairs(TINTS) do
+                    if t[1] == v then color = { t[2][1], t[2][2], t[2][3] } end
+                end
+                Set("darkenColor", color or false)
+            end, { enabled = function() return Look.Unexplored() == "dim" end })
+    end
 
     -- (3) Épingles et donjons
     local more = Column(3)
@@ -250,6 +303,9 @@ function UI.BuildMapPage(page, width, onRefresh)
     Check(more, "pinsGroupAdd", L.OPT_MAP_PINS_ADD, L.OPT_MAP_PINS_ADD_TIP)
     Check(more, "pinsShareGroup", L.OPT_MAP_PINS_SEND, L.OPT_MAP_PINS_SEND_TIP)
     Check(more, "pinsFollowNew", L.OPT_MAP_PINS_FOLLOW, L.OPT_MAP_PINS_FOLLOW_TIP)
+    Check(more, "ctrlClickPin", L.OPT_MAP_CTRL_PIN, L.OPT_MAP_CTRL_PIN_TIP, {
+        get = function() return Get("ctrlClickPin") ~= false end,
+    })
     Section(more, L.SET_MAP_DUNGEONS)
     Check(more, "dungeonInside", L.OPT_MAP_DUNGEON_INSIDE, L.OPT_MAP_DUNGEON_INSIDE_TIP, {
         get = function() return Get("dungeonInside") ~= false end,

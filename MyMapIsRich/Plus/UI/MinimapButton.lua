@@ -173,8 +173,12 @@ end
 
 -- Le menu des addons de la minimap (les AddonCompartmentFunc* du .toc) : le
 -- jeu cherche ces globaux par leur nom (repris de Map/Launcher.lua en 0.6.0)
-_G.MyMapIsRich_OnAddonCompartmentClick = function(_, mouse) if ns.db then Click(nil, mouse) end end
-_G.MyMapIsRich_OnAddonCompartmentEnter = function(_, owner) if ns.db then Tip(owner) end end
+-- (en veille : le message de veille, rien d'autre)
+_G.MyMapIsRich_OnAddonCompartmentClick = function(_, mouse)
+    local rival = ns.Conflict()
+    if rival then ns.Print(L.DORMANT, rival) elseif ns.db then Click(nil, mouse) end
+end
+_G.MyMapIsRich_OnAddonCompartmentEnter = function(_, owner) if ns.db and not ns.Conflict() then Tip(owner) end end
 _G.MyMapIsRich_OnAddonCompartmentLeave = function() GameTooltip:Hide() end
 
 -- Titan Panel et les autres afficheurs LibDataBroker, quand un addon fournit

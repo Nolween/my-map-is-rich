@@ -397,10 +397,18 @@ ns.On("MAP_SHOW", function() C_Timer.After(0.2, ShowInvite) end)
 ns.On("MAP_HIDE", function() if frame then frame:Hide() end end)
 
 local events = CreateFrame("Frame")
+events:RegisterEvent("PLAYER_LOGIN")
 events:RegisterEvent("CHAT_MSG_ADDON")
 events:RegisterEvent("GROUP_ROSTER_UPDATE")
 events:SetScript("OnEvent", function(_, event, prefix, text, _, sender)
-    if event == "GROUP_ROSTER_UPDATE" then
+    -- (en veille, OpenMap On Gamepad chargé aussi : les destinations sont les siennes)
+    if ns.Conflict() then return end
+    if event == "PLAYER_LOGIN" then
+        if C_ChatInfo and C_ChatInfo.RegisterAddonMessagePrefix then
+            pcall(C_ChatInfo.RegisterAddonMessagePrefix, PREFIX)
+        end
+        return
+    elseif event == "GROUP_ROSTER_UPDATE" then
         if rally and not Channel() then EndRally(true) end
         return
     end
@@ -408,9 +416,6 @@ events:SetScript("OnEvent", function(_, event, prefix, text, _, sender)
     local ok, err = pcall(OnMessage, text, sender)
     if not ok and geterrorhandler then geterrorhandler()(err) end
 end)
-if C_ChatInfo and C_ChatInfo.RegisterAddonMessagePrefix then
-    pcall(C_ChatInfo.RegisterAddonMessagePrefix, PREFIX)
-end
 
 -- /mmir trajet : le ralliement en cours
 function SH.Report()

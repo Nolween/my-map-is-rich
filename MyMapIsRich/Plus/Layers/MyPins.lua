@@ -48,6 +48,7 @@ Settings.Own("pinsHidden", false)       -- tes épingles cachées de la carte (l
 Settings.Own("pinsFollowNew", true)     -- une épingle posée est suivie
 Settings.Own("pinsShareGroup", false)   -- une épingle posée part au groupe quand sa fiche se ferme
 Settings.Own("pinsGroupAdd", false)     -- celles du groupe ajoutées sans demander
+Settings.Own("ctrlClickPin", true)      -- Ctrl+clic sur la carte pose une épingle (éteint : celui d'un autre addon, Map Pin Enhanced)
 
 local fresh = {}                -- les épingles tout juste posées : partagées au groupe quand leur fiche se ferme
 local set                       -- leur jeu d'icônes sur la carte
@@ -118,6 +119,8 @@ end
 -- Une épingle retirée : plus suivie, son dessin avec elle
 function E.Remove(p)
     if E.Followed(p) then E.Unfollow() end
+    -- (la plume qui dessinait sur elle rangée : sinon ses traits suivants porteraient une épingle partie)
+    if ns.Map.Sketch.Pin and ns.Map.Sketch.Pin() == p then ns.Map.Sketch.Toggle(false) end
     fresh[p] = nil
     local list = DB().list
     for i = #list, 1, -1 do
@@ -330,7 +333,9 @@ function E.Share(pins, to)
     ns.Print(L.PINS_SHARING, #pins, who)
 end
 
-local function Escape(note) return (note:gsub("[%%,;]", function(c) return ("%%%02X"):format(c:byte()) end)) end
+-- (les espaces aussi : un code se lit d'un seul tenant, chez nous comme chez OpenMap, dont
+-- l'Unescape relit tout %XX)
+local function Escape(note) return (note:gsub("[%%,;%s]", function(c) return ("%%%02X"):format(c:byte()) end)) end
 local function Unescape(note) return (note:gsub("%%(%x%x)", function(h) return string.char(tonumber(h, 16)) end)) end
 
 function E.CodeOf(pins)
@@ -370,8 +375,10 @@ function E.AddAll(pins, from)
 end
 
 function E.FromCode(text)
-    local body = tostring(text or ""):match(CODE:gsub("%p", "%%%0") .. "(%S+)")
-    if not body then return end
+    -- (jusqu'au bout de la ligne : un code d'OpenMap garde les espaces de ses notes)
+    local body = tostring(text or ""):match(CODE:gsub("%p", "%%%0") .. "([^\r\n]+)")
+    body = body and body:match("^(.-)%s*$")
+    if not body or body == "" then return end
     local pins = {}
     for part in body:gmatch("[^;]+") do
         local m, x, y, color, note = strsplit(",", part, 5)
@@ -447,6 +454,10 @@ local function Migrate()
         for _, key in ipairs({ "pinsShared", "pinsHidden", "pinsFollowNew", "pinsShareGroup", "pinsGroupAdd" }) do
             if old[key] ~= nil then new.settings[key] = old[key] end
         end
+    end)
+    -- (à part : repris en 1.0.0, après les autres)
+    ns.Map.Migrate("ctrlClickPin", function(old, new)
+        if old.ctrlClickPin ~= nil then new.settings.ctrlClickPin = old.ctrlClickPin end
     end)
 end
 

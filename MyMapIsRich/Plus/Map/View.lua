@@ -33,7 +33,7 @@ local K = ns.Map.Coords
 local A = ns.Map.Art
 local P = ns.Map.Pins
 local LK = ns.Map.Look
-local H = ns.Map.Hbd
+local HB = ns.Map.Hbd        -- (pas « H » : c'est la hauteur du dessin, dans plusieurs fonctions)
 
 local ART_RANGE = 80            -- les niveaux de cadre que prend le dessin
 local GLIDE_TIME = 0.4          -- la glissade de A et X, comme celle d'un clic
@@ -222,7 +222,7 @@ local function Apply()
     local hw, hh = view:GetWidth() / 2, view:GetHeight() / 2
     A.SetView(u, v, hw / (W * px), hh / (H * px), zoom * dk, zoom / ns.Map.Data.ClientZoom())
     P.PlacePlayer()
-    H.Place(u, v, zoom, W, H, px, hw, hh)
+    HB.Place(u, v, zoom, W, H, px, hw, hh)
     -- (la zone de la quête redessinée à la nouvelle échelle)
     if area.quest and area.frame then DrawArea(area.frame, area.quest) end
 end
@@ -475,12 +475,12 @@ local function Enter(pin)
         local leave = was:GetScript("OnLeave")
         if leave then pcall(leave, was, false) end
         local own = _G.QuestieGamepadMapTooltip
-        if H.Shown(was) and own and own ~= GameTooltip then own:Hide() end
+        if HB.Shown(was) and own and own ~= GameTooltip then own:Hide() end
     end
     if pin then
         if pin.LockHighlight then pin:LockHighlight() end
-        if H.IsQuestie(pin) then                -- (celle de Questie : son info-bulle, d'ici)
-            H.Tip(pin, _G.QuestieGamepadMapTooltip or GameTooltip)
+        if HB.IsQuestie(pin) then                -- (celle de Questie : son info-bulle, d'ici)
+            HB.Tip(pin, _G.QuestieGamepadMapTooltip or GameTooltip)
         else
             local enter = pin:GetScript("OnEnter")
             if enter then pcall(enter, pin, false) end
@@ -588,8 +588,11 @@ local function OnUpdate(_, elapsed)
     hbdWait = hbdWait - elapsed
     if hbdWait <= 0 then
         hbdWait = 0.5
-        H.Scan()
-        dirty = true
+        HB.Scan()
+        -- (les icônes des autres addons posées sur la vue, sans redessiner toute la carte)
+        local W, Ht = A.Size()
+        local px = FitPx() * zoom
+        if W and px > 0 then HB.Place(u, v, zoom, W, Ht, px, view:GetWidth() / 2, view:GetHeight() / 2) end
     end
     hoverWait = hoverWait - elapsed
     if hoverWait <= 0 then
@@ -599,7 +602,7 @@ local function OnUpdate(_, elapsed)
         overWindow = (ctl or blocked) and true or false
         wheelFrame = overWindow and C.WheelAt(x, y) or nil
         if ctl or blocked or dungeon then Enter(ctl)
-        else Enter(x and (P.At(x, y, REACH) or H.At(x, y)) or nil) end
+        else Enter(x and (P.At(x, y, REACH) or HB.At(x, y)) or nil) end
         -- (le lieu : pas sur une fenêtre ni la carte d'un donjon ; la souris sinon)
         local px, py = x, y
         if not px then px, py = MouseXY() end
@@ -677,7 +680,7 @@ local function Build()
     P.Setup(view, base + ART_RANGE + 4)
     P.RaiseArrow(math.min(9900, base + ARROW_ABOVE))
     MakePointer(strataUsed)
-    H.Setup(view, base + ART_RANGE + 10)
+    HB.Setup(view, base + ART_RANGE + 10)
     A.SetShown(true)
     built = true
     diag.why = "VIEW_WHY_BUILT"
@@ -723,7 +726,7 @@ local function Show()
     elseif not u then
         FirstView()
     end
-    H.Show()
+    HB.Show()
     glide = nil
     sc.Child:SetAlpha(0)      -- (la carte du jeu dessous : là, invisible ; rien d'elle n'est écrit)
     pcall(GameLabel, 0)
@@ -735,7 +738,7 @@ local function Hide()
     -- (la vue à la fermeture, pour la réouverture : Layers/Locate.lua)
     if built and view:IsShown() and V.Remember then pcall(V.Remember) end
     Enter(nil)
-    H.Hide()
+    HB.Hide()
     if ns.Map.Dungeons.Shown() then pcall(ns.Map.Dungeons.Close, true) end
     view:Hide()
     if pointer then pointer:Hide() end

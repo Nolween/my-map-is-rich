@@ -1008,3 +1008,10 @@ function DG.SideTab(dir)
 end
 
 ns.On("MAP_HIDE", function() DV.Close(true) end)
+
+-- (une quête rendue ou acceptée, la carte d'un donjon ouverte : son onglet Quêtes suit le journal)
+local questEvents = CreateFrame("Frame")
+for _, e in ipairs({ "QUEST_TURNED_IN", "QUEST_ACCEPTED" }) do pcall(questEvents.RegisterEvent, questEvents, e) end
+questEvents:SetScript("OnEvent", function()
+    if Shown() then C_Timer.After(0.5, function() if Shown() then Fill() end end) end
+end)

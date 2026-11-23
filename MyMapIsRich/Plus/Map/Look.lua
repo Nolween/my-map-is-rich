@@ -148,8 +148,29 @@ ns.On("MAP_ATTACHED", function()
 end)
 
 -- (dans une instance ou dehors : les icônes du monde cachées ou remontrées)
+-- Et ce que le joueur explore : ses zones cessent d'être inexplorées, une ville
+-- est trouvée en y entrant (les icônes « seulement les lieux trouvés » suivent).
+-- Carte fermée, cela attend sa prochaine ouverture.
+local exploredDirty, citiesDirty = false, false
+local function RefreshExplored()
+    if not (A.IsBuilt and A.IsBuilt()) then return end
+    if exploredDirty then
+        exploredDirty, citiesDirty = false, false
+        if A.RefreshExplored then pcall(A.RefreshExplored) end
+    elseif citiesDirty then
+        citiesDirty = false
+        if A.RefreshCities then pcall(A.RefreshCities) end
+    end
+end
 local events = CreateFrame("Frame")
-for _, e in ipairs({ "PLAYER_ENTERING_WORLD", "ZONE_CHANGED_NEW_AREA" }) do events:RegisterEvent(e) end
-events:SetScript("OnEvent", function()
+for _, e in ipairs({ "PLAYER_ENTERING_WORLD", "ZONE_CHANGED_NEW_AREA", "MAP_EXPLORATION_UPDATED" }) do
+    pcall(events.RegisterEvent, events, e)
+end
+events:SetScript("OnEvent", function(_, event)
+    if ns.Conflict() then return end
+    if event == "MAP_EXPLORATION_UPDATED" then exploredDirty = true
+    elseif event == "ZONE_CHANGED_NEW_AREA" then citiesDirty = true end
     if P.Ready() then pcall(P.SetWorldPinsHidden, InstanceHidden()) end
+    if ns.Map.On() and ns.MapShown and ns.MapShown() then RefreshExplored() end
 end)
+ns.On("MAP_SHOW", function() C_Timer.After(0, RefreshExplored) end)

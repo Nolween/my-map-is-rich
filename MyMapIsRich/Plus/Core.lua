@@ -123,7 +123,8 @@ end
 function ns.Why() return ns.Map.Why() end
 
 -- La carte est trouvée et compatible
-function ns.Ready() return ns.Map.Ready() end
+-- (en veille, OpenMap ou OpenMap On Gamepad chargé aussi : jamais prêt)
+function ns.Ready() return ns.Map.Ready() and not ns.Conflict() end
 
 -- Les fonctions de la vue sont là : elle tourne
 function ns.ViewReady() return ns.Map.ViewReady() end
@@ -236,6 +237,10 @@ local function StartPadView()
     ns.EnsureFlights()
 end
 ns.StartPadView = StartPadView
+-- (l'addon remis en marche, /mmir on ou le bouton de la minimap : la vue mise en place sans /reload)
+ns.On("OPTIONS", function()
+    if ns.db and ns.db.options.enabled and not InCombatLockdown() then StartPadView() end
+end)
 
 ---------------------------------------------------------------------------
 -- Chargement
@@ -301,7 +306,6 @@ local MAP_COMMANDS = {
     padview = function() ns.Map.View.Diag() end,
     pins = function() ns.Map.MyPins.Toggle() end,
     draw = function() ns.Map.Sketch.Toggle() end,
-    forgetflights = function() ns.Map.Flights.Forget() end,
 }
 SLASH_MYMAPISRICH1 = "/mmir"
 SLASH_MYMAPISRICH2 = "/mymapisrich"
@@ -317,8 +321,17 @@ SlashCmdList.MYMAPISRICH = function(msg)
     first = first and first:lower()
     if first == "carte" or first == "map" then
         -- (seul, ou une commande inconnue : les réglages de la carte, l'onglet Carte)
-        local run = MAP_COMMANDS[rest and rest:lower() or ""]
-        if run and ns.Ready() then pcall(run) else ns.Map.Menu.Open() end
+        local sub = rest and rest:lower() or ""
+        local run = MAP_COMMANDS[sub]
+        if sub == "forgetflights" then
+            -- (les maîtres de vol appris par ce personnage : seulement ses sauvegardes, la carte n'a pas à être prête)
+            ns.Map.Flights.Forget()
+        elseif run and ns.Ready() then
+            local ok, err = pcall(run)
+            if not ok and geterrorhandler then geterrorhandler()(err) end
+        else
+            ns.Map.Menu.Open()
+        end
     elseif cmd == "etat" or cmd == "état" or cmd == "status" then
         if ns.Diag then ns.Diag.Status() end
     elseif cmd == "sonde carte" or cmd == "probe map" then

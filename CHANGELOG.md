@@ -12,6 +12,17 @@ Après la mise à jour, **relance le jeu** (un `/reload` ne suffit pas : des fic
 - **`/mmir carte status`, `pins`, `draw` et `forgetflights`** marchent comme avant.
 - **Tes réglages sont mieux protégés** : un nombre que le jeu ne saurait pas relire est retiré de tes sauvegardes à la déconnexion, au lieu de faire perdre tout le fichier.
 - Le dessin de la carte et son zoom rapproché restent ceux d'OpenMap, portés dans l'addon, et ses données restent celles de ses outils (licence MIT, crédits dans l'onglet Aide).
+- **Revenus dans l'onglet Carte** (`/mmir carte`), des réglages d'OpenMap qui n'avaient plus de case :
+  - « Ctrl+clic pose une épingle » (rubrique Épingles) : éteins-le si un autre addon pose la sienne au Ctrl+clic (Map Pin Enhanced) ;
+  - « Minimap dans les trous (essai) » (rubrique Au plus près) ;
+  - « Niveaux des zones » et « Couleur de l'assombrissement » (nouvelle rubrique Les détails) : la couleur par défaut, sépia, bleu nuit, gris, ou celle que tu avais choisie sous OpenMap.
+- **Corrigé** :
+  - une zone que tu viens d'explorer, ou une ville où tu entres, s'éclaircit sur la carte sans attendre un `/reload`, et les lieux « seulement trouvés » de cette zone apparaissent ;
+  - un code d'épingles (`OMPINS1:`) dont une note a des espaces s'importe en entier, ceux d'OpenMap compris ;
+  - la gomme de la plume met à jour le nombre de traits d'une épingle ; retirer une épingle sur laquelle on dessine range la plume ;
+  - l'onglet Quêtes de la carte d'un donjon suit le journal quand une quête est acceptée ou rendue ;
+  - `/mmir on` après un `/reload` fait avec l'addon coupé remet la carte de l'addon sans un autre `/reload` ;
+  - en veille, l'addon ne fait plus rien : plus de trajet vers ton corps, de destinations du groupe, de page dans les Options ni de menu dans la liste des addons de la minimap.
 
 ## 0.15.0
 

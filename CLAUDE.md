@@ -63,7 +63,7 @@ Tout écran neuf, et tout écran refait, suit [CHARTE.md](CHARTE.md) (la même q
 
 ## Règles du jeu (taint, combat, manette)
 
-- **Rien n'est écrit dans les cadres de Blizzard** : seulement `hooksecurefunc` et `HookScript`. Pas de remplacement de fonction globale du jeu.
+- **Rien n'est écrit dans les cadres de Blizzard** : seulement `hooksecurefunc` et `HookScript`. Pas de remplacement de fonction globale du jeu. Seules exceptions, venues d'OpenMap et dites en tête de `Plus/Map/View.lua` : l'alpha du dessin de la carte du jeu (`ScrollContainer.Child`) et de son nom de zone, cachés sous notre vue et rendus à sa fermeture.
 - **Aucune fenêtre de l'addon dans `UISpecialFrames`** : l'interface manette de Forever la parcourt et bloquerait B au nom de l'addon. B ferme les fenêtres de l'addon par [Plus/Pad/Focus.lua](MyMapIsRich/Plus/Pad/Focus.lua).
 - **En combat** (`InCombatLockdown()`) : pas de création ni de déplacement de cadres protégés, pas de changement de raccourcis ; on attend `PLAYER_REGEN_ENABLED`. La manette rend la main au jeu au début d'un combat.
 - **Tout écran se joue à la manette** : ses éléments sont atteignables à la croix (focus de `Pad/Focus.lua`, `ns.Map.Cursor.AddRoot` pour les fenêtres sur la carte), A / B / X ont un sens, et la barre d'aide (`UI/HintBar.lua`) annonce les boutons avec leurs pastilles (`UI/Glyphs.lua`).

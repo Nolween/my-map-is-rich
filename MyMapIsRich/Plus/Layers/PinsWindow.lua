@@ -97,7 +97,7 @@ function PW.AskShared(batch)
     local lines = {}
     for i = 1, math.min(3, #batch.pins) do
         local q = batch.pins[i]
-        lines[i] = E.ZoneName(q.map) .. (q.note ~= "" and (" : " .. q.note) or "")
+        lines[i] = E.ZoneName(q.map) .. (q.note ~= "" and (" — " .. q.note) or "")
     end
     if #batch.pins > 3 then lines[#lines + 1] = L.PINS_ASK_MORE:format(#batch.pins - 3) end
     PW.Ask(L.PINS_ASK:format(batch.from, #batch.pins) .. "\n|cffffffff" .. table.concat(lines, "\n") .. "|r",

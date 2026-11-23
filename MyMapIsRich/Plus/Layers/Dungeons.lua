@@ -639,6 +639,7 @@ events:RegisterEvent("PLAYER_ENTERING_WORLD")
 events:RegisterEvent("ZONE_CHANGED_NEW_AREA")
 events:RegisterEvent("PLAYER_LEVEL_UP")
 events:SetScript("OnEvent", function(_, event)
+    if ns.Conflict() then return end
     if event == "PLAYER_LEVEL_UP" then
         -- (UnitLevel suit l'évènement un instant après)
         C_Timer.After(0, DN.Refresh)

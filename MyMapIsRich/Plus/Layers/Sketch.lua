@@ -249,8 +249,12 @@ local function Erase(u, v, pu, pv)
                 dist = math.min(dist, math.sqrt(cx * cx + cy * cy))
             end
             if dist < NEAR + (NIBS[list[i].size] or 3) then
-                table.remove(list, i)
+                local gone = table.remove(list, i)
                 Redraw()
+                RefreshTray()
+                -- (le compte des traits d'une épingle : sa fiche, la liste)
+                if gone and gone.pin then ns.Map.MyPins.Refresh() end
+                Changed()
                 return
             end
         end
