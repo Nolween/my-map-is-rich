@@ -8,9 +8,9 @@
 -- Depuis la 0.5.0, chaque version remplace un bloc du code venu d'OpenMap
 -- par le nôtre, sans que le reste de Plus ait à changer. Depuis la 0.12.0, la
 -- vue (Map/View.lua), le curseur (Map/Cursor.lua), l'aspect (Map/Look.lua) et
--- les icônes des autres addons (Map/Hbd.lua) sont à nous ; restent d'OpenMap
--- le dessin de la carte et ses jeux d'icônes (MapStitch, Map/Stitch.lua, et
--- le zoom rapproché, Map/Close.lua) : ns.Map.Art et ns.Map.Pins y mènent.
+-- les icônes des autres addons (Map/Hbd.lua) sont à nous ; depuis la 0.15.0,
+-- tout le moteur de la carte l'est : le dessin (Map/Art.lua, Map/Close.lua) et
+-- ses icônes (Map/PinSets.lua). Restent d'OpenMap Core.lua et Init.lua.
 -- Une fonction absente ou une erreur rendent nil : Plus ne lève pas
 -- d'erreur en jeu pour la carte.
 local _, root = ...
@@ -20,7 +20,7 @@ local L = ns.L
 local M = {}
 ns.Map = M
 
-local mod, S        -- le module « worldmap » (ses sauvegardes) et MapStitch, une fois trouvés (M.Attach)
+local mod, S        -- le module « worldmap » (ses sauvegardes) et le dessin (Map/Art.lua), une fois trouvés (M.Attach)
 
 -- (les résultats d'un appel protégé, sans le « ok » ; rien sur une erreur)
 local function Pass(ok, ...)
@@ -54,8 +54,8 @@ function M.Attach()
         why = L.WHY_NO_MODULE
         return false, why
     end
-    local s = root.MapStitch
-    if type(s) ~= "table" or type(s.GetPinSet) ~= "function" or type(s.Build) ~= "function" then
+    local s = S
+    if type(s) ~= "table" or type(s.Build) ~= "function" then
         why = L.WHY_NO_STITCH
         return false, why
     end
@@ -67,9 +67,14 @@ function M.Attach()
     return true
 end
 
--- Le module « worldmap » d'OpenMap et MapStitch, pour les modules de Plus qui
--- répondent au code d'OpenMap qui reste (Map/Stitch.lua, Map/Close.lua,
--- Init.lua : les ponts) ; et pour /mmir sonde carte. Partira en 1.0.0.
+-- Le dessin de la carte (Map/Art.lua) se fait connaître en se chargeant
+function M.SetArt(art) S = art end
+-- Le dessin lui-même, pour le zoom rapproché qui s'y ajoute (Map/Close.lua)
+function M.ArtTable() return S end
+
+-- Le module « worldmap » d'OpenMap et le dessin, pour les modules de Plus qui
+-- répondent au code d'OpenMap qui reste (Init.lua : les commandes /mmir carte) ;
+-- et pour /mmir sonde carte. Partira en 1.0.0.
 function M.Legacy() return mod, S end
 
 function M.Why() return why end
@@ -128,8 +133,8 @@ local C = {}
 M.Cursor = C
 
 ---------------------------------------------------------------------------
--- Le dessin de la carte d'OpenMap (MapStitch), pour le moteur de Plus
--- (Map/View.lua, Map/Look.lua, Map/Hbd.lua) jusqu'en 0.13.0 : ses fonctions
+-- Le dessin de la carte (Map/Art.lua), pour le moteur de Plus (Map/View.lua,
+-- Map/Look.lua, Map/Hbd.lua, Map/PinSets.lua) : ses fonctions
 -- telles quelles (A.Build, A.Layout, A.SetView...), et ce que la vue lui donne
 -- (A.GlideToWorld = ...). Le reste de Plus passe par ns.Map.Pins et Coords.
 ---------------------------------------------------------------------------
@@ -147,7 +152,7 @@ M.Coords = K
 
 -- (depuis la 0.10.0, l'entrée et le nom d'un donjon : Layers/Dungeons.lua)
 
--- Une zone est dessinée sur la carte (Map/Stitch.lua, jusqu'en 0.13.0)
+-- Une zone est dessinée sur la carte (Map/Art.lua)
 function K.Stitched(mapID) return Get(SF("Stitched"), mapID) and true or false end
 -- La taille du monde dessiné, en unités de l'art : largeur, hauteur (le rapport
 -- des deux côtés, pour qu'un cercle de la plume soit rond à l'écran)
@@ -200,6 +205,9 @@ function D.DungeonBosses() return root.MapDungeonBosses end
 function D.ClientZoom() return root.ClientMaps and root.ClientMaps.zoom or 1 end
 -- Les couleurs harmonisées existent pour ce client (Data/Forever/Grade.lua)
 function D.HasGrade() return root.MapGrade ~= nil end
+-- Toutes les tables de données de la carte (root.Map…, ClientMaps, Media,
+-- Safe), pour le dessin (Map/Art.lua) : elles partiront dans Data/Map en 1.0.0
+function D.All() return root end
 
 local FL = {}
 M.Flights = FL

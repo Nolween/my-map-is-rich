@@ -9,8 +9,8 @@
 -- (hooksecurefunc). Le code de l'interface manette du jeu (son curseur, B, la
 -- croix, le focus) reste ainsi le sien.
 --
--- Sur la vue : le dessin de la carte (MapStitch, Map/Stitch.lua jusqu'en
--- 0.13.0), ses icônes et celles des calques de Plus, celles des autres addons
+-- Sur la vue : le dessin de la carte (Map/Art.lua, et son zoom rapproché,
+-- Map/Close.lua), ses icônes (Map/PinSets.lua) et celles des calques de Plus, celles des autres addons
 -- (Map/Hbd.lua), ta flèche, la zone d'une quête.
 --   la souris   la molette zoome autour du curseur, tirer déplace, un clic
 --               gauche entre dans la zone (ou presse l'icône), un clic droit
@@ -1022,12 +1022,9 @@ function V.Diag()
 end
 
 ---------------------------------------------------------------------------
--- Ce que le code d'OpenMap qui reste appelle encore : le zoom rapproché
--- (Map/Close.lua se repose pendant un zoom), /mmir carte status (Init.lua)
+-- Ce que le code d'OpenMap qui reste appelle encore : /mmir carte status (Init.lua)
 ---------------------------------------------------------------------------
 ns.On("MAP_ATTACHED", function()
     local mod = ns.Map.Legacy()
-    if not mod then return end
-    mod.Zooming = V.Zooming
-    mod.Diag = function() V.Diag() end
+    if mod then mod.Diag = function() V.Diag() end end
 end)

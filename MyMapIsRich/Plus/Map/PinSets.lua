@@ -437,7 +437,7 @@ function P.RaiseArrow(level)
 end
 
 ---------------------------------------------------------------------------
--- La mise en place, et ce que le dessin d'OpenMap leur dit (Map/Stitch.lua :
+-- La mise en place, et ce que le dessin de la carte leur dit (Map/Art.lua :
 -- le zoom, la vue triée, un lieu exploré)
 ---------------------------------------------------------------------------
 -- La carte est dessinée et ses icônes en place

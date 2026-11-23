@@ -4,7 +4,7 @@
 --
 -- La carte est celle de My Map Is Rich (le code d'OpenMap, dans le même
 -- addon) : son espace de noms est la racine (root : le module « worldmap »
--- et le moteur de la carte, MapStitch). Plus vit à part, dans root.Plus,
+-- et ses sauvegardes). Plus vit à part, dans root.Plus,
 -- pour que ses textes et ses réglages ne touchent jamais ceux de la carte.
 -- Il ne se sert de la carte que si tout ce qu'il appelle existe : sinon il
 -- reste en veille (ns.Ready() faux) et le dit avec /mmir etat.

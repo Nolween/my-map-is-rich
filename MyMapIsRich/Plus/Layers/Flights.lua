@@ -10,8 +10,8 @@
 --     vrais chemins, avec ses escales et son temps ;
 --   - les temps : mesurés sur tes propres vols directs (pour tout le compte,
 --     MyMapIsRichPlusDB.map.flightTimes), sinon estimés d'après la longueur.
--- Les réglages « flight » (le calque) et « foundOnly » restent ceux de la
--- carte d'OpenMap tant que ses autres icônes s'en servent (Map/Stitch.lua).
+-- Les réglages « flight » (le calque) et « foundOnly » sont ceux de la carte
+-- (Map/Look.lua), que ses autres icônes suivent aussi.
 local _, root = ...
 local ns = root.Plus
 local L = ns.L
@@ -343,7 +343,7 @@ local function Build()
     if set or not (F and Pins.Ready()) then return end
     factionBit = UnitFactionGroup("player") == "Horde" and 2 or 1
     -- (les clés « flight » et « route » : le calque et ses icônes dès un zoom,
-    -- cachés dans les donjons, comme le fait encore Map/Stitch.lua)
+    -- cachés dans les donjons, comme les autres icônes de la carte)
     set = Pins.Set("flight", 2.5, 2)
     routeSet = Pins.Set("route", 1, 1)
     if not (set and routeSet) then return end

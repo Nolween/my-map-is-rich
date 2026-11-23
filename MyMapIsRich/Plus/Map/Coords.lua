@@ -6,7 +6,7 @@
 -- rectangle, celui que le jeu donne (C_Map.GetMapRectOnMap). Un point du
 -- jeu en mètres (yards, sur le continent 0 ou 1) s'y place par les coins de
 -- la carte de son continent.
--- Le dessin de la carte (Map/Stitch.lua) garde encore ses propres calculs ;
+-- Le dessin de la carte (Map/Art.lua) garde ses propres calculs ;
 -- /mmir sonde carte compare les deux (Diag.lua).
 local _, root = ...
 local ns = root.Plus

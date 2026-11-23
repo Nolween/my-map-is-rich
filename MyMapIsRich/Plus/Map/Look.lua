@@ -58,11 +58,8 @@ local SET_KEYS = { dungeons = "icons", boats = "boats", zeppelins = "zeppelins",
 ---------------------------------------------------------------------------
 function LK.Range(key)
     local r = RANGES[key]
-    if not r and key == "minimapFrom" then
-        -- (le zoom rapproché, Map/Close.lua jusqu'en 0.14.0)
-        local mod = ns.Map.Legacy()
-        r = mod and mod.MINI_FROM
-    end
+    -- (celles du zoom rapproché : Map/Close.lua)
+    if not r and key == "minimapFrom" then r = LK.MINI_FROM end
     if type(r) == "table" then return r[1], r[2], r[3] end
 end
 

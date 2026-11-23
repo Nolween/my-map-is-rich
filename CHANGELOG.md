@@ -1,5 +1,24 @@
 # Journal des versions — My Map Is Rich
 
+## 0.15.0
+
+**Le zoom rapproché passe dans le code de My Map Is Rich.**
+
+Après la mise à jour, **relance le jeu** (un `/reload` ne suffit pas : l'addon a un fichier nouveau).
+
+- **Le zoom rapproché** (la minimap du jeu qui se mêle à la carte quand tu zoomes, les capitales, les grottes et les entrées de donjon, les trous de la carte comblés) est maintenant dans l'addon lui-même. Il marche comme avant : rien ne devrait changer à l'écran.
+- **Tes réglages** de l'onglet Carte, rubrique « Au plus près » (détail de la minimap, son mélange, le zoom d'où elle vient, sa profondeur, la minimap dans les capitales, « Adoucir, grain de papier », les grottes), sont repris une fois. Les anciens restent en place.
+- **Tout le moteur de la carte** est désormais le code de My Map Is Rich. Il reste d'OpenMap ses sauvegardes, la veille et `/mmir carte`, qui partiront avec la 1.0.0.
+
+## 0.14.0
+
+**Le dessin de la carte passe dans le code de My Map Is Rich.**
+
+Après la mise à jour, **relance le jeu** (un `/reload` ne suffit pas : l'addon a un fichier nouveau).
+
+- **Le dessin de la carte** (les zones assemblées, la mer, les noms des continents et des mers, les villes, les zones inexplorées montrées, assombries ou cachées, les couleurs harmonisées) est maintenant dans l'addon lui-même. C'est le même dessin qu'avant, repris tel quel : rien ne devrait changer à l'écran.
+- **Corrigé** : depuis la 0.13.0, l'addon pouvait rester en veille au chargement (« My Map Is Rich est désactivé »), parce qu'il cherchait encore une fonction des icônes partie avec elles.
+
 ## 0.13.0
 
 **Les icônes de la carte, en code de My Map Is Rich.**

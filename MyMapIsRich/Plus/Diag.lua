@@ -297,7 +297,7 @@ end
 
 ---------------------------------------------------------------------------
 -- /mmir sonde carte : les coordonnées de My Map Is Rich (Map/Coords.lua)
--- comparées à celles d'OpenMap (Map/Stitch.lua, encore là), sur toutes les
+-- comparées à celles du dessin de la carte (Map/Art.lua), sur toutes les
 -- cartes du jeu et sur chaque maître de vol. Un écart : l'un des deux se trompe
 ---------------------------------------------------------------------------
 local GAP = 1e-6          -- (plus petit : le même point)
