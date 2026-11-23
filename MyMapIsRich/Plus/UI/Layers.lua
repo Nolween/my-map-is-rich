@@ -546,7 +546,9 @@ ns.On("MAP_REFRESH", function() if rail and rail:IsVisible() then LY.Refresh() e
 P.DefineContext("rail", 51, function() return LY.PanelShown() and F.Top() == panel end, "window")
 P.SetAction("rail", "PADDRIGHT", function() F.Move(1, 0) end, "HINT_MOVE")
 P.SetAction("rail", "PAD1", function() F.Activate("LeftButton") end, "HINT_TOGGLE")
-P.SetAction("rail", "PAD3", function() F.Activate("RightButton") end, "HINT_LAYER_DETAILS")
+-- (View : les détails d'un calque, son clic droit ; X : la taille de la carte)
+P.SetAction("rail", "PADBACK", function() F.Activate("RightButton") end, "HINT_LAYER_DETAILS")
+P.SetAction("rail", "PAD3", ns.PadMapSize, ns.PadMapSizeHint)
 P.SetAction("rail", "PAD2", F.Back, "HINT_BACK_MAP")
 P.SetAction("rail", "PAD4", function() LY.HidePanel() end)
 F.WINDOW_CONTEXTS.rail = true

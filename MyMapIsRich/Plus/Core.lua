@@ -187,6 +187,19 @@ function ns.PadToggleMapSize()
     ns.ToggleMapSize()
 end
 
+-- X à la manette, carte ouverte : la taille de la carte, et rien d'autre,
+-- quel que soit l'écran posé sur la carte (la liste des quêtes, la fiche d'un
+-- point, les lieux, le rail des calques, la plume, un donjon...). Seuls le
+-- clavier à l'écran et l'invitation du groupe gardent leur X. L'action et
+-- son libellé, pour chaque contexte de la manette
+function ns.PadMapSize()
+    if ns.FullMap() and ns.MapShown() then ns.PadToggleMapSize() end
+end
+function ns.PadMapSizeHint()
+    if not (ns.FullMap() and ns.MapShown()) then return nil end
+    return ns.MapSmall() and "HINT_MAP_FULL" or "HINT_MAP_SMALL"
+end
+
 ---------------------------------------------------------------------------
 -- Les gestes de l'addon qui touchent à l'interface du jeu (rendre la manette
 -- à sa carte, choisir une quête dans son journal, reposer nos raccourcis

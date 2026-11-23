@@ -34,7 +34,8 @@ end
 
 -- (comme la carte seule : aucun raccourci posé, les boutons dont
 -- l'interface manette ne se sert pas sont lus ; la croix, Y et B restent les
--- siens, X revient au monde par la vue de la carte)
+-- siens ; X, la taille de la carte ; le retour au monde, le bouton « < … »
+-- du haut, au curseur et A)
 P.DefineContext("dungeon", 40, Shown, nil, "read")
 P.SetAction("dungeon", "PADLSHOULDER", function() DG.Floor(-1) end)
 P.SetAction("dungeon", "PADRSHOULDER", function() DG.Floor(1) end, function()
@@ -47,7 +48,7 @@ end)
 P.SetAction("dungeon", "PADBACK", Side, function()
     return DG.Side() and "HINT_SIDE" or nil
 end)
-P.SetPassive("dungeon", "PAD3", "HINT_BACK_WORLD")
+P.SetAction("dungeon", "PAD3", ns.PadMapSize, ns.PadMapSizeHint)
 P.SetPassive("dungeon", "RSTICK", "HINT_ZOOM")
 P.SetPassive("dungeon", "LSTICK", "HINT_EDGE_PAN")
 

@@ -310,9 +310,9 @@ ns.AddLocale("zhTW", {
     -- 說明與輪盤（之前只有英文）
     HELP = "/mmir：設定 · /mmir carte：地圖設定 · /mmir etat：狀態 · /mmir sonde：檢測手把按鍵（地圖開啟時）· /mmir test：哪些按鍵會讓地圖失去游標 · /mmir focus · /mmir on / off · /mmir lieux：地點 · /mmir news：新內容 · /mmir trajet：進行中的路線（trajet stop：取消）· /mmir file：佇列 · /mmir panneau：路線面板復位 · /mmir reset",
     HELP_MAP_TITLE = "在地圖上",
-    HELP_MAP = "|cffffd100R3|r  到游標下地點的路線（在其終點上：取消）\n|cffffd100RB|r  跟隨我：地圖讓你保持在中央（再按 RB：停止）\n|cffffd100LB|r  地點：瀏覽、搜尋、最近、佇列\n|cffffd100View|r  輪盤：加入佇列、傳送給隊伍、圖釘、羽毛筆、地圖設定\n|cffffd100LT / RT|r  游標附近的上一個 / 下一個圖示\n\n遊戲保留左搖桿（游標）、A（按下 / 放大）、X（縮小）、B（關閉）、Y、十字鍵和右搖桿（縮放）。小地圖且游標在右側清單上時：右搖桿轉動鏡頭，在任務上按 R3 規劃到那裡的路線。",
+    HELP_MAP = "|cffffd100R3|r  到游標下地點的路線（在其終點上：取消）\n|cffffd100RB|r  跟隨我：地圖讓你保持在中央（再按 RB：停止）\n|cffffd100LB|r  地點：瀏覽、搜尋、最近、佇列\n|cffffd100View|r  輪盤：加入佇列、傳送給隊伍、圖釘、羽毛筆、地圖設定\n|cffffd100LT / RT|r  游標附近的上一個 / 下一個圖示\n\n遊戲保留左搖桿（游標）、A（按下 / 放大）、B（關閉）、Y、十字鍵和右搖桿（縮放）。小地圖且游標在右側清單上時：右搖桿轉動鏡頭，在任務上按 R3 規劃到那裡的路線。X：在地圖上任何位置都可切換全螢幕或小地圖。",
     HELP_WINDOW_TITLE = "在視窗中",
-    HELP_WINDOW = "插件的視窗（圖釘、地點、輪盤、地圖上方的這個視窗）：\n|cffffd100十字鍵|r  在元素之間移動（金色邊框）\n|cffffd100A|r  選擇    |cffffd100X|r  右鍵    |cffffd100B|r  返回\n|cffffd100LB / RB|r  分頁    |cffffd100右搖桿|r  捲動，或在輪盤上選擇\n在地點中：|cffffd100Y|r 路線，|cffffd100X|r 加入佇列；在佇列中：|cffffd100LT / RT|r 上移 / 下移。\n\n在文字框上按 A 開啟鍵盤：X 刪除，Y 空格，LB / RB 文字游標，LT 大寫，RT 確認，B 取消。",
+    HELP_WINDOW = "插件的視窗（圖釘、地點、輪盤、地圖上方的這個視窗）：\n|cffffd100十字鍵|r  在元素之間移動（金色邊框）\n|cffffd100A|r  選擇    |cffffd100View|r  右鍵    |cffffd100X|r  地圖大小    |cffffd100B|r  返回\n|cffffd100LB / RB|r  分頁    |cffffd100右搖桿|r  捲動，或在輪盤上選擇\n在地點中：|cffffd100Y|r 路線，|cffffd100View|r 加入佇列；在佇列中：|cffffd100LT / RT|r 上移 / 下移。\n\n在文字框上按 A 開啟鍵盤：X 刪除，Y 空格，LB / RB 文字游標，LT 大寫，RT 確認，B 取消。",
     HELP_DUNGEON_TITLE = "地城地圖",
     HELP_DUNGEON = "|cffffd100游標在邊緣|r  移動地圖\n|cffffd100右搖桿|r  圍繞游標縮放\n|cffffd100LB / RB|r  樓層\n|cffffd100LT / RT|r  側邊欄分頁\n|cffffd100View|r  進入側邊欄（B 離開）\n|cffffd100X|r  回到世界",
     HELP_COMMANDS_TITLE = "指令",

@@ -260,11 +260,17 @@ end
 local function Step(inward, pad)
     -- (les fenêtres de l'addon sur la carte d'abord, les boutons de la carte d'un donjon)
     if inward and lastX and C.Press(lastX, lastY) then return end
+    -- (le X de la manette : la taille de la carte, partout, Plus d'abord ; le
+    -- clic droit de la souris garde son sens, plus bas)
+    if not inward and pad and onOut then
+        local ok, taken = pcall(onOut)
+        if ok and taken then return end
+    end
     if ns.Map.Dungeons.Shown() then
-        if not inward then ns.Map.Dungeons.Close() end      -- (X : en sortir)
+        if not inward then ns.Map.Dungeons.Close() end      -- (le clic droit : en sortir)
         return
     end
-    -- la plume sortie : A pose la plume ou la lève, X la range
+    -- la plume sortie : A pose la plume ou la lève, le clic droit la range
     if ns.Map.Sketch.Drawing() and ns.Sketch then
         if inward then ns.Sketch.PadPress() else ns.Sketch.Toggle(false) end
         return
@@ -276,11 +282,6 @@ local function Step(inward, pad)
         E.SetMode(false)
         E.DropAt(cu, cv)
         return
-    end
-    -- (le X de la manette, rien d'ouvert : Plus d'abord, la taille de la carte)
-    if not inward and pad and onOut then
-        local ok, taken = pcall(onOut)
-        if ok and taken then return end
     end
     -- (l'icône sous le curseur pressée ; une qui n'a rien à presser laisse passer A)
     if inward and hovered and hovered:IsVisible() and not (hovered.openmapNoPress and not hovered.OnClick) then return Press(hovered) end

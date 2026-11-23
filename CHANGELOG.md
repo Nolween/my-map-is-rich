@@ -12,6 +12,10 @@ Après la mise à jour, **relance le jeu** (un `/reload` ne suffit pas : des fic
 - **`/mmir carte status`, `pins`, `draw` et `forgetflights`** marchent comme avant.
 - **Tes réglages sont mieux protégés** : un nombre que le jeu ne saurait pas relire est retiré de tes sauvegardes à la déconnexion, au lieu de faire perdre tout le fichier.
 - Le dessin de la carte et son zoom rapproché restent ceux d'OpenMap, portés dans l'addon, et ses données restent celles de ses outils (licence MIT, crédits dans l'onglet Aide).
+- **X à la manette ne sert plus qu'à une chose : plein écran ou carte réduite**, où que tu sois sur la carte (la carte, la liste et la fiche des quêtes, la fiche d'un point, les lieux, le rail des calques, la plume, un donjon). Ce qu'il faisait d'autre passe sur **View** :
+  - ajouter à la file (liste des quêtes, fiche d'un point, lieux) ; dans l'onglet File, retirer ;
+  - les détails d'un calque (rail des calques) ; le clic droit dans une fenêtre posée sur la carte.
+  La plume se range par View puis « Terminé », la carte d'un donjon se quitte par son bouton « < … » en haut à gauche (le curseur dessus, A). Le clavier à l'écran (effacer) et l'invitation du groupe (plus tard) gardent leur X. La croix haut / bas ne change plus la taille de la carte.
 - **Revenus dans l'onglet Carte** (`/mmir carte`), des réglages d'OpenMap qui n'avaient plus de case :
   - « Ctrl+clic pose une épingle » (rubrique Épingles) : éteins-le si un autre addon pose la sienne au Ctrl+clic (Map Pin Enhanced) ;
   - « Minimap dans les trous (essai) » (rubrique Au plus près) ;
@@ -21,6 +25,9 @@ Après la mise à jour, **relance le jeu** (un `/reload` ne suffit pas : des fic
   - un code d'épingles (`OMPINS1:`) dont une note a des espaces s'importe en entier, ceux d'OpenMap compris ;
   - la gomme de la plume met à jour le nombre de traits d'une épingle ; retirer une épingle sur laquelle on dessine range la plume ;
   - l'onglet Quêtes de la carte d'un donjon suit le journal quand une quête est acceptée ou rendue ;
+  - à la manette, sur la carte réduite, la liste des quêtes défile jusqu'au bout : la manette du jeu qui y entre passe dans notre liste au lieu de s'arrêter à sa dernière ligne visible ;
+  - à la manette, remonter dans la liste des quêtes la fait défiler jusqu'à la première quête, au lieu de sauter à la recherche ou aux boutons du dessus (plein écran comme carte réduite) ;
+  - à la manette, un seul appui sur la croix gauche passe de la liste des quêtes au curseur de la carte (il en fallait deux) ;
   - `/mmir on` après un `/reload` fait avec l'addon coupé remet la carte de l'addon sans un autre `/reload` ;
   - en veille, l'addon ne fait plus rien : plus de trajet vers ton corps, de destinations du groupe, de page dans les Options ni de menu dans la liste des addons de la minimap.
 

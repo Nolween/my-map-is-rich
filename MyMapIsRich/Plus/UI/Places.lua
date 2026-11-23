@@ -549,17 +549,17 @@ local HANDLERS = {
             end
         end,
         y = Route, x = Queue,
-        hints = { { "PAD1", "PLACES_OPEN" }, { "PAD4", "PLACES_ROUTE" }, { "PAD3", "PLACES_QUEUE" }, { "PAD2", "HINT_BACK" } },
+        hints = { { "PAD1", "PLACES_OPEN" }, { "PAD4", "PLACES_ROUTE" }, { "PADBACK", "PLACES_QUEUE" }, { "PAD2", "HINT_BACK" } },
     },
     search = {
         a = Route, x = Queue,
         y = function(item) ShowOnMap(item) PL.Hide() end,
-        hints = { { "PAD1", "PLACES_ROUTE" }, { "PAD3", "PLACES_QUEUE" }, { "PAD4", "PLACES_SHOW" }, { "PAD2", "HINT_CLOSE" } },
+        hints = { { "PAD1", "PLACES_ROUTE" }, { "PADBACK", "PLACES_QUEUE" }, { "PAD4", "PLACES_SHOW" }, { "PAD2", "HINT_CLOSE" } },
     },
     recent = {
         a = function(item) ShowOnMap(item) PL.Hide() end,
         y = Route, x = Queue,
-        hints = { { "PAD1", "PLACES_SHOW" }, { "PAD4", "PLACES_ROUTE" }, { "PAD3", "PLACES_QUEUE" }, { "PAD2", "HINT_CLOSE" } },
+        hints = { { "PAD1", "PLACES_SHOW" }, { "PAD4", "PLACES_ROUTE" }, { "PADBACK", "PLACES_QUEUE" }, { "PAD2", "HINT_CLOSE" } },
     },
     queue = {
         a = function(item)
@@ -584,7 +584,7 @@ local HANDLERS = {
             FillQueue()
             FocusRow(j + (T().Goal() and 1 or 0))
         end,
-        hints = { { "PAD1", "QUEUE_GO" }, { "PAD3", "QUEUE_REMOVE" }, { "PADLTRIGGER", "QUEUE_MOVE" }, { "PAD4", "QUEUE_SORT" }, { "PAD2", "HINT_CLOSE" } },
+        hints = { { "PAD1", "QUEUE_GO" }, { "PADBACK", "QUEUE_REMOVE" }, { "PADLTRIGGER", "QUEUE_MOVE" }, { "PAD4", "QUEUE_SORT" }, { "PAD2", "HINT_CLOSE" } },
     },
 }
 
@@ -826,7 +826,9 @@ end
 
 P.DefineContext("places", 52, function() return PL.Shown() and F.Top() == frame end, "window")
 P.SetAction("places", "PAD4", function() Handle("y") end, Label("PAD4"))
-P.SetAction("places", "PAD3", function() Handle("x") end, Label("PAD3"))
+-- (View : dans la file, ou en retirer, onglet File ; X : la taille de la carte, rien d'autre)
+P.SetAction("places", "PADBACK", function() Handle("x") end, Label("PADBACK"))
+P.SetAction("places", "PAD3", ns.PadMapSize, ns.PadMapSizeHint)
 P.SetAction("places", "PAD2", Back, function() return tab == "places" and #path > 0 and "HINT_BACK" or "HINT_CLOSE" end)
 P.SetAction("places", "PADLTRIGGER", function() Handle("move", -1) end)
 P.SetAction("places", "PADRTRIGGER", function() Handle("move", 1) end, function() return tab == "queue" and "QUEUE_MOVE" or nil end)

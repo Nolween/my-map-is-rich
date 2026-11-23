@@ -7,7 +7,8 @@
 --   la souris    tirer à gauche trace, tirer à droite déplace la carte, la
 --                molette zoome ; Ctrl+Z défait, Échap range la plume ;
 --   la manette   A pose la plume puis la lève (un trait : A, bouger, A),
---                X la range, View passe dans le plateau (Pad/MapNav.lua) ;
+--                View passe dans le plateau, dont Terminé la range ; X ne fait
+--                que la taille de la carte (Pad/MapNav.lua) ;
 --   une épingle  « Dessiner » sur sa fiche attache ce qu'on dessine à elle :
 --                le dessin part avec elle, et se cache avec les épingles.
 -- Sur la carte d'un donjon, la plume dessine sur son étage

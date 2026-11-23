@@ -462,7 +462,15 @@ P.SetAction("window", "PADDDOWN", function() F.Move(0, -1) end)
 P.SetAction("window", "PADDLEFT", function() F.Move(-1, 0) end)
 P.SetAction("window", "PADDRIGHT", function() F.Move(1, 0) end, "HINT_MOVE")
 P.SetAction("window", "PAD1", function() F.Activate("LeftButton") end, "HINT_SELECT")
-P.SetAction("window", "PAD3", function() F.Activate("RightButton") end, "HINT_RIGHT_CLICK")
+-- (X : le clic droit ; carte ouverte, la taille de la carte, et le clic droit
+-- passe sur View. Le clavier et l'invitation gardent leur propre X)
+local function OnMap() return ns.FullMap() and ns.MapShown() end
+P.SetAction("window", "PAD3", function()
+    if OnMap() then ns.PadMapSize() else F.Activate("RightButton") end
+end, function() return ns.PadMapSizeHint() or "HINT_RIGHT_CLICK" end)
+P.SetAction("window", "PADBACK", function()
+    if OnMap() then F.Activate("RightButton") end
+end, function() return OnMap() and "HINT_RIGHT_CLICK" or nil end)
 P.SetAction("window", "PAD2", F.Back, "HINT_BACK")
 P.SetAction("window", "PADLSHOULDER", function() F.Tab(-1) end)
 P.SetAction("window", "PADRSHOULDER", function() F.Tab(1) end, function()

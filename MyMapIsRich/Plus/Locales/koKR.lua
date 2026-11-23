@@ -310,9 +310,9 @@ ns.AddLocale("koKR", {
     -- 도움말과 휠 (이전에는 영어만)
     HELP = "/mmir: 설정 · /mmir carte: 지도 설정 · /mmir etat: 상태 · /mmir sonde: 컨트롤러 버튼 점검 (지도 열림) · /mmir test: 지도의 커서를 빼앗는 버튼 · /mmir focus · /mmir on / off · /mmir lieux: 장소 · /mmir news: 새 소식 · /mmir trajet: 진행 중인 경로 (trajet stop: 취소) · /mmir file: 대기열 · /mmir panneau: 경로 패널 제자리로 · /mmir reset",
     HELP_MAP_TITLE = "지도에서",
-    HELP_MAP = "|cffffd100R3|r  커서 아래 지점까지 경로 (목적지 위에서: 취소)\n|cffffd100RB|r  나 따라가기: 지도가 나를 가운데에 둠 (다시 RB: 중지)\n|cffffd100LB|r  장소: 둘러보기, 검색, 최근, 대기열\n|cffffd100View|r  휠: 대기열에 추가, 파티에 보내기, 핀, 깃펜, 지도 설정\n|cffffd100LT / RT|r  커서 주변의 이전 / 다음 아이콘\n\n게임이 왼쪽 스틱(커서), A(누르기 / 확대), X(축소), B(닫기), Y, 방향 패드, 오른쪽 스틱(확대)을 그대로 씁니다. 작은 지도에서 커서가 오른쪽 목록에 있으면: 오른쪽 스틱은 카메라를 돌리고, 퀘스트에서 R3는 그곳까지 경로를 짭니다.",
+    HELP_MAP = "|cffffd100R3|r  커서 아래 지점까지 경로 (목적지 위에서: 취소)\n|cffffd100RB|r  나 따라가기: 지도가 나를 가운데에 둠 (다시 RB: 중지)\n|cffffd100LB|r  장소: 둘러보기, 검색, 최근, 대기열\n|cffffd100View|r  휠: 대기열에 추가, 파티에 보내기, 핀, 깃펜, 지도 설정\n|cffffd100LT / RT|r  커서 주변의 이전 / 다음 아이콘\n\n게임이 왼쪽 스틱(커서), A(누르기 / 확대), B(닫기), Y, 방향 패드, 오른쪽 스틱(확대)을 그대로 씁니다. 작은 지도에서 커서가 오른쪽 목록에 있으면: 오른쪽 스틱은 카메라를 돌리고, 퀘스트에서 R3는 그곳까지 경로를 짭니다. X: 지도 어디에 있든 전체 화면과 작은 지도를 오갑니다.",
     HELP_WINDOW_TITLE = "창에서",
-    HELP_WINDOW = "애드온의 창 (핀, 장소, 휠, 지도 위의 이 창):\n|cffffd100방향 패드|r  요소에서 요소로 (금색 테두리)\n|cffffd100A|r  선택    |cffffd100X|r  오른쪽 클릭    |cffffd100B|r  뒤로\n|cffffd100LB / RB|r  탭    |cffffd100오른쪽 스틱|r  스크롤, 또는 휠에서 고르기\n장소에서: |cffffd100Y|r 경로, |cffffd100X|r 대기열에 추가; 대기열에서: |cffffd100LT / RT|r 위로 / 아래로.\n\n텍스트 칸에서 A는 키보드를 엽니다: X 지우기, Y 띄어쓰기, LB / RB 텍스트 커서, LT 대문자, RT 확인, B 취소.",
+    HELP_WINDOW = "애드온의 창 (핀, 장소, 휠, 지도 위의 이 창):\n|cffffd100방향 패드|r  요소에서 요소로 (금색 테두리)\n|cffffd100A|r  선택    |cffffd100View|r  오른쪽 클릭    |cffffd100X|r  지도 크기    |cffffd100B|r  뒤로\n|cffffd100LB / RB|r  탭    |cffffd100오른쪽 스틱|r  스크롤, 또는 휠에서 고르기\n장소에서: |cffffd100Y|r 경로, |cffffd100View|r 대기열에 추가; 대기열에서: |cffffd100LT / RT|r 위로 / 아래로.\n\n텍스트 칸에서 A는 키보드를 엽니다: X 지우기, Y 띄어쓰기, LB / RB 텍스트 커서, LT 대문자, RT 확인, B 취소.",
     HELP_DUNGEON_TITLE = "던전 지도",
     HELP_DUNGEON = "|cffffd100가장자리의 커서|r  지도 옮기기\n|cffffd100오른쪽 스틱|r  커서 주변 확대\n|cffffd100LB / RB|r  층\n|cffffd100LT / RT|r  옆 패널의 탭\n|cffffd100View|r  옆 패널로 들어가기 (B로 나오기)\n|cffffd100X|r  세계로 돌아가기",
     HELP_COMMANDS_TITLE = "명령어",

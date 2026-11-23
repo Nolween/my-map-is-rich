@@ -490,7 +490,7 @@ local function FillHead()
     local pad = ns.PadUI()
     panel.lt:SetShown(pad and view == "list")
     panel.rt:SetShown(pad)
-    for _, b in ipairs(page.actions) do b.glyph:SetShown(pad) end
+    for _, b in ipairs(page.actions) do if b.glyph then b.glyph:SetShown(pad) end end
     page.back.glyph:SetShown(pad)
 end
 
@@ -1310,7 +1310,8 @@ local function Build(chrome)
     page.route = Button(page, L.FICHE_ROUTE, half, 28, nil, "PAD4")
     page.route:SetPoint("BOTTOMLEFT", page, "BOTTOMLEFT", 12, 42)
     page.route:SetScript("OnClick", Route)
-    page.queue = Button(page, L.ACT_QUEUE, half, 28, "grey", "PAD3")
+    -- (à la manette, la file depuis la liste : View ; X ne fait que la taille de la carte)
+    page.queue = Button(page, L.ACT_QUEUE, half, 28, "grey")
     page.queue:SetPoint("LEFT", page.route, "RIGHT", 6, 0)
     page.queue:SetScript("OnClick", Queue)
     page.track = Button(page, L.QUESTS_TRACK, half, 24, "grey", "PAD1")
@@ -1533,13 +1534,47 @@ local function Current()
     if f and f.item and f.item.quest then return f.item.quest end
 end
 
+-- La croix (ou le stick) haut / bas dans la liste : de quête en quête, en
+-- sautant les en-têtes de zone. La quête voisine hors de vue, la liste défile
+-- jusqu'à elle, au lieu que la croix saute à la recherche ou aux boutons du
+-- dessus (les plus proches à l'écran). Seulement depuis la toute première
+-- quête, elle sort de la liste vers le haut.
+local function ListStep(dy)
+    local cur = F.Current and F.Current()
+    local at
+    if cur and cur.item and list and cur:GetParent() == list then
+        for i, row in ipairs(list.rows) do
+            if row == cur then at = list.offset + i end
+        end
+    end
+    if not at then return F.Move(0, dy) end
+    local k = at - dy
+    while items[k] and not items[k].quest do k = k - dy end
+    if not items[k] then
+        -- (au bout de la liste : vers le haut, la recherche ; vers le bas, rien)
+        if dy > 0 then F.Move(0, dy) end
+        return
+    end
+    local i = k - list.offset
+    if i < 1 then list:SetOffset(k - 1) elseif i > #list.rows then list:SetOffset(k - #list.rows) end
+    local row = list.rows[k - list.offset]
+    if not (row and row:IsShown()) then return end
+    if row == cur then
+        -- (la même ligne, une autre quête dedans : elle se choisit de nouveau)
+        local onEnter = row:GetScript("OnEnter")
+        if onEnter then pcall(onEnter, row) end
+    else
+        F.SetCurrent(row)
+    end
+end
+
 -- (pas le contexte des fenêtres comme base : B y a son propre sens, revenir à la carte)
 P.DefineContext("quests", 52.5, function() return QP.Focused() and F.Top() == panel and view == "list" end)
-P.SetAction("quests", "PADDUP", function() F.Move(0, 1) end)
-P.SetAction("quests", "PADDDOWN", function() F.Move(0, -1) end)
+P.SetAction("quests", "PADDUP", function() ListStep(1) end)
+P.SetAction("quests", "PADDDOWN", function() ListStep(-1) end)
 -- (la liste est à droite de la carte, plein écran ou réduite : la croix gauche
--- y revient ; la croix gauche du jeu y redonne ensuite le curseur)
-P.SetAction("quests", "PADDLEFT", function() QP.Blur() end)
+-- n'est pas prise, elle reste au jeu, qui donne d'un seul appui son curseur à
+-- la carte ; la liste le voit et rend la manette, plus bas : logWatch)
 P.SetAction("quests", "PADDRIGHT", function() F.Move(1, 0) end, "HINT_MOVE")
 P.SetAction("quests", "PAD1", function()
     local q = Current()
@@ -1567,11 +1602,13 @@ end, function()
     if goal and goal.questID == q.questID then return "HINT_TRAVEL_CANCEL" end
     return "HINT_TRAVEL_QUEST"
 end)
-P.SetAction("quests", "PAD3", function()
+-- (View : la quête dans la file ; X : la taille de la carte, rien d'autre)
+P.SetAction("quests", "PADBACK", function()
     local q = Current()
     if q then Select(q, false) end
     Queue()
 end, "ACT_QUEUE")
+P.SetAction("quests", "PAD3", ns.PadMapSize, ns.PadMapSizeHint)
 -- (LT : le tri, par zone ou les plus proches ; RT : revenir à la carte, comme
 -- B ; la liste reste)
 P.SetAction("quests", "PADLTRIGGER", function() Sort(sortBy == "zone" and "dist" or "zone") end, "HINT_QUESTS_SORT")
@@ -1586,8 +1623,11 @@ P.DefineContext("questmenu", 52.7, function()
 end, "window")
 P.SetAction("questmenu", "PAD2", function() CloseQuestMenu() end, "HINT_MENU_CLOSE")
 P.SetAction("questmenu", "PAD4", function() CloseQuestMenu() end)
--- (pas de clic droit dans un menu)
-P.SetAction("questmenu", "PAD3", function() end)
+-- (pas de clic droit dans un menu ; X : le menu fermé, la taille de la carte)
+P.SetAction("questmenu", "PAD3", function()
+    CloseQuestMenu()
+    ns.PadMapSize()
+end, ns.PadMapSizeHint)
 F.WINDOW_CONTEXTS.questmenu = true
 
 ---------------------------------------------------------------------------
@@ -1618,7 +1658,7 @@ end), function()
     return (q and Watched(q)) and "QUESTS_UNTRACK" or "QUESTS_TRACK"
 end)
 P.SetAction("questpage", "PAD4", function() Route() end, "FICHE_ROUTE")
-P.SetAction("questpage", "PAD3", function() Queue() end, "ACT_QUEUE")
+P.SetAction("questpage", "PAD3", ns.PadMapSize, ns.PadMapSizeHint)
 P.SetAction("questpage", "PADLTRIGGER", Act(Share), "QUESTS_SHARE")
 P.SetAction("questpage", "PADBACK", function() AbandonPress() end, function()
     local q = Selected()
@@ -1725,7 +1765,7 @@ local function StickStep(dir)
             return
         end
         if F.Top() ~= panel then return end
-        if view == "list" then F.Move(0, dir) else PageScroll(-dir) end
+        if view == "list" then ListStep(dir) else PageScroll(-dir) end
         P.Dirty()
     elseif QP.Shown() and Free() then
         QP.Focus()
@@ -1769,13 +1809,58 @@ local function FocusAtOpen()
     QP.Focus()
 end
 
+-- La navigation de l'interface manette du jeu (SmartNavigation) peut entrer
+-- dans nos lignes (elles sont sur la carte du jeu) ou dans son journal, caché
+-- sous notre liste : surtout sur la carte réduite, qui laisse la manette au
+-- jeu. Elle ne sait pas faire défiler notre liste et s'arrête à sa dernière
+-- ligne visible. Dès que son focus y arrive, la manette passe dans notre
+-- liste, qui défile. Sortie de la liste (B, la croix gauche), elle n'y est
+-- reprise que si le jeu y déplace de nouveau son focus.
+local function Within(f, frame)
+    for _ = 1, 15 do
+        if not f then return false end
+        if f == frame then return true end
+        f = f.GetParent and f:GetParent()
+    end
+    return false
+end
+local gameButton, watchWait = nil, 0
+local logWatch = CreateFrame("Frame")
+logWatch:Hide()
+logWatch:SetScript("OnUpdate", function(_, elapsed)
+    watchWait = watchWait - elapsed
+    if watchWait > 0 then return end
+    watchWait = 0.2
+    -- (le curseur donné à la carte, la croix gauche du jeu : la liste rend la manette)
+    if focused and view == "list" and CanvasHasPad() then
+        QP.Blur()
+        return
+    end
+    local nav = _G.SmartNavigation
+    if not (nav and type(nav.GetCurrentButton) == "function") then return end
+    local ok, button = pcall(nav.GetCurrentButton, nav)
+    if not ok or type(button) ~= "table" or type(button.GetParent) ~= "function" then button = nil end
+    if button == gameButton then return end
+    gameButton = button
+    if not button or focused or InCombatLockdown() or not ns.PadUI() then return end
+    if not (panel and QP.Shown() and view == "list" and Free()) then return end
+    local inPanel = Within(button, panel)
+    if not (inPanel or Within(button, _G.QuestMapFrame)) then return end
+    QP.Focus()
+    -- (sur l'une de nos lignes : la manette reste sur celle-là)
+    if inPanel and button.item and F.SetCurrent then F.SetCurrent(button) end
+end)
+
 ns.On("MAP_SHOW", function()
     stickDir = 0
     stickDriver:Show()
+    gameButton, watchWait = nil, 0
+    logWatch:Show()
     for _, t in ipairs(FOCUS_AT) do C_Timer.After(t, FocusAtOpen) end
 end)
 ns.On("MAP_HIDE", function()
     stickDriver:Hide()
+    logWatch:Hide()
     Keep(false)
 end)
 -- (passée en plein écran : comme à l'ouverture)
@@ -1801,3 +1886,4 @@ end, nil, "read")
 P.SetPassive("mapidle", "PADDLEFT", "HINT_BACK_MAP")
 P.SetAction("mapidle", "PADRTRIGGER", function() QP.Focus() end, "HINT_QUESTS")
 P.SetPassive("mapidle", "PAD2", "HINT_CLOSE_MAP")
+P.SetAction("mapidle", "PAD3", ns.PadMapSize, ns.PadMapSizeHint)

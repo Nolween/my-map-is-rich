@@ -731,7 +731,7 @@ local function BuildBar()
     UI.Tip(view.back, function() return view.back:GetText() end, L.DUNGEON_BACK_TIP)
     local close = UI.CloseButton(bar, 22, function() DV.Close() end)
     close:SetPoint("RIGHT", -10, 0)
-    close.noGamepad = true      -- (X revient au monde : la croix n'est pas un élément à choisir)
+    close.noGamepad = true      -- (à la manette, le bouton « < … » à gauche revient au monde : la croix n'est pas un élément à choisir)
     -- l'étage : son nom (la liste de tous au clic) entre deux flèches
     view.floorButton = UI.Button(bar, "", 200, 24, "grey")
     view.floorButton:SetPoint("CENTER")

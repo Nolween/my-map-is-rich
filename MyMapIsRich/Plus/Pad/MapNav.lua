@@ -19,8 +19,8 @@
 -- L'aimant : le curseur au repos tout près d'une icône, la vue se recale
 -- pour la mettre dessous (son info-bulle s'ouvre, A l'appuie).
 --
--- La plume sortie (contexte « sketch », Layers/Sketch.lua) : A pose et lève la plume,
--- X la range ; View passe dans ses outils.
+-- La plume sortie (contexte « sketch », Layers/Sketch.lua) : A pose et lève la plume ;
+-- View passe dans ses outils (Terminé la range) ; X, la taille de la carte.
 local _, root = ...
 local ns = root.Plus
 local L = ns.L
@@ -418,16 +418,11 @@ end)
 -- (UI/MapChrome.lua, ns.Map.View.SetOutHandler) ne vient pas sur sa carte en fenêtre,
 -- sous la carte réduite ; s'il vient aussi, ns.PadToggleMapSize n'en compte
 -- qu'un. La carte classique : le X du jeu, dézoomer)
-P.SetAction("map", "PAD3", function()
-    if ns.FullMap() then ns.PadToggleMapSize() end
-end, function()
-    if not ns.FullMap() then return nil end
-    return ns.MapSmall() and "HINT_MAP_FULL" or "HINT_MAP_SMALL"
-end)
+P.SetAction("map", "PAD3", ns.PadMapSize, ns.PadMapSizeHint)
 P.SetPassive("map", "PAD2", function() return ns.FullMap() and "HINT_CLOSE_MAP" or nil end)
 
--- La plume sortie : A pose et lève la plume, X la range ; View
--- passe dans ses outils, RB recentre
+-- La plume sortie : A pose et lève la plume ; View passe dans ses outils
+-- (Terminé la range), RB recentre ; X, la taille de la carte
 P.DefineContext("sketch", 45, function() return Sketching() and CanvasFocus() end, nil, "read")
 P.SetAction("sketch", "PADBACK", function()
     local tray = Tray()
@@ -435,7 +430,7 @@ P.SetAction("sketch", "PADBACK", function()
 end, "HINT_QUILL_TOOLS")
 P.SetAction("sketch", "PADRSHOULDER", FindMe, "HINT_RECENTER")
 P.SetPassive("sketch", "PAD1", "HINT_QUILL_PEN")
-P.SetPassive("sketch", "PAD3", "HINT_QUILL_DONE")
+P.SetAction("sketch", "PAD3", ns.PadMapSize, ns.PadMapSizeHint)
 
 ns.On("CONTEXT", function(name)
     magnet:SetShown(name == "map")

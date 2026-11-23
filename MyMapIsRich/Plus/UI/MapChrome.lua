@@ -541,20 +541,25 @@ local function UnbindKeys()
     if not InCombatLockdown() then ClearOverrideBindings(keyOwner) end
 end
 
--- La croix bas du jeu agrandit sa carte en fenêtre, celle qui est sous la
--- nôtre. La neutraliser par un raccourci de l'addon brouillait l'interface
--- manette (le jeu bloquait ensuite SetPreferredGamepadInteractTarget) : elle
--- reste au jeu. Si elle agrandit la carte du jeu sous la carte réduite, la
--- nôtre passe aussi en plein écran, plutôt que de rester une fenêtre sur fond
--- noir ; X reste le bouton pour passer de l'une à l'autre.
+-- La croix haut / bas du jeu agrandit ou réduit sa carte en fenêtre, celle
+-- qui est sous la nôtre. La neutraliser par un raccourci de l'addon brouillait
+-- l'interface manette (le jeu bloquait ensuite SetPreferredGamepadInteractTarget) :
+-- elle reste au jeu. Mais elle ne change jamais la taille de notre carte : seul
+-- X (ou le bouton Taille) passe de la carte réduite au plein écran. La carte du
+-- jeu agrandie sous la carte réduite est remise en fenêtre, sans quoi la nôtre
+-- resterait une fenêtre au milieu d'un fond noir. (Un geste noté : ns.Risky.)
 local sizeHooked = false
 local function HookGameSize()
     local map = _G.WorldMapFrame
-    if sizeHooked or not (map and type(map.Maximize) == "function") then return end
+    if sizeHooked or not (map and type(map.Maximize) == "function" and type(map.Minimize) == "function") then return end
     sizeHooked = true
+    -- (aussitôt, dans la même image : rien ne se voit de la carte du jeu agrandie
+    -- ni de la nôtre qui se recentrerait ; attendre l'image suivante faisait voir
+    -- un aller-retour)
     hooksecurefunc(map, "Maximize", function()
         if not (ns.FullMap() and ns.MapShown() and ns.MapSmall()) or InCombatLockdown() then return end
-        C_Timer.After(0, function() ns.SetMapSmall(false) end)
+        if map.IsMaximized and not map:IsMaximized() then return end
+        if ns.Risky("MinimizeGameMap") then pcall(map.Minimize, map) end
     end)
 end
 

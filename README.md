@@ -35,11 +35,14 @@ La carte du jeu reste ouverte dessous, invisible : c'est elle que M, Échap et B
 | Carte | Y | Le panneau des calques (carte plein écran) |
 | Carte | View | La roue, autour du curseur : ajouter à la file, envoyer au groupe, poser une épingle, épingles, plume, réglages de la carte (stick droit pour choisir, A pour valider, View pour fermer) |
 | Carte | LT / RT | Carte plein écran : LT l'icône suivante autour du curseur, RT entre dans la liste des quêtes (la croix y va de quête en quête). |
-| Carte | Stick gauche, A, X, B, croix, L3, stick droit | Ceux du jeu et de la carte : curseur (sur tout l'écran, carte plein écran), appuyer / zoomer, plein écran ou carte réduite (X, carte de l'addon ; ailleurs dézoomer), fermer, Carte standard, marqueur, zoom |
+| Carte | X | Plein écran ou carte réduite, **où que l'on soit sur la carte** (liste des quêtes, fiche d'un point, lieux, rail des calques, plume, donjon). C'est son seul rôle ; seuls le clavier virtuel (effacer) et l'invitation du groupe (plus tard) gardent leur X |
+| Carte | Stick gauche, A, B, croix, L3, stick droit | Ceux du jeu et de la carte : curseur (sur tout l'écran, carte plein écran), appuyer / zoomer, fermer, Carte standard, marqueur, zoom. La croix haut / bas ne change jamais la taille de la carte |
 | Liste des quêtes | R3 | Itinéraire tout de suite jusqu'à la quête choisie ; R3 sur la quête du trajet en cours l'annule ; carte réduite : stick droit pour tourner la caméra |
 | Liste des quêtes | Y | Le menu de la quête choisie (voir, itinéraire, file, suivre, partager, lien, abandonner) : la croix choisit, A valide, B ou Y le ferment |
-| Fenêtre | Croix, A / X / B, LB / RB | D'un élément à l'autre, valider / clic droit / retour, onglets |
-| Lieux | Y / X | Itinéraire jusqu'au lieu / l'ajouter à la file ; dans la file : LT / RT monter / descendre |
+| Liste des quêtes | View | Ajouter la quête choisie à la file |
+| Fenêtre | Croix, A / B, View, LB / RB | D'un élément à l'autre, valider / retour, clic droit (View sur la carte, X ailleurs), onglets |
+| Lieux, fiche d'un point | Y / View | Itinéraire jusqu'au lieu / l'ajouter à la file ; dans la file : View le retire, LT / RT monter / descendre |
+| Rail des calques | View | Les détails du calque choisi |
 | Champ de texte | A | Clavier virtuel |
 
 Pendant un itinéraire, en jeu (la carte plein écran le cache, la carte réduite le laisse), le **panneau de trajet** dit l'étape, le temps restant et l'heure d'arrivée (en vol : la barre de vol et l'alerte d'atterrissage), une **flèche GPS** dessous montre où aller, et la manette **vibre** à chaque étape. En fantôme, l'itinéraire mène au corps.

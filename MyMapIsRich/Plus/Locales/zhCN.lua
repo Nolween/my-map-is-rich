@@ -310,9 +310,9 @@ ns.AddLocale("zhCN", {
     -- 帮助与轮盘（之前只有英文）
     HELP = "/mmir：设置 · /mmir carte：地图设置 · /mmir etat：状态 · /mmir sonde：检测手柄按键（地图打开时）· /mmir test：哪些按键会让地图失去光标 · /mmir focus · /mmir on / off · /mmir lieux：地点 · /mmir news：新内容 · /mmir trajet：进行中的路线（trajet stop：取消）· /mmir file：队列 · /mmir panneau：路线面板复位 · /mmir reset",
     HELP_MAP_TITLE = "在地图上",
-    HELP_MAP = "|cffffd100R3|r  到光标下地点的路线（在其终点上：取消）\n|cffffd100RB|r  跟随我：地图让你保持在中央（再按 RB：停止）\n|cffffd100LB|r  地点：浏览、搜索、最近、队列\n|cffffd100View|r  轮盘：加入队列、发送给队伍、图钉、羽毛笔、地图设置\n|cffffd100LT / RT|r  光标附近的上一个 / 下一个图标\n\n游戏保留左摇杆（光标）、A（按下 / 放大）、X（缩小）、B（关闭）、Y、十字键和右摇杆（缩放）。小地图且光标在右侧列表上时：右摇杆转动镜头，在任务上按 R3 规划到那里的路线。",
+    HELP_MAP = "|cffffd100R3|r  到光标下地点的路线（在其终点上：取消）\n|cffffd100RB|r  跟随我：地图让你保持在中央（再按 RB：停止）\n|cffffd100LB|r  地点：浏览、搜索、最近、队列\n|cffffd100View|r  轮盘：加入队列、发送给队伍、图钉、羽毛笔、地图设置\n|cffffd100LT / RT|r  光标附近的上一个 / 下一个图标\n\n游戏保留左摇杆（光标）、A（按下 / 放大）、B（关闭）、Y、十字键和右摇杆（缩放）。小地图且光标在右侧列表上时：右摇杆转动镜头，在任务上按 R3 规划到那里的路线。X：在地图上任何位置都可切换全屏或小地图。",
     HELP_WINDOW_TITLE = "在窗口中",
-    HELP_WINDOW = "插件的窗口（图钉、地点、轮盘、地图上方的这个窗口）：\n|cffffd100十字键|r  在元素之间移动（金色边框）\n|cffffd100A|r  选择    |cffffd100X|r  右键    |cffffd100B|r  返回\n|cffffd100LB / RB|r  标签页    |cffffd100右摇杆|r  滚动，或在轮盘上选择\n在地点中：|cffffd100Y|r 路线，|cffffd100X|r 加入队列；在队列中：|cffffd100LT / RT|r 上移 / 下移。\n\n在文本框上按 A 打开键盘：X 删除，Y 空格，LB / RB 文本光标，LT 大写，RT 确认，B 取消。",
+    HELP_WINDOW = "插件的窗口（图钉、地点、轮盘、地图上方的这个窗口）：\n|cffffd100十字键|r  在元素之间移动（金色边框）\n|cffffd100A|r  选择    |cffffd100View|r  右键    |cffffd100X|r  地图大小    |cffffd100B|r  返回\n|cffffd100LB / RB|r  标签页    |cffffd100右摇杆|r  滚动，或在轮盘上选择\n在地点中：|cffffd100Y|r 路线，|cffffd100View|r 加入队列；在队列中：|cffffd100LT / RT|r 上移 / 下移。\n\n在文本框上按 A 打开键盘：X 删除，Y 空格，LB / RB 文本光标，LT 大写，RT 确认，B 取消。",
     HELP_DUNGEON_TITLE = "地下城地图",
     HELP_DUNGEON = "|cffffd100光标在边缘|r  移动地图\n|cffffd100右摇杆|r  围绕光标缩放\n|cffffd100LB / RB|r  楼层\n|cffffd100LT / RT|r  侧边栏标签页\n|cffffd100View|r  进入侧边栏（B 离开）\n|cffffd100X|r  回到世界",
     HELP_COMMANDS_TITLE = "命令",
