@@ -329,7 +329,7 @@ end
 function DG.Drawing() return view and view.markup and true or false end
 
 ---------------------------------------------------------------------------
--- Les boss sur la carte : là où Data/Forever/DungeonBosses.lua les met (et
+-- Les boss sur la carte : là où Data/Map/DungeonBosses.lua les met (et
 -- ceux que tu avais placés à la main), numérotés comme l'onglet Boss
 ---------------------------------------------------------------------------
 -- (une carte tirée de la minicarte a ses propres étages, donc ses propres places)

@@ -299,6 +299,7 @@ ns.AddLocale("koKR", {
     WHATSNEW_MMIR_0_13_0 = "• |cffffd100지도 아이콘을 새로|r My Map Is Rich의 코드로 만들었습니다: 던전 입구, 선착장, 비행 조련사, 퀘스트, 마을 주민, 파티, 내 핀과 그림, 목적지, 내 화살표. 화면에서는 바뀌는 것이 없어야 합니다.\n• |cffffd100선착장|r (배, 비행선 탑, 비행정): 툴팁에 어디로 가는지 나오고, 클릭하면 반대편 끝으로 이동합니다.",
     WHATSNEW_MMIR_0_14_0 = "• |cffffd100지도 그림이 이제 My Map Is Rich 안에 있습니다|r: 이어 붙인 지역, 바다, 대륙과 바다의 이름, 도시, 보이거나 어둡게 하거나 숨긴 미탐험 지역, 맞춘 색. 예전과 같은 그림이라 화면에서는 바뀌는 것이 없어야 합니다.\n• |cffffd100수정|r: 0.13.0부터 접속할 때 애드온이 꺼진 채로 남을 수 있었습니다.",
     WHATSNEW_MMIR_0_15_0 = "• |cffffd100가까이 확대하기가 이제 My Map Is Rich 안에 있습니다|r: 확대할 때 지도에 섞이는 미니맵, 대도시, 동굴과 던전 입구, 메워진 지도의 빈틈. 예전과 똑같이 작동하므로 화면에서 바뀌는 것은 없습니다.\n• 설정(지도 탭, '가까이서')은 한 번 옮겨집니다.\n• 지도 엔진 전체가 이제 애드온 자체의 코드입니다.",
+    WHATSNEW_MMIR_1_0_0 = "• |cffffd100My Map Is Rich 1.0|r: 이제 애드온에 따로 돌아가는 OpenMap 코드가 없습니다. 지도, 아이콘, 설정, 명령어 모두 My Map Is Rich 자체의 코드입니다.\n• 화면에서 바뀌는 것은 없어야 합니다. 핀, 그림, 배운 비행 조련사, 지도 설정은 한 번 옮겨지고, 예전 것은 그대로 남습니다.\n• OpenMap이나 OpenMap On Gamepad도 켜져 있으면 My Map Is Rich는 여전히 대기 상태로 있고 그렇게 알려 줍니다.",
 })
 
 -- /mmir focus ouverture (Diag.lua)
@@ -389,7 +390,7 @@ ns.AddLocale("koKR", {
     CREDITS_BUTTON = "만든 사람들…",
     CREDITS_BUTTON_TIP = "지도와 그 데이터, 그림을 만든 사람들.",
     CREDITS_TITLE = "만든 사람들",
-    CREDITS_TEXT = "|cffffd100My Map Is Rich|r는 nolwe가 WoW Forever를 위해 만듭니다.\n\n|cffffd100지도는 OpenMap|r 0.8.11 (MIT 라이선스)에서 왔으며, My Map Is Rich가 그 코드를 한 걸음씩 자기 코드로 바꾸고 있습니다. OpenMap은 Ji Unit이 daxtron2, Ironship, C-Clymer, RADD95, Peendars, Loukky, diegodiaz1256, Naladdar, ZiiMs, forcedroidbrain, TheRayoX, KonigTX, Luquatic, puschie286, k4m1, FlyingPenguin98, bv101rj, Rambomst, kr0ozin과 함께 만들었습니다. RADD95는 일부 클라이언트에서 동굴과 던전 지도가 초록색으로 보이던 이유를 찾았습니다.\n\n|cffffd100컨트롤러, 경로, 장소|r는 OpenMap On Gamepad에서 왔습니다.\n\n|cffffd100도보 데이터|r (도로, 지형, 상대 진영 마을)는 cjber의 Shortest Path Forever에서 왔습니다 (GPL-3.0-or-later 라이선스).\n\n|cffffd100지도 그림|r은 Blizzard Entertainment의 것입니다.\n\n문제를 알려 주고 생각을 나눠 주는 모든 분께 |cffffd100감사합니다|r.",
+    CREDITS_TEXT = "|cffffd100My Map Is Rich|r는 nolwe가 WoW Forever를 위해 만듭니다.\n\n|cffffd100지도는 OpenMap|r 0.8.11 (MIT 라이선스)에서 왔으며, My Map Is Rich가 그 코드를 한 걸음씩 자기 코드로 바꾸었습니다. 지도 그림과 데이터는 OpenMap의 것을 옮겨 왔습니다. OpenMap은 Ji Unit이 daxtron2, Ironship, C-Clymer, RADD95, Peendars, Loukky, diegodiaz1256, Naladdar, ZiiMs, forcedroidbrain, TheRayoX, KonigTX, Luquatic, puschie286, k4m1, FlyingPenguin98, bv101rj, Rambomst, kr0ozin과 함께 만들었습니다. RADD95는 일부 클라이언트에서 동굴과 던전 지도가 초록색으로 보이던 이유를 찾았습니다.\n\n|cffffd100컨트롤러, 경로, 장소|r는 OpenMap On Gamepad에서 왔습니다.\n\n|cffffd100도보 데이터|r (도로, 지형, 상대 진영 마을)는 cjber의 Shortest Path Forever에서 왔습니다 (GPL-3.0-or-later 라이선스).\n\n|cffffd100지도 그림|r은 Blizzard Entertainment의 것입니다.\n\n문제를 알려 주고 생각을 나눠 주는 모든 분께 |cffffd100감사합니다|r.",
     BINDING_FIND = "My Map Is Rich: 내 위치",
     BINDING_PIN = "My Map Is Rich: 핀 꽂기",
     BINDING_PINS = "My Map Is Rich: 핀",

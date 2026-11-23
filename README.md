@@ -3,7 +3,7 @@
 Une carte du monde d'un seul tenant pour **WoW Forever**, toutes les zones assemblées, aussi pratique à la souris qu'**à la manette**. On passe d'une zone à la suivante en dézoomant, et on y trace le trajet le plus rapide jusqu'à n'importe quel point.
 
 My Map Is Rich réunit dans un seul addon :
-- **la carte d'[OpenMap](https://github.com/openmap-world/openmap)** 0.8.11 : la carte assemblée, ses icônes (donjons, maîtres de vol, bateaux, PNJ de ville), les épingles, la plume, les cartes de donjon… Son code est sous licence MIT, merci à ses auteurs. Depuis la 0.5.0, il est remplacé pas à pas par celui de My Map Is Rich (voir « Comment c'est fait ») ;
+- **la carte d'[OpenMap](https://github.com/openmap-world/openmap)** 0.8.11 : la carte assemblée, ses icônes (donjons, maîtres de vol, bateaux, PNJ de ville), les épingles, la plume, les cartes de donjon… Son code est sous licence MIT, merci à ses auteurs. De la 0.5.0 à la 1.0.0, il a été remplacé pas à pas par celui de My Map Is Rich (voir « Comment c'est fait ») ;
 - **tout [OpenMap On Gamepad](https://github.com/Nolween/openmap-on-gamepad)** 0.6.0 : la manette sur la carte, les itinéraires, le panneau de trajet et la flèche GPS, la file, la roue, les lieux et la recherche, le partage avec le groupe.
 
 ## La carte plein écran
@@ -47,11 +47,11 @@ Pendant un itinéraire, en jeu (la carte plein écran le cache, la carte réduit
 ## Commandes
 
 - `/mmir` : la fenêtre de l'addon (Réglages, Carte, Trajets, Aide, Découvrir), aussi par le bouton de la minimap, le menu des addons de la minimap et Titan Panel
-- `/mmir carte` : les réglages de la carte (l'onglet Carte) ; `/mmir carte <…>` : les commandes de la carte venues d'OpenMap (`status`, `pins`, `draw`, `forgetflights`…)
+- `/mmir carte` : les réglages de la carte (l'onglet Carte) ; `/mmir carte <…>` : les commandes de la carte (`status` : ce que fait la vue ; `pins` : tes épingles ; `draw` : la plume ; `forgetflights` : oublier les maîtres de vol appris par ce personnage)
 - Les raccourcis du jeu (Raccourcis > My Map Is Rich) : me localiser, poser une épingle, les épingles, la plume, les réglages de la carte
 - `/mmir etat` : où en est l'addon ; `/mmir trajet` (`trajet stop`) : l'itinéraire en cours
 - `/mmir lieux`, `/mmir file` (`file vider`), `/mmir panneau`, `/mmir news`, `/mmir minimap`, `/mmir on` / `off`, `/mmir reset`
-- Diagnostic : `/mmir sonde`, `/mmir sonde carte` (les coordonnées comparées à celles d'OpenMap), `/mmir test`, `/mmir focus`, `/mmir camera sonde`, `/mmir camera trace`
+- Diagnostic : `/mmir sonde`, `/mmir sonde carte` (les coordonnées comparées à celles du dessin de la carte), `/mmir test`, `/mmir focus`, `/mmir camera sonde`, `/mmir camera trace`
 
 ## Avec OpenMap ou OpenMap On Gamepad
 
@@ -64,18 +64,21 @@ Avec **My Gamepad Is Rich** (après la 1.6.2), ses boutons s'effacent quand la c
 ```
 MyMapIsRich/                le dossier de l'addon
   MyMapIsRich.toc
-  Core.lua Init.lua Bindings.xml Locales/ Data/Forever/ Map/ Media/   la carte (OpenMap 0.8.11, renommé ; remplacée pas à pas)
-  Plus/                     la couche reprise d'OpenMap On Gamepad
+  Bindings.xml              les raccourcis du jeu (Plus/UI/KeyBindings.lua)
+  Plus/                     tout le code de l'addon
     Init.lua Core.lua Diag.lua Locales/ Map/ Layers/ Pad/ Travel/ UI/ Data/
-  LICENSE  LICENSES/ (OpenMap.txt, Ace3.txt)
+  Data/Map/                 les données de la carte (tirées du jeu par les outils d'OpenMap)
+  Media/                    l'icône, la flèche ; Media/Map/ : les textures de la carte
+  LICENSE  LICENSES/ (OpenMap.txt, Ace3.txt, README.txt)
 tools/                      roads/ et nav/ : les données de marche (voir plus bas) ;
                             hazards/ : les villes de l'autre faction (voir plus bas) ;
                             media/Arrow.ps1 : la flèche GPS (Media/Arrow.tga)
 ```
 
-- **La carte** est le code d'OpenMap 0.8.11, copié tel qu'il est installé puis renommé : ses globaux (`MyMapIsRich`, `MyMapIsRichAPI`, les cadres `MyMapIsRich…`), ses sauvegardes (`MyMapIsRichDB`, `MyMapIsRichCharDB`), ses textes (« My Map Is Rich »). Les commentaires gardent le nom d'OpenMap : ils disent d'où vient le code.
-- **Plus** a son propre espace de noms : chaque fichier commence par `local _, root = ... ; local ns = root.Plus`. Ses `ns.L`, `ns.db` (`MyMapIsRichPlusDB`), `ns.UI`... ne touchent jamais ceux de la carte. Il atteint la carte **par `ns.Map` seulement** (`Plus/Map/Api.lua` : la vue, le curseur, les coordonnées, les icônes, les épingles, les vols, la plume, les donjons ; `Plus/Map/Settings.lua` : les réglages de la carte et leur passage dans nos sauvegardes). En 0.5.0, ces fonctions appellent encore le code d'OpenMap ; chaque version suivante en remplace un bloc par le nôtre.
-- La veille : `ns.Conflict()` (Core.lua), demandée à la connexion par Init.lua et Plus/Core.lua.
+- **D'où ça vient** : My Map Is Rich est né d'OpenMap 0.8.11 (la carte) et d'OpenMap On Gamepad 0.6.0 (la manette, les itinéraires, les lieux). De la 0.5.0 à la 1.0.0, le code d'OpenMap a été remplacé par le nôtre, une version par étape ([FEUILLE_DE_ROUTE.md](FEUILLE_DE_ROUTE.md)). Le dessin de la carte et son zoom rapproché en sont portés tels quels, et ses données restent celles de ses outils.
+- **Plus** porte tout le code : chaque fichier commence par `local _, root = ... ; local ns = root.Plus` (l'espace de noms `root` ne garde que les tables de `Data/Map/`). Ses `ns.L`, `ns.db` (`MyMapIsRichPlusDB`), `ns.char` (`MyMapIsRichPlusCharDB`), `ns.UI`... Il atteint la carte **par `ns.Map`** (`Plus/Map/Api.lua` : la vue, le curseur, les coordonnées, les icônes, les épingles, les vols, la plume, les donjons ; `Plus/Map/Data.lua` : les données ; `Plus/Map/Settings.lua` : les réglages de la carte).
+- **Les anciennes sauvegardes** (`MyMapIsRichDB`, `MyMapIsRichCharDB`, celles de la carte d'OpenMap) restent déclarées dans le `.toc` : chaque module en copie une fois ce que le joueur avait (`ns.Map.Migrate`), sans rien effacer. Un personnage secondaire migre à sa propre connexion.
+- La veille : `ns.Conflict()` (`Plus/Core.lua`), demandée à la connexion.
 - Règle : rien n'est écrit dans les cadres de Blizzard (seulement `hooksecurefunc` / `HookScript`), et aucune fenêtre de la manette n'entre dans `UISpecialFrames` : sinon l'interface manette du jeu bloque des actions au nom de l'addon.
 - **La carte plein écran** est notre vue (`Plus/Map/View.lua`, depuis la 0.12.0 ; elle venait de la vue manette d'OpenMap), pour la souris et la manette : elle se bâtit une fois, sur son propre cadre, enfant de la carte du jeu (qui reste ouverte dessous). Le dessin de la carte est `Plus/Map/Art.lua`, ses icônes `Plus/Map/PinSets.lua` et le zoom rapproché (la minicarte, les grottes) `Plus/Map/Close.lua` ; le dessin et le zoom rapproché sont ceux d'OpenMap, portés. La vue les atteint par `ns.Map.Art`. Plus pose dessus son habillage (`Plus/UI/MapChrome.lua`) et le rail des calques (`Plus/UI/Layers.lua`).
 - Le détail des modules de Plus (la couche des boutons, les itinéraires, le panneau, la roue, les lieux, le groupe) est dans les en-têtes de leurs fichiers, comme dans OpenMap On Gamepad.
@@ -97,12 +100,12 @@ python -m venv .venv
 powershell -ExecutionPolicy Bypass -File tools\hazards\build_hazards.ps1 ["K:\World of Warcraft\_forever_\Interface\AddOns\ShortestPathForever"]
 ```
 
-Les données de la carte (`MyMapIsRich/Data/Forever/`) viennent des outils d'OpenMap, dans son dépôt.
+Les données de la carte (`MyMapIsRich/Data/Map/`) et ses textures (`MyMapIsRich/Media/Map/`) viennent des outils d'OpenMap, dans son dépôt : on les régénère, on ne les édite pas.
 
 ## Licence et crédits
 
 My Map Is Rich est sous licence **GPL-3.0-or-later** (`MyMapIsRich/LICENSE`), parce qu'il livre les données de marche tirées de Shortest Path Forever (merci à cjber).
-Le code de la carte vient d'**OpenMap** (© OpenMap contributors, licence MIT : `MyMapIsRich/LICENSES/OpenMap.txt`) ; ses crédits sont dans la fenêtre Crédits de l'onglet Aide (`MyMapIsRich/Plus/UI/Credits.lua`). Ace3 n'est plus livré depuis la 0.6.0. Les images de la carte sont celles de Blizzard.
+Le dessin de la carte, son zoom rapproché et ses données viennent d'**OpenMap** (© OpenMap contributors, licence MIT : `MyMapIsRich/LICENSES/OpenMap.txt`) ; ses crédits sont dans la fenêtre Crédits de l'onglet Aide (`MyMapIsRich/Plus/UI/Credits.lua`). Ace3 n'est plus livré depuis la 0.6.0. Les images de la carte sont celles de Blizzard.
 
 ## Paquet
 

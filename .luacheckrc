@@ -8,5 +8,5 @@
 std = "lua51"
 max_line_length = false
 ignore = { "1", "2", "3", "4", "5", "6" }
--- (les bibliothèques d'OpenMap, Ace3 : pas les nôtres)
-exclude_files = { "MyMapIsRich/Libs/**" }
+-- (les données générées : Data/Map, par les outils d'OpenMap ; Plus/Data, par tools/)
+exclude_files = { "MyMapIsRich/Data/**", "MyMapIsRich/Plus/Data/**" }

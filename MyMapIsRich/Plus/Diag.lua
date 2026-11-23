@@ -1,6 +1,6 @@
 -- Diagnostic : /mmir etat (où en est l'addon) et /mmir sonde (à lancer carte
 -- ouverte : ce que chaque bouton de la manette fait sur la carte du jeu, sans
--- les raccourcis de l'addon, et les fenêtres d'OpenMap ouvertes).
+-- les raccourcis de l'addon, et les fenêtres de l'addon ouvertes).
 local _, root = ...
 local ns = root.Plus
 local L = ns.L
@@ -303,8 +303,8 @@ end
 local GAP = 1e-6          -- (plus petit : le même point)
 
 function Diag.ProbeCoords()
-    local mod, S = ns.Map.Legacy()
-    if not (mod and S and S.Rect and S.FromYards) then
+    local S = ns.Map.ArtTable()
+    if not (S and S.Rect and S.FromYards) then
         ns.Print(L.PROBE_NO_OLD)
         return
     end
@@ -323,9 +323,6 @@ function Diag.ProbeCoords()
         local l2, r2, t2, b2 = S.Rect(id)
         local g = math.max(Gap(l1, l2), Gap(r1, r2), Gap(t1, t2), Gap(b1, b2))
         if l1 and l2 then
-            local u1, v1 = K.ToWorld(id, 0.3, 0.7)
-            local okW, u2, v2 = pcall(mod.ToWorld, id, 0.3, 0.7)
-            if okW then g = math.max(g, Gap(u1, u2), Gap(v1, v2)) end
             -- (les cartes sous le milieu de la carte, du monde à la plus petite)
             local cu, cv = (l1 + r1) / 2, (t1 + b1) / 2
             local c1, c2 = K.ChainAt(cu, cv), S.ChainAt(cu, cv)

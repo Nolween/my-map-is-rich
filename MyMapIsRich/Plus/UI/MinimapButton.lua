@@ -194,7 +194,7 @@ end
 local events = CreateFrame("Frame")
 events:RegisterEvent("PLAYER_LOGIN")
 events:SetScript("OnEvent", function()
-    if not ns.db or root.dormant then return end
+    if not ns.db or ns.Conflict() then return end
     MB.Init()
     pcall(RegisterBroker)
 end)

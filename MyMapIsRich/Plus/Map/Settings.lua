@@ -1,17 +1,17 @@
 -- Les réglages de la carte : ns.Map.Settings, et leur passage d'OpenMap à Plus.
 --
 -- Un réglage de la carte (un calque allumé, la plume, les épingles...) vit
--- encore dans les sauvegardes de la partie venue d'OpenMap (MyMapIsRichDB,
--- MyMapIsRichCharDB) tant que son module n'est pas réécrit. Quand il l'est,
--- sa clé passe dans les nôtres (MyMapIsRichPlusDB.map, et
--- MyMapIsRichPlusCharDB.map pour ce qui est propre au personnage) : OWNER le
--- dit, clé par clé. Settings.Get et Settings.Set lisent et écrivent au bon
--- endroit : le rail des calques n'a pas à savoir qui détient la clé.
+-- dans MyMapIsRichPlusDB.map, et MyMapIsRichPlusCharDB.map pour ce qui est
+-- propre au personnage. Chaque module déclare ses clés et leur valeur
+-- d'origine (Settings.Own) ; le rail des calques les lit et les écrit par
+-- Settings.Get et Settings.Set.
 --
--- Une migration (M.Migrate) copie, une fois, ce que le joueur avait (ses
+-- Avant la 1.0.0, ils vivaient dans les sauvegardes de la carte d'OpenMap
+-- (MyMapIsRichDB, MyMapIsRichCharDB, toujours déclarées dans le .toc). Une
+-- migration (M.Migrate) copie, une fois, ce que le joueur y avait (ses
 -- épingles, ses dessins, ses vols appris) ; elle n'efface rien de l'ancien :
--- revenir à une version d'avant le retrouve. Chaque module réécrit migre ses
--- propres clés, dans la version qui le remplace.
+-- revenir à une version d'avant le retrouve. Un personnage secondaire migre
+-- à sa propre connexion.
 local _, root = ...
 local ns = root.Plus
 
@@ -19,22 +19,11 @@ local M = ns.Map
 local Settings = {}
 M.Settings = Settings
 
--- clé -> "new" quand elle vit chez nous ; absente : chez la carte d'OpenMap
--- (0.5.0 : toutes chez elle)
-local OWNER = {}
-Settings.OWNER = OWNER
-local DEFAULT = {}        -- clé reprise -> sa valeur tant que le joueur n'y a pas touché
+local DEFAULT = {}        -- clé -> sa valeur tant que le joueur n'y a pas touché
 
--- Une clé reprise par un module de Plus (sa valeur d'origine, si le joueur
--- n'en a pas) : elle vit désormais dans nos sauvegardes
+-- Une clé d'un module de la carte, et sa valeur d'origine (si le joueur n'en a pas)
 function Settings.Own(key, default)
-    OWNER[key] = "new"
     DEFAULT[key] = default
-end
-
-local function Old()
-    local ok, mod = pcall(root.GetModule, root, "worldmap")
-    return ok and type(mod) == "table" and mod or nil
 end
 
 -- Nos sauvegardes de la carte (créées au chargement : M.InitDB)
@@ -43,53 +32,30 @@ function M.CharDB() return ns.char and ns.char.map end
 
 -- Un réglage du compte
 function Settings.Get(key)
-    if OWNER[key] == "new" then
-        local db = M.DB()
-        local v = db and db.settings[key]
-        if v == nil then v = DEFAULT[key] end
-        return v
-    end
-    local mod = Old()
-    return mod and mod.db and mod.db[key]
+    local db = M.DB()
+    local v = db and db.settings[key]
+    if v == nil then v = DEFAULT[key] end
+    return v
 end
 
 function Settings.Set(key, value)
-    if OWNER[key] == "new" then
-        local db = M.DB()
-        if db then db.settings[key] = value end
-        return
-    end
-    local mod = Old()
-    if mod and mod.db then mod.db[key] = value end
+    local db = M.DB()
+    if db then db.settings[key] = value end
 end
 
 -- Un réglage du personnage
 function Settings.Char(key)
-    if OWNER[key] == "new" then
-        local db = M.CharDB()
-        return db and db.settings[key]
-    end
-    local mod = Old()
-    return mod and mod.char and mod.char[key]
+    local db = M.CharDB()
+    return db and db.settings[key]
 end
 
 function Settings.SetChar(key, value)
-    if OWNER[key] == "new" then
-        local db = M.CharDB()
-        if db then db.settings[key] = value end
-        return
-    end
-    local mod = Old()
-    if mod and mod.char then mod.char[key] = value end
+    local db = M.CharDB()
+    if db then db.settings[key] = value end
 end
 
--- La valeur d'origine d'un réglage repris (nil : il n'en a pas, ou il est
--- encore à la carte d'OpenMap : les siens sont dans ses défauts)
-function Settings.Default(key)
-    if OWNER[key] == "new" then return DEFAULT[key] end
-    local mod = Old()
-    return mod and mod.defaults and mod.defaults[key]
-end
+-- La valeur d'origine d'un réglage (nil : il n'en a pas)
+function Settings.Default(key) return DEFAULT[key] end
 
 -- Les réglages du compte, comme une table (lire, écrire une clé) : pour le
 -- rail des calques, qui les parcourt clé par clé
@@ -159,3 +125,25 @@ function M.Migrate(name, fn, perChar)
     end
     new.migrated[name] = true
 end
+
+---------------------------------------------------------------------------
+-- À la déconnexion : un nombre NaN ou infini dans les sauvegardes s'écrit en
+-- un texte que le jeu ne sait pas relire, et tout le fichier est perdu (tous
+-- les réglages revenus à leur valeur d'origine à la connexion suivante). On
+-- les retire avant (le même soin qu'OpenMap prenait de ses sauvegardes).
+---------------------------------------------------------------------------
+local function Scrub(t, seen)
+    if type(t) ~= "table" or seen[t] then return end
+    seen[t] = true
+    for k, v in pairs(t) do
+        if type(v) == "number" and (v ~= v or v == math.huge or v == -math.huge) then t[k] = nil
+        elseif type(v) == "table" then Scrub(v, seen) end
+    end
+end
+
+local logout = CreateFrame("Frame")
+logout:RegisterEvent("PLAYER_LOGOUT")
+logout:SetScript("OnEvent", function()
+    Scrub(ns.db, {})
+    Scrub(ns.char, {})
+end)

@@ -12,10 +12,6 @@
 -- à copier-coller n'importe où (« OMPINS1: », le même qu'OpenMap).
 -- Une épingle : { id, map (uiMapID), x, y (sur cette carte, 0..1), note,
 -- color (COLORS), from (qui l'a partagée), at (time()) }
---
--- Le reste du code venu d'OpenMap (la plume, le point de destination, la vue)
--- appelle encore mod.RefreshPins, mod.PinAt, mod.AddPin... : les ponts, en
--- bas, le leur rendent (ns.Map.Legacy). Ils partiront avec ces modules.
 local _, root = ...
 local ns = root.Plus
 local L = ns.L
@@ -440,14 +436,6 @@ local function OnAddonMessage(prefix, text, channel, from)
 end
 
 ---------------------------------------------------------------------------
--- Le pont vers le code d'OpenMap qui reste (/mmir carte pins : Init.lua)
----------------------------------------------------------------------------
-local function Bridge()
-    local mod = ns.Map.Legacy()
-    if mod then mod.TogglePins = function(_, on) E.Toggle(on) end end
-end
-
----------------------------------------------------------------------------
 -- La migration : les épingles d'OpenMap (MyMapIsRichDB.worldmap.pins) et
 -- leurs réglages, copiés une fois ; l'ancien n'est pas effacé
 ---------------------------------------------------------------------------
@@ -464,7 +452,6 @@ end
 
 ns.On("MAP_ATTACHED", function()
     Migrate()
-    Bridge()
 end)
 
 -- (la carte dessinée à sa première ouverture : les épingles posées dès qu'elle l'est)
@@ -476,10 +463,10 @@ events:RegisterEvent("PLAYER_LOGIN")
 events:RegisterEvent("CHAT_MSG_ADDON")
 events:SetScript("OnEvent", function(_, event, ...)
     if event == "PLAYER_LOGIN" then
-        if root.dormant then return end
+        if ns.Conflict() then return end
         if C_ChatInfo and C_ChatInfo.RegisterAddonMessagePrefix then pcall(C_ChatInfo.RegisterAddonMessagePrefix, PREFIX) end
     elseif event == "CHAT_MSG_ADDON" then
-        if root.dormant or not ns.db then return end
+        if ns.Conflict() or not ns.db then return end
         pcall(OnAddonMessage, ...)
     end
 end)

@@ -10,8 +10,6 @@ ns.AddLocale("frFR", {
 
     -- Chargement
     WHY_NOT_LOADED = "pas encore chargé",
-    WHY_NO_OPENMAP = "My Map Is Rich n'est pas chargé",
-    WHY_NO_MODULE = "le module de carte de My Map Is Rich est introuvable",
     WHY_NO_STITCH = "le moteur de carte de My Map Is Rich est introuvable",
     WHY_MISSING = "cette version de My Map Is Rich n'a pas : %s",
     DISABLED_WHY = "en veille : %s.",
@@ -594,6 +592,7 @@ ns.AddLocale("frFR", {
     WHATSNEW_MMIR_0_13_0 = "• |cffffd100Les icônes de la carte, refaites|r en code de My Map Is Rich : entrées de donjon, quais, maîtres de vol, quêtes, citadins, ton groupe, tes épingles et tes dessins, le point de destination et ta flèche. Rien ne devrait changer à l'écran.\n• |cffffd100Les quais|r (bateaux, tours des zeppelins, dirigeables) : leur info-bulle dit où va la traversée, et un clic glisse jusqu'à l'autre bout.",
     WHATSNEW_MMIR_0_14_0 = "• |cffffd100Le dessin de la carte vit maintenant dans My Map Is Rich lui-même|r : les zones assemblées, la mer, les noms des continents et des mers, les villes, les zones inexplorées montrées, assombries ou cachées, les couleurs harmonisées. C'est le même dessin qu'avant : rien ne devrait changer à l'écran.\n• |cffffd100Corrigé|r : depuis la 0.13.0, l'addon pouvait rester éteint à la connexion.",
     WHATSNEW_MMIR_0_15_0 = "• |cffffd100Le zoom rapproché vit maintenant dans My Map Is Rich lui-même|r : la minimap mêlée à la carte quand tu zoomes, les capitales, les grottes et les entrées de donjon, les trous de la carte comblés. Il marche comme avant : rien ne devrait changer à l'écran.\n• Tes réglages (onglet Carte, « Au plus près ») sont repris une fois.\n• Tout le moteur de la carte est désormais le code de l'addon.",
+    WHATSNEW_MMIR_1_0_0 = "• |cffffd100My Map Is Rich 1.0|r : l'addon ne contient plus de code d'OpenMap qui tourne à part. La carte, ses icônes, ses réglages et ses commandes sont tous le code de My Map Is Rich.\n• Rien ne devrait changer à l'écran. Tes épingles, tes dessins, tes maîtres de vol appris et tes réglages de la carte sont repris une fois, et les anciens restent en place.\n• Si OpenMap ou OpenMap On Gamepad est activé aussi, My Map Is Rich reste toujours en veille et le dit.",
 })
 
 -- /mmir focus ouverture (Diag.lua)
@@ -666,7 +665,7 @@ ns.AddLocale("frFR", {
     CREDITS_BUTTON = "Crédits…",
     CREDITS_BUTTON_TIP = "Qui a fait la carte, ses données et ses images.",
     CREDITS_TITLE = "Crédits",
-    CREDITS_TEXT = "|cffffd100My Map Is Rich|r est fait par nolwe, pour WoW Forever.\n\n|cffffd100La carte vient d'OpenMap|r 0.8.11 (licence MIT), dont My Map Is Rich remplace le code par le sien, pas à pas. OpenMap a été fait par Ji Unit, avec daxtron2, Ironship, C-Clymer, RADD95, Peendars, Loukky, diegodiaz1256, Naladdar, ZiiMs, forcedroidbrain, TheRayoX, KonigTX, Luquatic, puschie286, k4m1, FlyingPenguin98, bv101rj, Rambomst et kr0ozin. RADD95 a trouvé pourquoi les cartes des grottes et des donjons s'affichaient en vert sur certains clients.\n\n|cffffd100La manette, les itinéraires et les lieux|r viennent d'OpenMap On Gamepad.\n\n|cffffd100Les données de marche|r (routes, relief, villes de l'autre faction) viennent de Shortest Path Forever, de cjber (licence GPL-3.0-or-later).\n\n|cffffd100Les images de la carte|r sont celles de Blizzard Entertainment.\n\n|cffffd100Merci|r à tous ceux qui signalent un problème ou partagent une idée.",
+    CREDITS_TEXT = "|cffffd100My Map Is Rich|r est fait par nolwe, pour WoW Forever.\n\n|cffffd100La carte vient d'OpenMap|r 0.8.11 (licence MIT), dont My Map Is Rich a remplacé le code par le sien, pas à pas ; le dessin de la carte et ses données restent ceux d'OpenMap, portés. OpenMap a été fait par Ji Unit, avec daxtron2, Ironship, C-Clymer, RADD95, Peendars, Loukky, diegodiaz1256, Naladdar, ZiiMs, forcedroidbrain, TheRayoX, KonigTX, Luquatic, puschie286, k4m1, FlyingPenguin98, bv101rj, Rambomst et kr0ozin. RADD95 a trouvé pourquoi les cartes des grottes et des donjons s'affichaient en vert sur certains clients.\n\n|cffffd100La manette, les itinéraires et les lieux|r viennent d'OpenMap On Gamepad.\n\n|cffffd100Les données de marche|r (routes, relief, villes de l'autre faction) viennent de Shortest Path Forever, de cjber (licence GPL-3.0-or-later).\n\n|cffffd100Les images de la carte|r sont celles de Blizzard Entertainment.\n\n|cffffd100Merci|r à tous ceux qui signalent un problème ou partagent une idée.",
     BINDING_FIND = "My Map Is Rich : me localiser",
     BINDING_PIN = "My Map Is Rich : poser une épingle",
     BINDING_PINS = "My Map Is Rich : les épingles",

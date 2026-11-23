@@ -149,7 +149,7 @@ local events = CreateFrame("Frame")
 events:RegisterEvent("PLAYER_LOGIN")
 events:SetScript("OnEvent", function(self, event)
     if event == "PLAYER_LOGIN" then
-        if root.dormant then return end
+        if ns.Conflict() then return end
         pcall(self.RegisterEvent, self, "USER_WAYPOINT_UPDATED")
         pcall(self.RegisterEvent, self, "SUPER_TRACKING_CHANGED")
     elseif ns.Map.IsBuilt() then

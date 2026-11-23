@@ -1,5 +1,18 @@
 # Journal des versions — My Map Is Rich
 
+## 1.0.0
+
+**My Map Is Rich se passe d'OpenMap.** De la 0.5.0 à aujourd'hui, le code d'OpenMap a été remplacé par le nôtre, une version par étape. Avec la 1.0.0, il ne reste plus rien de lui qui tourne à part.
+
+Après la mise à jour, **relance le jeu** (un `/reload` ne suffit pas : des fichiers ont changé de place).
+
+- **Rien ne devrait changer à l'écran** : la carte, ses icônes, la manette, les itinéraires et les réglages marchent comme avant.
+- **Tes épingles, tes dessins, tes maîtres de vol appris et tes réglages de la carte** sont repris une fois, comme à chaque étape. Les anciennes sauvegardes ne sont pas effacées : un personnage que tu n'as pas joué depuis retrouve les siennes à sa connexion.
+- **La veille** : si OpenMap ou OpenMap On Gamepad est activé aussi, My Map Is Rich n'accroche toujours rien et le dit dans la discussion.
+- **`/mmir carte status`, `pins`, `draw` et `forgetflights`** marchent comme avant.
+- **Tes réglages sont mieux protégés** : un nombre que le jeu ne saurait pas relire est retiré de tes sauvegardes à la déconnexion, au lieu de faire perdre tout le fichier.
+- Le dessin de la carte et son zoom rapproché restent ceux d'OpenMap, portés dans l'addon, et ses données restent celles de ses outils (licence MIT, crédits dans l'onglet Aide).
+
 ## 0.15.0
 
 **Le zoom rapproché passe dans le code de My Map Is Rich.**

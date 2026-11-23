@@ -1,10 +1,10 @@
 -- Le nom du lieu sous le curseur, avec les niveaux de sa zone et la pêche :
 -- en code de My Map Is Rich depuis la 0.9.0 (il venait de Map/Extras.lua).
---   les niveaux  ceux de la zone (Data/Forever/Levels.lua), colorés pour ton
+--   les niveaux  ceux de la zone (Data/Map/Levels.lua), colorés pour ton
 --                niveau comme les quêtes du jeu : au-dessus de toi rouge ou
 --                orange, le tien jaune, en dessous vert, puis gris ;
 --   la pêche     pour qui la connaît : la compétence où chaque lancer prend
---                (Data/Forever/Fishing.lua : la base + 95), vert dès là,
+--                (Data/Map/Fishing.lua : la base + 95), vert dès là,
 --                jaune dès la moitié, rouge en dessous.
 -- L'habillage de la carte l'écrit en haut à gauche (UI/MapChrome.lua, par la
 -- vue : ns.Map.View.Place). Le réglage « zoneLevels » l'allume.

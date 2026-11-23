@@ -26,7 +26,7 @@ local ACTIONS = {
 local OPEN_WAIT = 0.3
 
 function _G.MyMapIsRich_Binding(id)
-    if not (ns.db and ns.Ready()) or (root.dormant) then return end
+    if not (ns.db and ns.Ready()) or ns.Conflict() then return end
     if id == "menu" then
         ns.Map.Menu.Toggle()
         return

@@ -1,13 +1,10 @@
--- Cœur de Plus (la couche reprise d'OpenMap On Gamepad) : données
--- sauvegardées, accès à la carte, passage en vue manette, petits outils
--- partagés (messages, événements internes), commande /mmir.
+-- Cœur de My Map Is Rich : données sauvegardées, accès à la carte, passage
+-- en vue manette, petits outils partagés (messages, événements internes),
+-- la veille, commande /mmir.
 --
--- La carte est celle de My Map Is Rich (le code d'OpenMap, dans le même
--- addon) : son espace de noms est la racine (root : le module « worldmap »
--- et ses sauvegardes). Plus vit à part, dans root.Plus,
--- pour que ses textes et ses réglages ne touchent jamais ceux de la carte.
--- Il ne se sert de la carte que si tout ce qu'il appelle existe : sinon il
--- reste en veille (ns.Ready() faux) et le dit avec /mmir etat.
+-- Tout le code de l'addon vit dans root.Plus (Plus/Init.lua) ; il atteint la
+-- carte par ns.Map (Map/Api.lua). Il ne s'en sert que si son dessin est là :
+-- sinon il reste en veille (ns.Ready() faux) et le dit avec /mmir etat.
 -- Rien n'est écrit dans les cadres de Blizzard (la carte du monde reste
 -- celle du jeu, sécurisée : l'interface manette de Forever n'est jamais
 -- bloquée par notre faute).
@@ -15,15 +12,35 @@ local ADDON, root = ...
 local ns = root.Plus
 local L = ns.L
 
--- (accès global : _G.MyMapIsRich.Plus, lu par My Gamepad Is Rich, débogage)
-
 ns.VERSION = (C_AddOns and C_AddOns.GetAddOnMetadata or GetAddOnMetadata)(ADDON, "Version") or "?"
 
-local PREFIX = "|cff" .. (root.ACCENT or "e6b85c") .. "My Map Is Rich|r : "
+local PREFIX = "|cffe6b85cMy Map Is Rich|r : "
 
 function ns.Print(msg, ...)
     if select("#", ...) > 0 then msg = msg:format(...) end
     DEFAULT_CHAT_FRAME:AddMessage(PREFIX .. tostring(msg))
+end
+
+---------------------------------------------------------------------------
+-- La veille : My Map Is Rich vient d'OpenMap et d'OpenMap On Gamepad. L'un
+-- d'eux chargé aussi, il n'accroche rien (la carte leur reste) et le dit.
+-- Rend le nom de celui qui est là, sinon false. (Tous les addons ne sont
+-- chargés qu'à la connexion : avant, la réponse n'est pas retenue.)
+---------------------------------------------------------------------------
+local RIVALS = { "OpenMap", "OpenMapOnGamepad" }
+local dormant
+function ns.Conflict()
+    if dormant ~= nil then return dormant end
+    local loaded = C_AddOns and C_AddOns.IsAddOnLoaded or IsAddOnLoaded
+    local found = false
+    if loaded then
+        for _, name in ipairs(RIVALS) do
+            local ok, on = pcall(loaded, name)
+            if ok and on then found = name break end
+        end
+    end
+    if not IsLoggedIn or IsLoggedIn() then dormant = found end
+    return found
 end
 
 ---------------------------------------------------------------------------
@@ -79,7 +96,7 @@ end
 
 ---------------------------------------------------------------------------
 -- Petits événements internes : ns.On(nom, fn), ns.Fire(nom, ...)
--- (READY : OpenMap trouvé et compatible ; MAP_SHOW / MAP_HIDE ; OPTIONS ;
+-- (READY : la carte trouvée et lancée ; MAP_SHOW / MAP_HIDE ; OPTIONS ;
 -- THEME ; CONTEXT : le contexte de la manette a changé ; TRAVEL : un
 -- itinéraire lancé, avancé ou fini, la file changée ; TRAVEL_ARRIVED (goal) :
 -- arrivé à une destination ; TRAVEL_END (goal) : un trajet arrêté ou
@@ -250,8 +267,12 @@ events:SetScript("OnEvent", function(_, event, arg)
         if ns.UI and ns.UI.SetTheme then ns.UI.SetTheme(ns.db.options.theme, true) end
         ns.Map.Attach()
     elseif event == "PLAYER_LOGIN" then
-        -- (OpenMap ou OpenMap On Gamepad chargé aussi : en veille, Init.lua le dit)
-        if root.dormant or (root.Conflict and root.Conflict()) then return end
+        -- (OpenMap ou OpenMap On Gamepad chargé aussi : en veille, on le dit)
+        local rival = ns.Conflict()
+        if rival then
+            ns.Print(L.DORMANT, rival)
+            return
+        end
         -- (après une mise à jour : les nouveautés, l'écran de chargement
         -- passé ; UI/WhatsNew.lua)
         C_Timer.After(6, function() if ns.WhatsNew then ns.WhatsNew.MaybeShow() end end)
@@ -270,31 +291,34 @@ end)
 
 ---------------------------------------------------------------------------
 -- /mmir (et /mymapisrich) ; /mmir carte : les réglages de la carte ;
--- /mmir carte <…> : les commandes de la carte (status, pins, draw... : Init.lua)
+-- /mmir carte <…> : les commandes de la carte (MAP_COMMANDS)
 ---------------------------------------------------------------------------
+-- (status : ce que fait la vue ; pins : tes épingles montrées ou cachées ;
+-- draw : la plume ; forgetflights : les maîtres de vol appris par ce
+-- personnage, oubliés. padview : l'ancien nom de status)
+local MAP_COMMANDS = {
+    status = function() ns.Map.View.Diag() end,
+    padview = function() ns.Map.View.Diag() end,
+    pins = function() ns.Map.MyPins.Toggle() end,
+    draw = function() ns.Map.Sketch.Toggle() end,
+    forgetflights = function() ns.Map.Flights.Forget() end,
+}
 SLASH_MYMAPISRICH1 = "/mmir"
 SLASH_MYMAPISRICH2 = "/mymapisrich"
 SlashCmdList.MYMAPISRICH = function(msg)
     local raw = strtrim(msg or "")
     local cmd = raw:lower()
-    if root.dormant then
-        ns.Print(L.DORMANT, root.dormant)
+    local rival = ns.Conflict()
+    if rival then
+        ns.Print(L.DORMANT, rival)
         return
     end
     local first, rest = raw:match("^(%S+)%s*(.*)$")
     first = first and first:lower()
     if first == "carte" or first == "map" then
         -- (seul, ou une commande inconnue : les réglages de la carte, l'onglet Carte)
-        local sub = rest and rest:lower() or ""
-        local handled = false
-        if sub == "forgetflights" then
-            -- (les maîtres de vol appris par ce personnage, oubliés : Layers/Flights.lua)
-            ns.Map.Flights.Forget()
-            handled = true
-        elseif sub ~= "" and root.MapSlash then
-            handled = root.MapSlash(rest)
-        end
-        if not handled then ns.Map.Menu.Open() end
+        local run = MAP_COMMANDS[rest and rest:lower() or ""]
+        if run and ns.Ready() then pcall(run) else ns.Map.Menu.Open() end
     elseif cmd == "etat" or cmd == "état" or cmd == "status" then
         if ns.Diag then ns.Diag.Status() end
     elseif cmd == "sonde carte" or cmd == "probe map" then

@@ -2,7 +2,7 @@
 
 Add-on World of Warcraft pour **WoW Forever** (client 1.16.x, `## Interface: 16001…16200`, Lua 5.1).
 Une carte du monde d'un seul tenant, jouable à la souris et **à la manette**, avec itinéraires, lieux et partage en groupe.
-Né d'un fork d'**OpenMap** 0.8.11 (MIT) auquel on a ajouté tout **OpenMap On Gamepad** 0.6.0. Il s'en éloigne désormais : c'est un addon de la famille « … Is Rich » (My Guild Is Rich, My Gamepad Is Rich, My Auction House Is Rich), dans `G:\Addons Wow Dev\`.
+Né d'un fork d'**OpenMap** 0.8.11 (MIT) auquel on a ajouté tout **OpenMap On Gamepad** 0.6.0. Depuis la 1.0.0, tout son code est le nôtre : c'est un addon de la famille « … Is Rich » (My Guild Is Rich, My Gamepad Is Rich, My Auction House Is Rich), dans `G:\Addons Wow Dev\`.
 
 Le [README.md](README.md) décrit les fonctions et la structure, la [CHARTE.md](CHARTE.md) l'apparence. Ce fichier dit **comment travailler**.
 
@@ -10,46 +10,43 @@ Le [README.md](README.md) décrit les fonctions et la structure, la [CHARTE.md](
 
 - Répondre en **français**. Les commentaires du code neuf, le CHANGELOG, la CHARTE et les messages de commit sont en français.
 - Le style de la maison : des phrases courtes et concrètes, sans jargon, qui disent **ce que voit ou fait le joueur** (« Le panneau de trajet dit l'étape… »). Pas d'anglicismes quand un mot français existe (« addon » et les noms de boutons de manette restent).
-- Le code venu d'OpenMap (`Core.lua`, `Map/`, `Init.lua`) garde ses commentaires en anglais et son indentation **par tabulations**. Le code de `Plus/` est indenté de **4 espaces**. On suit l'usage du fichier qu'on modifie.
+- Le code est indenté de **4 espaces**, ses commentaires en français (ceux de `Plus/Map/Art.lua` et `Close.lua`, portés d'OpenMap, ont été traduits). Les fichiers générés de `Data/Map/` gardent leurs commentaires anglais.
 
-## Les deux moitiés de l'addon
+## Comment l'addon est rangé
 
-| | La carte | Plus |
-|---|---|---|
-| Origine | OpenMap 0.8.11, renommé | OpenMap On Gamepad 0.6.0 |
-| Fichiers | `Core.lua`, `Map/`, `Data/Forever/`, `Locales/`, `Init.lua` | `Plus/` (`Map/`, `Pad/`, `Travel/`, `UI/`, `Data/`, `Locales/`) |
-| Espace de noms | `root` (le `...` de l'addon) | `local _, root = ... ; local ns = root.Plus` en tête de **chaque** fichier |
-| Textes | `ns.L["English text"]` | `ns.L.CLE` |
-| Sauvegardes | `MyMapIsRichDB`, `MyMapIsRichCharDB` | `MyMapIsRichPlusDB` (`ns.db`, défauts dans `DEFAULTS` de `Plus/Core.lua`), `MyMapIsRichPlusCharDB` (`ns.char`, par personnage) |
+| | |
+|---|---|
+| Code | `Plus/` : `Map/` (le moteur de la carte), `Layers/` (ses calques), `Pad/`, `Travel/`, `UI/`, `Data/`, `Locales/` |
+| Espace de noms | `local _, root = ... ; local ns = root.Plus` en tête de **chaque** fichier ; `root` ne porte que les données de `Data/Map/` (et `root.Media`, posé par `Plus/Init.lua`) |
+| Textes | `ns.L.CLE` (`Plus/Locales/`) |
+| Sauvegardes | `MyMapIsRichPlusDB` (`ns.db`, défauts dans `DEFAULTS` de `Plus/Core.lua` ; la carte dans `ns.db.map`), `MyMapIsRichPlusCharDB` (`ns.char`, par personnage) |
+| Données | `Data/Map/` (les tables de la carte) et `Media/Map/` (ses textures), tirées du jeu par les outils d'OpenMap |
 
-- Plus atteint la carte **par `ns.Map` seulement** ([Plus/Map/Api.lua](MyMapIsRich/Plus/Map/Api.lua)), jamais par `root`, `GetModule` ou un global. Plus ne touche jamais `ns.L` / `ns.db` de la carte, et inversement.
-- **L'ordre de chargement est celui du `.toc`** ([MyMapIsRich/MyMapIsRich.toc](MyMapIsRich/MyMapIsRich.toc)). Tout fichier ajouté s'y inscrit à sa place (une nouvelle langue avant `Plus\Locales\Init.lua`, un écran après `UI\Widgets.lua`…). Un fichier ajouté demande de **relancer le jeu** : `/reload` ne le charge pas.
-- Ne pas modifier : `Data/Forever/` (généré par les outils d'OpenMap), `Plus/Data/` (généré par `tools/roads`, `tools/nav` et `tools/hazards`, voir le README). On régénère, on n'édite pas à la main.
+- Le reste de Plus atteint la carte **par `ns.Map`** ([Plus/Map/Api.lua](MyMapIsRich/Plus/Map/Api.lua)) et ses données **par `ns.Map.Data`** ([Plus/Map/Data.lua](MyMapIsRich/Plus/Map/Data.lua)), jamais par `root` ou un global.
+- **L'ordre de chargement est celui du `.toc`** ([MyMapIsRich/MyMapIsRich.toc](MyMapIsRich/MyMapIsRich.toc)) : `Plus/Init.lua`, puis les données, puis le reste de Plus. Tout fichier ajouté s'y inscrit à sa place (une nouvelle langue avant `Plus\Locales\Init.lua`, un écran après `UI\Widgets.lua`…). Un fichier ajouté demande de **relancer le jeu** : `/reload` ne le charge pas.
+- Ne pas modifier : `Data/Map/` et `Media/Map/` (générés par les outils d'OpenMap), `Plus/Data/` (généré par `tools/roads`, `tools/nav` et `tools/hazards`, voir le README). On régénère, on n'édite pas à la main.
 
-## Se passer d'OpenMap (en cours depuis la 0.5.0)
+## D'où vient le code (OpenMap, de la 0.5.0 à la 1.0.0)
 
-Le code d'OpenMap est remplacé par le nôtre, une version par étape, l'addon jouable entre deux (l'état du chantier : [FEUILLE_DE_ROUTE.md](FEUILLE_DE_ROUTE.md), à tenir à jour à chaque étape) :
-0.5.0 ménage et adaptateur `ns.Map` · 0.6.0 les réglages de la carte dans `/mmir` (fait : l'onglet Carte, `Plus/UI/MapPage.lua` ; plus de menu d'OpenMap, d'Ace3 ni de `Launcher.lua`) · 0.7.0 coordonnées et épingles (fait : `Plus/Map/Coords.lua`, `Plus/Layers/MyPins.lua`, `PinsWindow.lua` ; le point de destination attend la 0.9.0, avec `Nav.lua`) · 0.8.0 vols, bateaux, zeppelins (fait : `Plus/Layers/Flights.lua`, `Boats.lua` ; les quais passent dans `Boats.lua` en 0.13.0) · 0.9.0 quêtes, citadins, groupe, point de destination, niveaux de zone (fait : `Plus/Layers/Quests.lua`, `Townsfolk.lua`, `Group.lua`, `Waypoint.lua`, `Locate.lua`, `ZoneInfo.lua` ; le reste d'`Extras.lua`, la barre de coordonnées, le fondu, la limite d'images de la carte classique et les icônes de HereBeDragons, part avec la vue en 0.12.0) · 0.10.0 donjons (fait : `Plus/Layers/Dungeons.lua`, `DungeonView.lua` ; les traits de la plume sur la carte d'un donjon sont gardés avec la plume) · 0.11.0 la plume (fait : `Plus/Layers/Sketch.lua`, dans `MyMapIsRichPlusDB.map.sketch`) · 0.12.0 la vue (fait : `Plus/Map/View.lua`, `Cursor.lua`, `Look.lua`, `Hbd.lua` ; le module « worldmap » n'est plus qu'une table de sauvegardes, créée dans `Core.lua`) · 0.13.0 les icônes (fait : `Plus/Map/PinSets.lua` ; les quais dans `Layers/Boats.lua`) · 0.14.0 le dessin de la carte (fait : `Plus/Map/Art.lua`, le dessin d'OpenMap porté, commentaires traduits ) · 0.15.0 le zoom rapproché (fait : `Plus/Map/Close.lua`, porté de même ; il atteint le dessin par `ns.Map.ArtTable()` ; le dossier `Map/` est vide) · 1.0.0 plus de `Core.lua`, `Init.lua`, `Locales/`, `Libs/`.
-- Un module réécrit va dans `Plus/Map/` (le moteur) ou `Plus/Layers/` (les calques), en code de Plus, et ses écrans suivent la CHARTE. Il remplace **le bloc de `Plus/Map/Api.lua`** qui appelait OpenMap, sans changer ce que voit le reste de Plus ; le fichier d'OpenMap qu'il remplace se supprime dans le même changement.
-- Une clé de réglage reprise passe à `"new"` dans `OWNER` ([Plus/Map/Settings.lua](MyMapIsRich/Plus/Map/Settings.lua)), et ce que le joueur avait se copie une fois par `ns.Map.Migrate` (épingles, dessins, vols appris…). **On n'efface jamais l'ancien** : `MyMapIsRichDB` et `MyMapIsRichCharDB` restent déclarés dans le `.toc`.
-- Les textes d'un module réécrit passent dans `Plus/Locales/` (10 langues), en reprenant les traductions de l'ancien `Locales/xxXX.lua`.
-- Restent pour l'instant, comme simples données : les tables de `Data/Forever/` et les textures de `Media/Textures/Forever/` (tirées des images de Blizzard par les outils d'OpenMap, MIT). Les dessins de Santiago Reyes, faits pour OpenMap, ont été retirés : on ne les remet pas.
+Le code d'OpenMap a été remplacé par le nôtre, une version par étape (le détail : [FEUILLE_DE_ROUTE.md](FEUILLE_DE_ROUTE.md)). Ce qu'il en reste à savoir :
+- **Les anciennes sauvegardes** (`MyMapIsRichDB`, `MyMapIsRichCharDB`, celles de la carte d'OpenMap) restent déclarées dans le `.toc` et **ne s'effacent jamais** : chaque module en copie une fois ce que le joueur avait par `ns.Map.Migrate` ([Plus/Map/Settings.lua](MyMapIsRich/Plus/Map/Settings.lua) ; épingles, dessins, vols appris…). Un personnage secondaire migre à sa connexion : ces migrations restent.
+- Un réglage de la carte se déclare avec sa valeur d'origine par `ns.Map.Settings.Own(clé, défaut)` dans le module qui s'en sert.
+- `Plus/Map/Art.lua` (le dessin) et `Close.lua` (le zoom rapproché) sont le code d'OpenMap porté tel quel (MIT) : on peut les simplifier, en vérifiant en jeu.
+- Les dessins de Santiago Reyes, faits pour OpenMap, ont été retirés : on ne les remet pas.
 
 ## Traduction : les 10 langues, toujours
 
 Tout texte vu par le joueur passe par `L` et existe dans les **10 langues du client** : `enUS` (référence), `frFR`, `deDE`, `esES` (sert aussi à `esMX`), `itIT`, `ptBR`, `ruRU`, `koKR`, `zhCN`, `zhTW`.
 Aucune chaîne en dur dans le code, même pour un message de discussion ou une info-bulle.
 
-**Dans `Plus/Locales/`** (le système de My Guild Is Rich : `ns.AddLocale(code, { CLE = "texte" })`) :
+**Dans `Plus/Locales/`** (le seul système de traduction depuis la 1.0.0 ; celui de My Guild Is Rich : `ns.AddLocale(code, { CLE = "texte" })`) :
 - Une clé ajoutée l'est **dans les 10 fichiers dans le même changement**, à la même place (même section, même ordre que `enUS.lua`), traduite pour de vrai. Pas de « TODO », pas de copie de l'anglais.
 - Les `%s` / `%d` gardent **le même ordre** que l'anglais (`string.format` n'a pas d'arguments numérotés).
 - Ne se traduisent pas : les commandes (`/mmir lieux`), les noms de boutons et de touches (A, B, LB, RT, R3, View, F9…), « My Map Is Rich » et les noms des autres addons.
 - Les clés gardent leur préfixe de rubrique : `HINT_`, `OPT_`, `TRAVEL_`, `HUD_`, `PLACES_`, `SHARE_`, `STATUS_`, `WHATSNEW_`…
 - Les noms du jeu (zones, PNJ, objets) viennent de l'API du jeu, déjà traduits ; on ne les met pas dans les Locales.
 - La longueur compte : l'allemand et le russe sont plus longs, le coréen et le chinois plus courts. Un bouton ou une colonne doit tenir en allemand.
-- **Dette connue (0.1.0)** : `enUS` et `frFR` ont 378 clés, les 8 autres langues 213 ; il en manque 165 (aide, réglages, trajets, partage, diagnostics). Quand on touche une rubrique, on complète ses clés manquantes dans les 8 langues.
-
-**Dans `Locales/`** (la carte, d'OpenMap) : `L["English text"] = "traduction"`, un fichier par langue, **`esMX` compris** (11 fichiers sans l'anglais, qui est la clé elle-même), rangés à peu près par ordre alphabétique de la clé. Ils étaient générés par `tools/locale/translate.py` d'OpenMap, qui n'est pas dans ce dépôt : on les édite désormais à la main (une phrase nouvelle à sa place alphabétique), et une phrase ajoutée au code de la carte l'est dans les 10 fichiers.
+- **Dette connue (1.0.0)** : `enUS` et `frFR` ont 764 clés, les 8 autres langues 531 ; il en manque 233 (surtout `TRAVEL_`, `HINT_`, `OPT_`, `HUD_`, `SHARE_`, `PLACES_`, `WHY_`, `STATUS_`). Quand on touche une rubrique, on complète ses clés manquantes dans les 8 langues.
 
 **Dans le `.toc`** : `## Notes` existe en anglais et en `Notes-xxXX` pour les 10 autres codes (`esMX` compris). Une fonction majeure ajoutée ou retirée se reporte dans les 11.
 
@@ -70,7 +67,7 @@ Tout écran neuf, et tout écran refait, suit [CHARTE.md](CHARTE.md) (la même q
 - **Aucune fenêtre de l'addon dans `UISpecialFrames`** : l'interface manette de Forever la parcourt et bloquerait B au nom de l'addon. B ferme les fenêtres de l'addon par [Plus/Pad/Focus.lua](MyMapIsRich/Plus/Pad/Focus.lua).
 - **En combat** (`InCombatLockdown()`) : pas de création ni de déplacement de cadres protégés, pas de changement de raccourcis ; on attend `PLAYER_REGEN_ENABLED`. La manette rend la main au jeu au début d'un combat.
 - **Tout écran se joue à la manette** : ses éléments sont atteignables à la croix (focus de `Pad/Focus.lua`, `ns.Map.Cursor.AddRoot` pour les fenêtres sur la carte), A / B / X ont un sens, et la barre d'aide (`UI/HintBar.lua`) annonce les boutons avec leurs pastilles (`UI/Glyphs.lua`).
-- **La veille** : si OpenMap ou OpenMap On Gamepad est activé, My Map Is Rich n'accroche rien (`ns.Conflict()` dans `Core.lua`). Tout nouveau point d'accroche passe par ce test.
+- **La veille** : si OpenMap ou OpenMap On Gamepad est activé, My Map Is Rich n'accroche rien (`ns.Conflict()` dans `Plus/Core.lua`). Tout nouveau point d'accroche passe par ce test.
 - **Les préfixes de messages entre joueurs ne changent pas** (`OpenMap`, `OMGPRoute`) : ils font passer épingles et destinations entre les trois addons (`OpenMapLoc`, les positions d'amis, est parti avec les amis en 0.5.0). Un format de message qui change reste lisible par les versions d'avant.
 - Les dépendances facultatives (Questie, My Gamepad Is Rich, Leatrix_Maps…) se testent avant usage ; l'addon marche sans aucune.
 - Une API qui peut manquer sur Forever se teste (`if C_ChatInfo and C_ChatInfo.X then`) ou passe par `pcall`.
@@ -104,4 +101,4 @@ Ces fichiers existent, presque identiques, dans My Guild Is Rich, My Gamepad Is 
 
 ## Licences
 
-My Map Is Rich est sous **GPL-3.0-or-later** (à cause des données de marche de Shortest Path Forever, de cjber). Le code de la carte reste sous MIT (`LICENSES/OpenMap.txt`), crédits d'OpenMap dans la fenêtre Crédits ([Plus/UI/Credits.lua](MyMapIsRich/Plus/UI/Credits.lua), un texte par langue : `CREDITS_TEXT`). Ace3 n'est plus livré depuis la 0.6.0 (`LICENSES/Ace3.txt` reste, à retirer si on le décide). Ces fichiers ne se suppriment pas, et un code repris d'ailleurs ajoute sa licence et son crédit.
+My Map Is Rich est sous **GPL-3.0-or-later** (à cause des données de marche de Shortest Path Forever, de cjber). Le dessin de la carte, son zoom rapproché et ses données restent sous MIT (`LICENSES/OpenMap.txt`, détail dans `LICENSES/README.txt`), crédits d'OpenMap dans la fenêtre Crédits ([Plus/UI/Credits.lua](MyMapIsRich/Plus/UI/Credits.lua), un texte par langue : `CREDITS_TEXT`). Ace3 n'est plus livré depuis la 0.6.0 (`LICENSES/Ace3.txt` reste, à retirer si on le décide). Ces fichiers ne se suppriment pas, et un code repris d'ailleurs ajoute sa licence et son crédit.

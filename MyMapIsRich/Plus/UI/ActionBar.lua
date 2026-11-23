@@ -12,7 +12,7 @@
 --   en bas à droite      Poser une épingle (la roue se ferme, A la pose)
 --   en bas               Mes épingles
 --   en bas à gauche      Plume
---   en haut à gauche     Menu d'OpenMap
+--   en haut à gauche     Réglages de la carte (l'onglet Carte de /mmir)
 -- Au milieu, le nom de l'action choisie et ce qu'elle fait. Le point sous le
 -- curseur est retenu à l'ouverture de la roue. LB (lieux) et RB (me suivre)
 -- restent sur la carte.

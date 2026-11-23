@@ -5,12 +5,12 @@
 -- les icônes, les épingles, le point de destination, les vols, les citadins,
 -- la plume, les donjons, les réglages de la carte.
 --
--- Depuis la 0.5.0, chaque version remplace un bloc du code venu d'OpenMap
--- par le nôtre, sans que le reste de Plus ait à changer. Depuis la 0.12.0, la
--- vue (Map/View.lua), le curseur (Map/Cursor.lua), l'aspect (Map/Look.lua) et
--- les icônes des autres addons (Map/Hbd.lua) sont à nous ; depuis la 0.15.0,
--- tout le moteur de la carte l'est : le dessin (Map/Art.lua, Map/Close.lua) et
--- ses icônes (Map/PinSets.lua). Restent d'OpenMap Core.lua et Init.lua.
+-- De la 0.5.0 à la 1.0.0, chaque version y a remplacé un bloc du code venu
+-- d'OpenMap par le nôtre, sans que le reste de Plus ait à changer. Depuis la
+-- 1.0.0, tout est à nous : la vue (Map/View.lua), le curseur (Map/Cursor.lua),
+-- l'aspect (Map/Look.lua), les icônes des autres addons (Map/Hbd.lua), le
+-- dessin (Map/Art.lua, Map/Close.lua), ses icônes (Map/PinSets.lua) et ses
+-- données (Map/Data.lua). Les fonctions sont posées par ces fichiers.
 -- Une fonction absente ou une erreur rendent nil : Plus ne lève pas
 -- d'erreur en jeu pour la carte.
 local _, root = ...
@@ -20,7 +20,8 @@ local L = ns.L
 local M = {}
 ns.Map = M
 
-local mod, S        -- le module « worldmap » (ses sauvegardes) et le dessin (Map/Art.lua), une fois trouvés (M.Attach)
+local S             -- le dessin de la carte (Map/Art.lua : M.SetArt)
+local ready         -- le dessin est trouvé (M.Attach)
 
 -- (les résultats d'un appel protégé, sans le « ok » ; rien sur une erreur)
 local function Pass(ok, ...)
@@ -44,25 +45,14 @@ local why = L.WHY_NOT_LOADED
 
 -- Trouver le dessin de la carte : rend vrai, ou faux et pourquoi (le texte de /mmir etat)
 function M.Attach()
-    if mod then return true end
-    if type(root) ~= "table" or type(root.GetModule) ~= "function" then
-        why = L.WHY_NO_OPENMAP
-        return false, why
-    end
-    local ok, m = pcall(root.GetModule, root, "worldmap")
-    if not ok or type(m) ~= "table" then
-        why = L.WHY_NO_MODULE
-        return false, why
-    end
-    local s = S
-    if type(s) ~= "table" or type(s.Build) ~= "function" then
+    if ready then return true end
+    if type(S) ~= "table" or type(S.Build) ~= "function" then
         why = L.WHY_NO_STITCH
         return false, why
     end
-    mod, S = m, s
+    ready = true
     why = nil
-    -- (les modules de Plus posent leurs ponts vers le code d'OpenMap qui reste,
-    -- et copient ce que le joueur avait : Layers/, Map/)
+    -- (les modules de Plus copient ce que le joueur avait : Layers/, Map/)
     ns.Fire("MAP_ATTACHED")
     return true
 end
@@ -72,15 +62,10 @@ function M.SetArt(art) S = art end
 -- Le dessin lui-même, pour le zoom rapproché qui s'y ajoute (Map/Close.lua)
 function M.ArtTable() return S end
 
--- Le module « worldmap » d'OpenMap et le dessin, pour les modules de Plus qui
--- répondent au code d'OpenMap qui reste (Init.lua : les commandes /mmir carte) ;
--- et pour /mmir sonde carte. Partira en 1.0.0.
-function M.Legacy() return mod, S end
-
 function M.Why() return why end
 
 -- Le dessin de la carte est trouvé
-function M.Ready() return mod ~= nil end
+function M.Ready() return ready or false end
 
 -- La vue est bâtie (à la première ouverture de la carte) et tourne
 function M.ViewReady() return M.View.Built and M.View.Built() or false end
@@ -102,7 +87,7 @@ end
 
 -- Mettre la vue en place (une fois : elle se bâtit à la première ouverture de la carte)
 function M.Start()
-    if not mod then return false end
+    if not ready then return false end
     return Run(M.View.Start)
 end
 
@@ -111,8 +96,8 @@ function M.Waits() return false end
 
 -- (pour /mmir etat : l'état brut de la carte)
 function M.Diag()
-    if not mod then return end
-    return { built = M.Built(), on = M.On(), full = M.Full(), db = mod.db }
+    if not ready then return end
+    return { built = M.Built(), on = M.On(), full = M.Full() }
 end
 
 ---------------------------------------------------------------------------
@@ -180,34 +165,11 @@ M.Waypoint = W
 -- (depuis la 0.9.0 : Layers/Waypoint.lua)
 
 ---------------------------------------------------------------------------
--- Les vols, les bateaux : les données de la carte
+-- Les données de la carte (les tables de Data/Map/)
 ---------------------------------------------------------------------------
 local D = {}
 M.Data = D
-
--- Les maîtres de vol et leurs trajets (nodes, paths)
-function D.Flights() return root.MapFlights end
--- Les lieux : entrées de donjon (instances), quais (transports), traversées
-function D.Places() return root.MapPlaces end
--- Les continents (absent sur Forever)
-function D.World() return root.MapWorld end
--- Les niveaux et la pêche de chaque zone ; la zone de chaque grande ville
-function D.Levels() return root.MapLevels end
-function D.Fishing() return root.MapFishing end
-function D.CityZones() return root.MapCityZones end
--- Les cartes des donjons (celles de Blizzard, celles tirées de la minicarte)
--- et la place de leurs boss
-function D.DungeonMaps() return root.MapDungeonMaps end
-function D.DungeonMinimap() return root.MapDungeonMinimap end
-function D.DungeonBosses() return root.MapDungeonBosses end
--- Combien plus loin zoomer dans ce client (ses zones plus petites :
--- Data/Forever/Client.lua) ; 1 d'habitude
-function D.ClientZoom() return root.ClientMaps and root.ClientMaps.zoom or 1 end
--- Les couleurs harmonisées existent pour ce client (Data/Forever/Grade.lua)
-function D.HasGrade() return root.MapGrade ~= nil end
--- Toutes les tables de données de la carte (root.Map…, ClientMaps, Media,
--- Safe), pour le dessin (Map/Art.lua) : elles partiront dans Data/Map en 1.0.0
-function D.All() return root end
+-- (depuis la 1.0.0, les vols, les lieux, les niveaux, les donjons... : Map/Data.lua)
 
 local FL = {}
 M.Flights = FL

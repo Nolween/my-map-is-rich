@@ -299,6 +299,7 @@ ns.AddLocale("zhTW", {
     WHATSNEW_MMIR_0_13_0 = "• |cffffd100重做的地圖圖示|r，使用 My Map Is Rich 自己的程式碼：地城入口、碼頭、飛行管理員、任務、城鎮居民、你的隊伍、你的圖釘和繪圖、目的地點和你的箭頭。螢幕上應該沒有變化。\n• |cffffd100碼頭|r（船隻、飛艇塔、飛空艇）：提示會說明航線前往何處，點擊即滑動到另一端。",
     WHATSNEW_MMIR_0_14_0 = "• |cffffd100地圖繪製現在就在 My Map Is Rich 自身之中|r：拼接的區域、海洋、大陸和海洋的名稱、城市、顯示、變暗或隱藏的未探索區域、協調的顏色。和以前是同一套繪製：螢幕上應該沒有變化。\n• |cffffd100已修正|r：自 0.13.0 起，插件在登入時可能保持關閉。",
     WHATSNEW_MMIR_0_15_0 = "• |cffffd100近距離縮放現在就在 My Map Is Rich 自身之中|r：放大時融入地圖的小地圖、主城、洞穴和地城入口、填補的地圖空隙。用法和以前一樣，畫面上應當沒有變化。\n• 你的設定（地圖分頁「近距離」）會遷移一次。\n• 整個地圖引擎現在都是插件自己的程式碼。",
+    WHATSNEW_MMIR_1_0_0 = "• |cffffd100My Map Is Rich 1.0|r：插件裡不再有單獨執行的 OpenMap 程式碼。地圖、圖示、設定和指令全都是 My Map Is Rich 自己的程式碼。\n• 畫面上應當沒有變化。你的圖釘、繪圖、已學會的飛行管理員和地圖設定會遷移一次，舊的資料原樣保留。\n• 如果同時啟用了 OpenMap 或 OpenMap On Gamepad，My Map Is Rich 仍會保持待機並提示。",
 })
 
 -- /mmir focus ouverture (Diag.lua)
@@ -389,7 +390,7 @@ ns.AddLocale("zhTW", {
     CREDITS_BUTTON = "製作者…",
     CREDITS_BUTTON_TIP = "地圖、資料和圖像是誰做的。",
     CREDITS_TITLE = "製作者",
-    CREDITS_TEXT = "|cffffd100My Map Is Rich|r 由 nolwe 為 WoW Forever 製作。\n\n|cffffd100地圖來自 OpenMap|r 0.8.11（MIT 授權），My Map Is Rich 正在一步步用自己的程式碼取代它的程式碼。OpenMap 由 Ji Unit 與 daxtron2、Ironship、C-Clymer、RADD95、Peendars、Loukky、diegodiaz1256、Naladdar、ZiiMs、forcedroidbrain、TheRayoX、KonigTX、Luquatic、puschie286、k4m1、FlyingPenguin98、bv101rj、Rambomst 和 kr0ozin 一起製作。RADD95 找到了某些客戶端上洞穴和地城地圖顯示為綠色的原因。\n\n|cffffd100手把、路線和地點|r來自 OpenMap On Gamepad。\n\n|cffffd100步行資料|r（道路、地形、敵對陣營的城鎮）來自 cjber 的 Shortest Path Forever（GPL-3.0-or-later 授權）。\n\n|cffffd100地圖圖像|r屬於 Blizzard Entertainment。\n\n|cffffd100感謝|r所有回報問題、分享想法的人。",
+    CREDITS_TEXT = "|cffffd100My Map Is Rich|r 由 nolwe 為 WoW Forever 製作。\n\n|cffffd100地圖來自 OpenMap|r 0.8.11（MIT 授權），My Map Is Rich 已一步步用自己的程式碼取代了它的程式碼；地圖繪製和資料仍沿用 OpenMap 的，移植而來。OpenMap 由 Ji Unit 與 daxtron2、Ironship、C-Clymer、RADD95、Peendars、Loukky、diegodiaz1256、Naladdar、ZiiMs、forcedroidbrain、TheRayoX、KonigTX、Luquatic、puschie286、k4m1、FlyingPenguin98、bv101rj、Rambomst 和 kr0ozin 一起製作。RADD95 找到了某些客戶端上洞穴和地城地圖顯示為綠色的原因。\n\n|cffffd100手把、路線和地點|r來自 OpenMap On Gamepad。\n\n|cffffd100步行資料|r（道路、地形、敵對陣營的城鎮）來自 cjber 的 Shortest Path Forever（GPL-3.0-or-later 授權）。\n\n|cffffd100地圖圖像|r屬於 Blizzard Entertainment。\n\n|cffffd100感謝|r所有回報問題、分享想法的人。",
     BINDING_FIND = "My Map Is Rich：找到我",
     BINDING_PIN = "My Map Is Rich：放置圖釘",
     BINDING_PINS = "My Map Is Rich：圖釘",

@@ -10,8 +10,6 @@ ns.AddLocale("enUS", {
 
     -- Loading
     WHY_NOT_LOADED = "not loaded yet",
-    WHY_NO_OPENMAP = "My Map Is Rich isn't loaded",
-    WHY_NO_MODULE = "My Map Is Rich's map module wasn't found",
     WHY_NO_STITCH = "My Map Is Rich's map engine wasn't found",
     WHY_MISSING = "this My Map Is Rich version lacks: %s",
     DISABLED_WHY = "on standby: %s.",
@@ -594,6 +592,7 @@ ns.AddLocale("enUS", {
     WHATSNEW_MMIR_0_13_0 = "• |cffffd100The map's icons, redone|r in My Map Is Rich's own code: dungeon entrances, docks, flight masters, quests, townsfolk, your group, your pins and drawings, the waypoint and your arrow. Nothing should change on screen.\n• |cffffd100Docks|r (boats, zeppelin towers, airships): their tooltip says where the crossing goes, and a click glides to the other end.",
     WHATSNEW_MMIR_0_14_0 = "• |cffffd100The map's art now lives in My Map Is Rich itself|r: the stitched zones, the sea, the continents' and seas' names, the cities, unexplored areas shown, darkened or hidden, the matched colours. It's the same art as before, so nothing should change on screen.\n• |cffffd100Fixed|r: since 0.13.0 the addon could stay off at login.",
     WHATSNEW_MMIR_0_15_0 = "• |cffffd100The close-up zoom now lives in My Map Is Rich itself|r: the minimap blended into the map as you zoom in, the major cities, the caves and dungeon entrances, the gaps in the map filled in. It works as before, so nothing should change on screen.\n• Your settings (Map tab, “Up close”) are carried over once.\n• All of the map's engine is now the addon's own code.",
+    WHATSNEW_MMIR_1_0_0 = "• |cffffd100My Map Is Rich 1.0|r: the addon no longer contains any of OpenMap's code running on its own. The map, its icons, its settings and its commands are all My Map Is Rich's own code.\n• Nothing should change on screen. Your pins, drawings, learned flight masters and map settings are carried over once, and the old ones stay in place.\n• If OpenMap or OpenMap On Gamepad is also enabled, My Map Is Rich still stays off and says so.",
 })
 
 -- /mmir focus ouverture (Diag.lua)
@@ -666,7 +665,7 @@ ns.AddLocale("enUS", {
     CREDITS_BUTTON = "Credits…",
     CREDITS_BUTTON_TIP = "Who made the map, its data and its art.",
     CREDITS_TITLE = "Credits",
-    CREDITS_TEXT = "|cffffd100My Map Is Rich|r is made by nolwe, for WoW Forever.\n\n|cffffd100The map comes from OpenMap|r 0.8.11 (MIT licence), whose code My Map Is Rich is replacing with its own, step by step. OpenMap was made by Ji Unit, with daxtron2, Ironship, C-Clymer, RADD95, Peendars, Loukky, diegodiaz1256, Naladdar, ZiiMs, forcedroidbrain, TheRayoX, KonigTX, Luquatic, puschie286, k4m1, FlyingPenguin98, bv101rj, Rambomst and kr0ozin. RADD95 found why cave and dungeon maps showed green on some clients.\n\n|cffffd100The controller, the routes and the places|r come from OpenMap On Gamepad.\n\n|cffffd100The walking data|r (roads, terrain, the other faction's towns) come from Shortest Path Forever, by cjber (GPL-3.0-or-later licence).\n\n|cffffd100The map art|r is Blizzard Entertainment's own.\n\n|cffffd100Thanks|r to everyone who reports problems and shares ideas.",
+    CREDITS_TEXT = "|cffffd100My Map Is Rich|r is made by nolwe, for WoW Forever.\n\n|cffffd100The map comes from OpenMap|r 0.8.11 (MIT licence), whose code My Map Is Rich has replaced with its own, step by step; the map's drawing and its data are still OpenMap's, ported. OpenMap was made by Ji Unit, with daxtron2, Ironship, C-Clymer, RADD95, Peendars, Loukky, diegodiaz1256, Naladdar, ZiiMs, forcedroidbrain, TheRayoX, KonigTX, Luquatic, puschie286, k4m1, FlyingPenguin98, bv101rj, Rambomst and kr0ozin. RADD95 found why cave and dungeon maps showed green on some clients.\n\n|cffffd100The controller, the routes and the places|r come from OpenMap On Gamepad.\n\n|cffffd100The walking data|r (roads, terrain, the other faction's towns) come from Shortest Path Forever, by cjber (GPL-3.0-or-later licence).\n\n|cffffd100The map art|r is Blizzard Entertainment's own.\n\n|cffffd100Thanks|r to everyone who reports problems and shares ideas.",
     BINDING_FIND = "My Map Is Rich: find me",
     BINDING_PIN = "My Map Is Rich: drop a pin",
     BINDING_PINS = "My Map Is Rich: pins",

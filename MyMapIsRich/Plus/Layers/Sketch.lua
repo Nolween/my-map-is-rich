@@ -733,15 +733,6 @@ end
 function SK.Shown() return Shown() end
 function SK.Changed() Changed() end
 
----------------------------------------------------------------------------
--- Le pont vers le code d'OpenMap qui reste (/mmir carte draw : Init.lua ;
--- A et X la plume sortie : Map/View.lua appelle SKM directement)
----------------------------------------------------------------------------
-local function Bridge()
-    local mod = ns.Map.Legacy()
-    if mod then mod.ToggleSketch = function(_, on) SKM.Toggle(on) end end
-end
-
 local function Migrate()
     -- (les dessins de tout le compte, et « Tes dessins » montrés ou non)
     ns.Map.Migrate("sketch", function(old, new, copy)
@@ -752,7 +743,6 @@ end
 
 ns.On("MAP_ATTACHED", function()
     Migrate()
-    Bridge()
 end)
 ns.On("MAP_BUILT", function()
     local P = ns.Map.Pins

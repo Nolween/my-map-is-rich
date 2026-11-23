@@ -1020,11 +1020,3 @@ function V.Diag()
     ns.Print(L.VIEW_DIAG, L[diag.setup] or diag.setup, diag.shows, why,
         tostring(view and view:IsShown() or false), size, diag.cover or "-", tostring(small))
 end
-
----------------------------------------------------------------------------
--- Ce que le code d'OpenMap qui reste appelle encore : /mmir carte status (Init.lua)
----------------------------------------------------------------------------
-ns.On("MAP_ATTACHED", function()
-    local mod = ns.Map.Legacy()
-    if mod then mod.Diag = function() V.Diag() end end
-end)

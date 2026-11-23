@@ -284,8 +284,7 @@ end
 ns.On("MAP_BUILT", function() ns.Map.Townsfolk.Refresh() end)
 ns.On("MAP_REFRESH", function() ns.Map.Townsfolk.Refresh() end)
 
--- (la migration : le réglage d'OpenMap repris, et sa table posée pour le
--- rail ; les ponts : la vue d'OpenMap, Map/PadView.lua, et mod:Refresh)
+-- (la migration : le réglage d'OpenMap repris, et sa table posée pour le rail)
 ns.On("MAP_ATTACHED", function()
     ns.Map.Migrate("townsfolk", function(old, new, copy)
         if type(old.townsfolk) == "table" then new.settings.townsfolk = copy(old.townsfolk) end

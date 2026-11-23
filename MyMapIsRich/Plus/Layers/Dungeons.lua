@@ -1,6 +1,6 @@
 -- Les donjons sur la carte : leurs entrées, en code de My Map Is Rich depuis
 -- la 0.10.0 (elles venaient de Map/Dungeons.lua d'OpenMap).
---   l'entrée       une icône de donjon ou de raid (Data/Forever/Places.lua, et
+--   l'entrée       une icône de donjon ou de raid (Data/Map/Places.lua, et
 --                  celles que le jeu connaît en plus), ses niveaux dessous,
 --                  colorés pour ton niveau ; survolée, ce qu'il y a là ;
 --   le clic        la carte du donjon (Layers/DungeonView.lua) ; plusieurs

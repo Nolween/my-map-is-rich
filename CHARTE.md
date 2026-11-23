@@ -92,7 +92,7 @@ Tout texte passe par `L` et existe dans les **10 langues**.
 - `UI.MapWindow(nom, l, h, titre)` : le cadre de la charte (`UI.WindowChrome`), une barre de titre de 32 px, la croix « × » dans un carré rouge cerclé d'or à droite ; ni portrait ni onglets. Strate `FULLSCREEN_DIALOG`, au-dessus de la carte du jeu ; ajoutée aux cadres du curseur de la manette (`ns.Map.Cursor.AddRoot`).
 - **Navigateur de lieux** : trois colonnes de 236 px (des `UI.Inset`), séparées de 6 px, avec des lignes `UI.NavButton` de niveau 2 ; la ligne choisie est dorée.
 - **Clavier virtuel** : touches de 40 × 32 px, rouges pour les lettres, grises pour les accents et les touches spéciales (chacune avec l'icône de son bouton de manette) ; le texte en cours dans une zone en retrait (`UI.Well`), le curseur du texte en or.
-- **Barre d'actions** (View sur la carte) : une rangée de boutons de 118 × 44 px, le premier rouge (le menu d'OpenMap), les autres gris.
+- **Barre d'actions** (View sur la carte) : une rangée de boutons de 118 × 44 px, le premier rouge (les réglages de la carte), les autres gris.
 - **Barre d'aide** : bande de 30 px en bas de la vue de la carte (de l'écran, sur la carte plein écran), fond de fenêtre, trait doré en haut ; l'icône de chaque bouton puis ce qu'il fait (blanc : l'addon ; gris : le jeu et OpenMap). À la souris, sur la carte plein écran : les clics (l'icône de souris du jeu) et les touches (un carré de 18 px, fond `inputBg`, liseré `edgeLight`, le nom de la touche donné par le jeu : Maj, Ctrl, Alt, Échap), reliés par un « + » gris.
 
 ## L'habillage de la carte plein écran

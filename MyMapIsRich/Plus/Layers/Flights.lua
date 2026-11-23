@@ -385,13 +385,8 @@ local function Build()
 end
 
 ---------------------------------------------------------------------------
--- Le pont vers le code d'OpenMap qui reste (/mmir carte forgetflights :
--- Init.lua), et la migration
+-- La migration (/mmir carte forgetflights : FL.Forget, Plus/Core.lua)
 ---------------------------------------------------------------------------
-local function Bridge()
-    local mod = ns.Map.Legacy()
-    if mod then mod.ForgetFlights = function() FL.Forget() end end
-end
 -- (un réglage changé, « seulement les lieux trouvés » : l'aspect des maîtres de vol)
 ns.On("MAP_REFRESH", function() if set then RefreshLook() end end)
 
@@ -408,7 +403,6 @@ end
 
 ns.On("MAP_ATTACHED", function()
     Migrate()
-    Bridge()
 end)
 ns.On("MAP_BUILT", Build)
 ns.On("MAP_SHOW", function() if set then RefreshLook() end end)
@@ -417,7 +411,7 @@ local events = CreateFrame("Frame")
 events:RegisterEvent("PLAYER_LOGIN")
 events:SetScript("OnEvent", function(self, event)
     if event == "PLAYER_LOGIN" then
-        if root.dormant then return end
+        if ns.Conflict() then return end
         self:RegisterEvent("TAXIMAP_OPENED")
         self:RegisterEvent("TAXI_NODE_STATUS_CHANGED")
         if TakeTaxiNode then hooksecurefunc("TakeTaxiNode", OnTakeTaxi) end
