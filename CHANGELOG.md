@@ -17,6 +17,7 @@ Après la mise à jour, **relance le jeu** (un `/reload` ne suffit pas : des fic
   - les détails d'un calque (rail des calques) ; le clic droit dans une fenêtre posée sur la carte.
   La plume se range par View puis « Terminé », la carte d'un donjon se quitte par son bouton « < … » en haut à gauche (le curseur dessus, A). Le clavier à l'écran (effacer) et l'invitation du groupe (plus tard) gardent leur X. Sur la carte réduite, la croix bas (celle du jeu) met aussi la carte en vrai plein écran, comme X, et la croix haut la ramène en carte réduite ; un plein écran choisi par X n'est pas défait par la croix haut.
 - **LT / RT sur la carte** : l'icône précédente / suivante autour du curseur. RT n'ouvre plus la liste des quêtes, toujours affichée : la croix du jeu y amène (dans la liste, RT revient toujours à la carte).
+- **L'onglet Découvrir** donne maintenant la page CurseForge de My Map Is Rich (https://www.curseforge.com/wow/addons/my-map-is-rich-forever), à copier.
 - **Revenus dans l'onglet Carte** (`/mmir carte`), des réglages d'OpenMap qui n'avaient plus de case :
   - « Ctrl+clic pose une épingle » (rubrique Épingles) : éteins-le si un autre addon pose la sienne au Ctrl+clic (Map Pin Enhanced) ;
   - « Minimap dans les trous (essai) » (rubrique Au plus près) ;

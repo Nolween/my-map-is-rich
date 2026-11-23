@@ -67,6 +67,7 @@ ns.AddLocale("zhTW", {
     PROJECTS_ALL = "我在 CurseForge 上的所有專案：",
     PROJECT_MGIR = "手把的額外按鍵與層、HUD、智慧消耗品。",
     PROJECT_MGUIR = "公會中心：互助、團隊副本、行事曆和冒險，自動同步。",
+    PROJECT_MMIR = "一張無縫的世界地圖，滑鼠或手把皆可：路線、地點、隊伍。",
     PROJECT_OMGP = "完全用手把操作 OpenMap：圖示、地點、鍵盤、地城。",
 })
 

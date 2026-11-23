@@ -67,6 +67,7 @@ ns.AddLocale("esES", {
     PROJECTS_ALL = "Todos mis proyectos en CurseForge:",
     PROJECT_MGIR = "Los botones extra de tu mando y sus capas, un HUD, consumibles inteligentes.",
     PROJECT_MGUIR = "El centro de la hermandad: ayuda mutua, bandas, calendario y aventuras, sincronizados solos.",
+    PROJECT_MMIR = "Un mapa del mundo de una sola pieza, con ratón o mando: rutas, lugares, tu grupo.",
     PROJECT_OMGP = "OpenMap totalmente con mando: iconos, lugares, teclado, mazmorras.",
 })
 

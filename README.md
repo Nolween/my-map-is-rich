@@ -21,7 +21,7 @@ Carte ouverte en plein écran (hors combat), le personnage ne bouge pas : les to
 
 À la souris : clic gauche choisir ou zoomer, clic droit dézoomer, molette zoom, glisser pour déplacer, Maj+clic itinéraire, Ctrl+clic épingle, Alt+clic le menu des actions, clic du milieu me localiser, Échap ou M fermer.
 
-Une icône choisie (A, ou un clic) ouvre **sa fiche**, sous la zone : ce qu'est le point, le temps pour y aller et par où, et quoi faire (itinéraire, file, l'action de l'icône, poser une épingle, envoyer au groupe). Itinéraire (Y) en montre d'abord **l'aperçu** : le temps, l'arrivée, chaque étape ; Partir (A), la file (X), Annuler (B). R3 et Maj+clic partent tout de suite.
+Une icône choisie (A, ou un clic) ouvre **sa fiche**, sous la zone : ce qu'est le point, le temps pour y aller et par où, et quoi faire (itinéraire, file, l'action de l'icône, poser une épingle, envoyer au groupe). Itinéraire (Y) en montre d'abord **l'aperçu** : le temps, l'arrivée, chaque étape ; Partir (A), la file (View), Annuler (B). R3 et Maj+clic partent tout de suite.
 
 La carte du jeu reste ouverte dessous, invisible : c'est elle que M, Échap et B ferment. La carte classique d'OpenMap (dessinée dans la fenêtre de carte du jeu) n'existe plus depuis la 0.5.0.
 

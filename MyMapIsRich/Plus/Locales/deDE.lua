@@ -67,6 +67,7 @@ ns.AddLocale("deDE", {
     PROJECTS_ALL = "Alle meine Projekte auf CurseForge:",
     PROJECT_MGIR = "Zusatztasten deines Controllers und ihre Ebenen, ein HUD, schlaue Verbrauchsgüter.",
     PROJECT_MGUIR = "Das Gildenzentrum: gegenseitige Hilfe, Schlachtzüge, Kalender und Abenteuer, automatisch synchronisiert.",
+    PROJECT_MMIR = "Eine nahtlose Weltkarte, mit Maus oder Controller: Routen, Orte, deine Gruppe.",
     PROJECT_OMGP = "OpenMap vollständig mit dem Controller: Symbole, Orte, Tastatur, Dungeons.",
 })
 

@@ -67,6 +67,7 @@ ns.AddLocale("koKR", {
     PROJECTS_ALL = "CurseForge의 모든 프로젝트:",
     PROJECT_MGIR = "컨트롤러의 추가 버튼과 층, HUD, 똑똑한 소모품.",
     PROJECT_MGUIR = "길드의 중심: 서로 돕기, 공격대, 달력, 모험이 자동으로 동기화됩니다.",
+    PROJECT_MMIR = "마우스나 컨트롤러로 쓰는 하나로 이어진 세계 지도: 경로, 장소, 파티.",
     PROJECT_OMGP = "컨트롤러로 완전히 쓰는 OpenMap: 아이콘, 장소, 키보드, 던전.",
 })
 

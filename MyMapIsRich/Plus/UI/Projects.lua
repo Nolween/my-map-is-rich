@@ -21,7 +21,7 @@ UI.PROJECTS = {
         url = "https://www.curseforge.com/wow/addons/my-guild-is-rich" },
     { addon = "MyMapIsRich", name = "My Map Is Rich", desc = "PROJECT_MMIR",
         icon = "Interface\\Icons\\INV_Misc_Map_01",
-        url = "https://github.com/Nolween/my-map-is-rich" },
+        url = "https://www.curseforge.com/wow/addons/my-map-is-rich-forever" },
     { addon = "OpenMapOnGamepad", name = "OpenMap On Gamepad", desc = "PROJECT_OMGP",
         icon = "Interface\\Icons\\INV_Misc_Map02",
         url = "https://www.curseforge.com/wow/addons/openmap-on-gamepad-forever" },
