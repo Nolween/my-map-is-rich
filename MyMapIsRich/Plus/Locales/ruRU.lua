@@ -7,6 +7,7 @@ ns.AddLocale("ruRU", {
     HINT_MOVE = "Перемещение", HINT_SELECT = "Выбрать", HINT_RIGHT_CLICK = "Правый клик", HINT_BACK = "Назад",
     HINT_TABS = "Вкладки", HINT_MENU = "Меню", HINT_MENU_CLOSE = "Закрыть меню", HINT_SCROLL = "Прокрутка",
     HINT_JUMP = "Следующий значок", HINT_PAN = "Сдвинуть карту", HINT_PLACES = "Места", HINT_FIND_ME = "Где я",
+    HINT_JUMP_PREV = "Предыдущий значок",
     HINT_PIN = "Поставить метку", HINT_PIN_CANCEL = "Отменить метку", HINT_PIN_DROP = "Поставить метку здесь", HINT_PINS = "Метки",
     HINT_PRESS = "Нажать / приблизить", HINT_ZOOM_OUT = "Отдалить", HINT_ZOOM = "Масштаб", HINT_WAYPOINT = "Путевая точка",
     HINT_CLOSE_MAP = "Закрыть карту", HINT_QUILL_DONE = "Убрать перо", HINT_QUILL_TOOLS = "Инструменты пера",

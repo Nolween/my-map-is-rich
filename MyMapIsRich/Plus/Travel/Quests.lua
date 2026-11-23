@@ -187,8 +187,6 @@ end, function()
     if not ns.FullMap() then return nil end
     return "HINT_QUESTS"
 end)
--- (X : la taille de la carte, comme partout sur la carte)
-P.SetAction("questlog", "PAD3", ns.PadMapSize, ns.PadMapSizeHint)
 P.SetAction("questlog", "PADRSTICK", function()
     local questID = Q.Focused()
     if questID and ns.Travel then ns.Travel.AtQuest(questID) end

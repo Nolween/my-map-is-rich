@@ -7,6 +7,7 @@ ns.AddLocale("koKR", {
     HINT_MOVE = "이동", HINT_SELECT = "선택", HINT_RIGHT_CLICK = "우클릭", HINT_BACK = "뒤로",
     HINT_TABS = "탭", HINT_MENU = "메뉴", HINT_MENU_CLOSE = "메뉴 닫기", HINT_SCROLL = "스크롤",
     HINT_JUMP = "다음 아이콘", HINT_PAN = "지도 이동", HINT_PLACES = "장소", HINT_FIND_ME = "내 위치",
+    HINT_JUMP_PREV = "이전 아이콘",
     HINT_PIN = "핀 꽂기", HINT_PIN_CANCEL = "핀 취소", HINT_PIN_DROP = "여기에 핀 꽂기", HINT_PINS = "핀",
     HINT_PRESS = "누르기 / 확대", HINT_ZOOM_OUT = "축소", HINT_ZOOM = "확대/축소", HINT_WAYPOINT = "경유지",
     HINT_CLOSE_MAP = "지도 닫기", HINT_QUILL_DONE = "깃펜 넣기", HINT_QUILL_TOOLS = "깃펜 도구",

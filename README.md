@@ -13,7 +13,7 @@ Depuis la 0.2.0, M (ou le bouton carte de la manette) ouvre la carte **en plein 
 - en haut au milieu, **Aller à…** (LB, Ctrl+F), qui s'ouvre sur la carte ;
 - en haut à droite, Me localiser, Me suivre, les réglages de la carte (l'onglet Carte de `/mmir`), Plein écran / Carte réduite et Fermer ;
 - à gauche, sous la zone, **le rail des calques** (donjons, maîtres de vol, bateaux et zeppelins, quêtes, citadins, groupe, épingles, dessins) : un clic affiche ou cache un calque, un clic droit (ou Y) ouvre le panneau des calques et leurs détails ; dessous, un bouton pour les maîtres de vol découverts seulement, et un pour les réglages de la carte ; une carte réduite trop basse garde les boutons qui tiennent, les réglages toujours en dernier ;
-- à droite, **tes quêtes**, toujours affichées (à la manette, RT entre dans la liste, où la croix va de quête en quête ; B, RT ou la croix gauche reviennent à la carte) : par zone ou les plus proches, la fiche d'une quête (A ou un clic : ses objectifs, son histoire, ses récompenses, comme dans le journal du jeu), l'itinéraire, la file, suivre, partager ; Y ou un clic droit sur une quête ouvre **son menu**, sans passer par la fiche : voir la quête, itinéraire, file, suivre, partager, lien dans la discussion, abandonner (après confirmation) ;
+- à droite, **tes quêtes**, toujours affichées (à la manette, la croix du jeu y amène, et la manette passe alors dans la liste, où la croix va de quête en quête ; B, RT ou la croix gauche reviennent à la carte) : par zone ou les plus proches, la fiche d'une quête (A ou un clic : ses objectifs, son histoire, ses récompenses, comme dans le journal du jeu), l'itinéraire, la file, suivre, partager ; Y ou un clic droit sur une quête ouvre **son menu**, sans passer par la fiche : voir la quête, itinéraire, file, suivre, partager, lien dans la discussion, abandonner (après confirmation) ;
 - en bas à droite, tes coordonnées et celles du curseur ; au bord, « Toi » quand ta flèche sort de la vue ;
 - en bas, la barre d'aide : les boutons de la manette, ou les clics et les touches à la souris.
 
@@ -34,9 +34,9 @@ La carte du jeu reste ouverte dessous, invisible : c'est elle que M, Échap et B
 | Carte | LB | Aller à… (carte plein écran) ou Lieux : parcourir, rechercher au clavier (lieux, PNJ et objets de Questie), récents, la file |
 | Carte | Y | Le panneau des calques (carte plein écran) |
 | Carte | View | La roue, autour du curseur : ajouter à la file, envoyer au groupe, poser une épingle, épingles, plume, réglages de la carte (stick droit pour choisir, A pour valider, View pour fermer) |
-| Carte | LT / RT | Carte plein écran : LT l'icône suivante autour du curseur, RT entre dans la liste des quêtes (la croix y va de quête en quête). |
+| Carte | LT / RT | L'icône précédente / suivante autour du curseur |
 | Carte | X | Plein écran ou carte réduite, **où que l'on soit sur la carte** (liste des quêtes, fiche d'un point, lieux, rail des calques, plume, donjon). C'est son seul rôle ; seuls le clavier virtuel (effacer) et l'invitation du groupe (plus tard) gardent leur X |
-| Carte | Stick gauche, A, B, croix, L3, stick droit | Ceux du jeu et de la carte : curseur (sur tout l'écran, carte plein écran), appuyer / zoomer, fermer, Carte standard, marqueur, zoom. La croix haut / bas ne change jamais la taille de la carte |
+| Carte | Stick gauche, A, B, croix, L3, stick droit | Ceux du jeu et de la carte : curseur (sur tout l'écran, carte plein écran), appuyer / zoomer, fermer, Carte standard, marqueur, zoom. Sur la carte réduite, la croix bas du jeu met aussi la carte en plein écran (comme X), la croix haut la ramène en carte réduite |
 | Liste des quêtes | R3 | Itinéraire tout de suite jusqu'à la quête choisie ; R3 sur la quête du trajet en cours l'annule ; carte réduite : stick droit pour tourner la caméra |
 | Liste des quêtes | Y | Le menu de la quête choisie (voir, itinéraire, file, suivre, partager, lien, abandonner) : la croix choisit, A valide, B ou Y le ferment |
 | Liste des quêtes | View | Ajouter la quête choisie à la file |

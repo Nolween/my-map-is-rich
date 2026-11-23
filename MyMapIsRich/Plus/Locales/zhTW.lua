@@ -7,6 +7,7 @@ ns.AddLocale("zhTW", {
     HINT_MOVE = "移動", HINT_SELECT = "選擇", HINT_RIGHT_CLICK = "右鍵", HINT_BACK = "返回",
     HINT_TABS = "標籤", HINT_MENU = "選單", HINT_MENU_CLOSE = "關閉選單", HINT_SCROLL = "捲動",
     HINT_JUMP = "下一個圖示", HINT_PAN = "移動地圖", HINT_PLACES = "地點", HINT_FIND_ME = "找到我",
+    HINT_JUMP_PREV = "上一個圖示",
     HINT_PIN = "放置圖釘", HINT_PIN_CANCEL = "取消圖釘", HINT_PIN_DROP = "在此放置圖釘", HINT_PINS = "圖釘",
     HINT_PRESS = "按下 / 放大", HINT_ZOOM_OUT = "縮小", HINT_ZOOM = "縮放", HINT_WAYPOINT = "路徑點",
     HINT_CLOSE_MAP = "關閉地圖", HINT_QUILL_DONE = "收起羽毛筆", HINT_QUILL_TOOLS = "羽毛筆工具",

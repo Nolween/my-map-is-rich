@@ -542,26 +542,44 @@ local function UnbindKeys()
 end
 
 -- La croix haut / bas du jeu agrandit ou réduit sa carte en fenêtre, celle
--- qui est sous la nôtre. La neutraliser par un raccourci de l'addon brouillait
--- l'interface manette (le jeu bloquait ensuite SetPreferredGamepadInteractTarget) :
--- elle reste au jeu. Mais elle ne change jamais la taille de notre carte : seul
--- X (ou le bouton Taille) passe de la carte réduite au plein écran. La carte du
--- jeu agrandie sous la carte réduite est remise en fenêtre, sans quoi la nôtre
--- resterait une fenêtre au milieu d'un fond noir. (Un geste noté : ns.Risky.)
+-- qui est sous la nôtre. Elle reste au jeu, et l'addon n'y touche pas :
+--   - la neutraliser par un raccourci de l'addon brouillait l'interface
+--     manette (le jeu bloquait ensuite SetPreferredGamepadInteractTarget) ;
+--   - prendre les boutons par un cadre (EnableGamePadButton) fait exécuter
+--     les autres depuis le code de l'addon, qui les bloque (Pad/Bindings.lua) ;
+--   - remettre la carte du jeu en fenêtre (son Minimize, appelé par l'addon)
+--     contamine son état : le jeu bloquait SetPreferredGamepadInteractTarget
+--     jusqu'au /reload (1.0.0, comme FocusMap : UI/QuestPanel.lua).
+-- Notre carte suit donc celle du jeu, sans jamais la toucher (seulement
+-- ns.SetMapSmall, notre propre carte) : la croix bas agrandit celle du jeu
+-- sous la carte réduite, la nôtre passe en vrai plein écran, comme avec X ;
+-- la croix haut la réduit, la nôtre revient en carte réduite, mais seulement
+-- si c'est la croix bas qui l'avait mise en plein écran (un plein écran
+-- choisi par X ou le bouton Taille reste). Dans la même image : rien ne se voit
+-- de la carte du jeu agrandie entre deux.
 local sizeHooked = false
+local followed = false        -- notre plein écran vient de la croix bas du jeu
 local function HookGameSize()
     local map = _G.WorldMapFrame
-    if sizeHooked or not (map and type(map.Maximize) == "function" and type(map.Minimize) == "function") then return end
+    if sizeHooked or not (map and type(map.Maximize) == "function") then return end
     sizeHooked = true
-    -- (aussitôt, dans la même image : rien ne se voit de la carte du jeu agrandie
-    -- ni de la nôtre qui se recentrerait ; attendre l'image suivante faisait voir
-    -- un aller-retour)
     hooksecurefunc(map, "Maximize", function()
         if not (ns.FullMap() and ns.MapShown() and ns.MapSmall()) or InCombatLockdown() then return end
-        if map.IsMaximized and not map:IsMaximized() then return end
-        if ns.Risky("MinimizeGameMap") then pcall(map.Minimize, map) end
+        ns.SetMapSmall(false)
+        followed = true          -- (après MAP_SIZE, qui l'efface)
     end)
+    if type(map.Minimize) == "function" then
+        hooksecurefunc(map, "Minimize", function()
+            if not followed then return end
+            followed = false
+            if not (ns.FullMap() and ns.MapShown()) or ns.MapSmall() or InCombatLockdown() then return end
+            ns.SetMapSmall(true)
+        end)
+    end
 end
+-- (X, le bouton Taille ou la carte fermée : ce plein écran n'est plus celui de la croix)
+ns.On("MAP_SIZE", function() followed = false end)
+ns.On("MAP_HIDE", function() followed = false end)
 
 ---------------------------------------------------------------------------
 local function Build()
@@ -615,10 +633,10 @@ local function OnShow()
     if not ns.FullMap() then return end
     if not Build() then return end
     wait = 0
-    HookGameSize()
     BindKeys()
     MakeClose()
     PlaceClose()
+    HookGameSize()
 end
 
 ns.On("MAP_SHOW", function()

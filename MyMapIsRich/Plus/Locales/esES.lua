@@ -7,6 +7,7 @@ ns.AddLocale("esES", {
     HINT_MOVE = "Mover", HINT_SELECT = "Elegir", HINT_RIGHT_CLICK = "Clic derecho", HINT_BACK = "Volver",
     HINT_TABS = "Pestañas", HINT_MENU = "Menú", HINT_MENU_CLOSE = "Cerrar menú", HINT_SCROLL = "Desplazar",
     HINT_JUMP = "Icono siguiente", HINT_PAN = "Mover el mapa", HINT_PLACES = "Lugares", HINT_FIND_ME = "Encontrarme",
+    HINT_JUMP_PREV = "Icono anterior",
     HINT_PIN = "Poner chincheta", HINT_PIN_CANCEL = "Cancelar chincheta", HINT_PIN_DROP = "Poner la chincheta aquí", HINT_PINS = "Chinchetas",
     HINT_PRESS = "Pulsar / acercar", HINT_ZOOM_OUT = "Alejar", HINT_ZOOM = "Zoom", HINT_WAYPOINT = "Punto de ruta",
     HINT_CLOSE_MAP = "Cerrar mapa", HINT_QUILL_DONE = "Guardar la pluma", HINT_QUILL_TOOLS = "Herramientas de la pluma",

@@ -398,22 +398,12 @@ P.SetAction("map", "PAD4", function()
     if ns.FullMap() and ns.Layers then ns.Layers.TogglePanel() end
 end, function() return ns.FullMap() and "HINT_LAYERS" or nil end)
 P.SetAction("map", "PADBACK", Actions, "HINT_ACTIONS")
--- (sur la carte plein écran, LT : l'icône suivante autour du curseur ; RT :
--- les quêtes, UI/QuestPanel.lua — Start est au menu en cercle. Sur la carte
--- classique, LT / RT : l'icône précédente / suivante, comme avant)
-P.SetAction("map", "PADLTRIGGER", function()
-    if ns.FullMap() then M.Cycle(1) else M.Cycle(-1) end
-end, function()
-    return ns.FullMap() and "HINT_JUMP" or nil
-end)
-P.SetAction("map", "PADRTRIGGER", function()
-    if ns.FullMap() and ns.QuestPanel then ns.QuestPanel.PadMenu() else M.Cycle(1) end
-end, function()
-    -- (la manette sur la carte : RT affiche la liste ou y entre ; dedans, c'est
-    -- le contexte « quests » de UI/QuestPanel.lua qui dit « Fermer les quêtes »)
-    if not ns.FullMap() then return nil end
-    return "HINT_QUESTS"
-end)
+-- (LT / RT : l'icône précédente / suivante autour du curseur. La liste des
+-- quêtes, toujours affichée, n'a plus besoin de RT pour s'ouvrir : la manette
+-- du jeu qui y arrive passe dans la nôtre, UI/QuestPanel.lua ; dedans, RT
+-- revient à la carte)
+P.SetAction("map", "PADLTRIGGER", function() M.Cycle(-1) end, "HINT_JUMP_PREV")
+P.SetAction("map", "PADRTRIGGER", function() M.Cycle(1) end, "HINT_JUMP")
 -- (X : la taille de la carte, plein écran ou réduite. Lu ici, car le X du jeu
 -- (UI/MapChrome.lua, ns.Map.View.SetOutHandler) ne vient pas sur sa carte en fenêtre,
 -- sous la carte réduite ; s'il vient aussi, ns.PadToggleMapSize n'en compte

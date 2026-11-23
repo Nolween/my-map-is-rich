@@ -28,6 +28,7 @@ ns.AddLocale("frFR", {
     HINT_MENU_CLOSE = "Fermer le menu",
     HINT_SCROLL = "Défiler",
     HINT_JUMP = "Icône suivante",
+    HINT_JUMP_PREV = "Icône précédente",
     HINT_PAN = "Déplacer la carte",
     HINT_PLACES = "Lieux",
     HINT_FIND_ME = "Me trouver",

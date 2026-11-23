@@ -7,6 +7,7 @@ ns.AddLocale("zhCN", {
     HINT_MOVE = "移动", HINT_SELECT = "选择", HINT_RIGHT_CLICK = "右键", HINT_BACK = "返回",
     HINT_TABS = "标签", HINT_MENU = "菜单", HINT_MENU_CLOSE = "关闭菜单", HINT_SCROLL = "滚动",
     HINT_JUMP = "下一个图标", HINT_PAN = "移动地图", HINT_PLACES = "地点", HINT_FIND_ME = "找到我",
+    HINT_JUMP_PREV = "上一个图标",
     HINT_PIN = "放置图钉", HINT_PIN_CANCEL = "取消图钉", HINT_PIN_DROP = "在此放置图钉", HINT_PINS = "图钉",
     HINT_PRESS = "按下 / 放大", HINT_ZOOM_OUT = "缩小", HINT_ZOOM = "缩放", HINT_WAYPOINT = "路径点",
     HINT_CLOSE_MAP = "关闭地图", HINT_QUILL_DONE = "收起羽毛笔", HINT_QUILL_TOOLS = "羽毛笔工具",
