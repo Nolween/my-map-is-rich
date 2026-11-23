@@ -110,7 +110,7 @@ local GAP_LAND, PAPER = TEX .. "MapGapLand\\", TEX .. "MapPaper"
 local W, H                      -- the world map's art size (world units)
 local namesFrame                -- (the names' lettering: Letter, below)
 local labelsRoot, names = nil, {}   -- the lettered names (ns.MapLabels): { frame, label }, built when first shown
-local root, contRoot, tilesRoot, overlayRoot, coreRoot, blurRoot, citiesRoot, shadeRoot, pinRoot, arrow
+local root, contRoot, tilesRoot, overlayRoot, coreRoot, blurRoot, citiesRoot, shadeRoot
 local placed = {}               -- every region: { region, x, y, w, h } in world units
 local graded = {}               -- zone art: { tex, mapID, piece } (piece: its overlay piece, or false for base art)
 local twins = {}                -- its colour-matched copies, same shape
@@ -128,7 +128,6 @@ local landFill = {}             -- the continents' land kept as land (art copy +
 local gapFill = {}              -- the gap-fill tiles (they fade in with the zone detail)
 local seaPaper = {}             -- the sea paper's mottling: two octaves, dark and light each
 local hatches = {}              -- per continent: { l, r, t, b, k (world units per art px), tex = { two octaves } }
-local pins = {}
 local cities = {}               -- { frame, zoom where it fills the view (roughly) }
 local rects = {}                -- mapID -> { l, r, t, b } on the world, or false
 local host = { l = 0, t = 0, k = 1 }   -- the host map: its corner (world units) and units per world unit
@@ -696,49 +695,12 @@ local function PlaceOverlays(mapID)
 end
 
 --------------------------------------------------------------------------------
--- Icons
+-- Icons: My Map Is Rich's own since its 0.13.0 (Plus/Map/PinSets.lua: pin sets, pins, lines, the
+-- player's arrow). Kept here: the regions placed in world units since the build (Close.lua's layers,
+-- the icons' anchors: S.PlaceWorld) and how a record is placed
 --------------------------------------------------------------------------------
 
--- dungeon name -> its uiMapID (first map of that name), built on first use
-local instanceMaps
--- an instance's map, by its name: a dungeon map before a micro map of the same name, and never an
--- entrance cave's (Data/Caves.lua: Wailing Caverns' cave shares the dungeon's name); names matched
--- without "The", case or punctuation (the game's "Deadmines" is its map's "The Deadmines")
-function S.InstanceMap(name)
-	if type(name) ~= "string" or name == "" then return end
-	local function NameKey(n) return (n:lower():gsub("^the ", ""):gsub("[^%w]", "")) end
-	if not instanceMaps then
-		instanceMaps = {}
-		local caves = ns.MapCaves or {}
-		for id = 1, 5000 do
-			local info = C_Map.GetMapInfo(id)
-			local kind = info and info.mapType
-			if (kind == Enum.UIMapType.Dungeon or kind == Enum.UIMapType.Micro) and info.name and not caves[id] then
-				local key = NameKey(info.name)
-				local had = instanceMaps[key]
-				if not had or (kind == Enum.UIMapType.Dungeon and had.kind ~= Enum.UIMapType.Dungeon) then
-					instanceMaps[key] = { id = id, kind = kind }
-				end
-			end
-		end
-	end
-	local e = instanceMaps[NameKey(name)] or instanceMaps[NameKey((name:gsub("%s*%b()", "")))]
-	return e and e.id
-end
-
---------------------------------------------------------------------------------
--- Pin sets: groups of icons (and lines) that keep their size on screen.
--- Each pin hangs from an invisible anchor placed in the art (re-placed by
--- Layout), and pinRoot is on the map's view, not its canvas: it never scales, so
--- the pins keep their size on screen and a zoom only moves them (a layer rescaled
--- on each frame of a zoom lays out every pin in it again). A set shows when it's on
--- and the zoom has reached its minimum. Pins can be any frame with a texture; lines
--- join two anchors.
---------------------------------------------------------------------------------
-
-local sets = {}                 -- key -> { frame, on, minZoom, pins = {}, lines = {}, anchors = {}, pinPool, linePool }
-local anchorPool = {}
-local dynamic = {}              -- region -> record: anchors and paint marks (added and dropped often)
+local dynamic = {}              -- region -> record: anchors and close-up layers (added and dropped often)
 
 -- places a record's region, once, in world units: root's own units (Layout scales root
 -- to the host map, so nothing is re-placed when the host changes)
@@ -749,330 +711,14 @@ PlaceRecord = function(rec)
 	region:SetSize(rec[4], rec[5])
 end
 
-local function Anchor(u, v)
-	local a = tremove(anchorPool) or root:CreateTexture(nil, "BACKGROUND")
-	a:SetAlpha(0)
-	a:Hide()        -- (hidden, not only see-through: a shown one is laid out and drawn on every zoom frame)
-	local rec = { a, u, v, 0.01, 0.01 }
-	dynamic[a] = rec
-	PlaceRecord(rec)
-	return a
-end
-
-local function DropAnchor(a)
-	dynamic[a] = nil
-	a:ClearAllPoints()
-	anchorPool[#anchorPool + 1] = a
-end
-
-function S.PinSet(key, minZoom, level)
-	local set = sets[key]
-	if not set then
-		set = { frame = CreateFrame("Frame", nil, pinRoot), on = true, minZoom = minZoom or 1,
-			pins = {}, lines = {}, anchors = {}, pinPool = {}, linePool = {} }
-		set.frame:SetAllPoints(pinRoot)
-		sets[key] = set
-		if S.WorldPinsHidden(key) then set.shownNow = false set.frame:Hide() end
-	end
-	if level then set.frame:SetFrameLevel(pinRoot:GetFrameLevel() + level) end
-	return set
-end
-
--- sets a texture from a look: { atlas = } or { texture =, coords = }; an atlas this
--- client lacks falls back to the texture, a missing texture to `fallback`
-local function Look(tex, look)
-	tex:SetTexCoord(0, 1, 0, 1)
-	tex:SetVertexColor(1, 1, 1, 1)
-	if look.atlas and (not C_Texture or not C_Texture.GetAtlasInfo or C_Texture.GetAtlasInfo(look.atlas)) then
-		tex:SetAtlas(look.atlas)
-	else
-		local ok = tex:SetTexture(look.texture or look.fallback or "Interface\\Minimap\\ObjectIcons")
-		if ok == false and look.fallback then tex:SetTexture(look.fallback) end
-		if look.coords then tex:SetTexCoord(unpack(look.coords)) end
-	end
-	if look.color then tex:SetVertexColor(unpack(look.color)) end
-	tex:SetRotation(look.rotation or 0)
-end
-S.Look = Look
-
--- a pin at a world point (normalized); look: atlas / texture / coords / size / color.
--- Pins are pooled per set: a reused pin keeps the fields its set's code gave it.
--- Pins are kept in cells of the world, PIN_CELL wide: S.Cull hides the cells off the
--- view, so a pan or zoom doesn't move (and draw) every pin on the world, only those near it
-local PIN_CELL = 0.04           -- world (normalized)
 local cullBox                   -- the last view S.Cull saw, with its margin: { u0, v0, u1, v1 }
 local NONE = {}                 -- (an empty list to loop over, kept: not a new one a frame)
-local function PinCell(set, u, v)
-	local i, j = math.floor(u / PIN_CELL), math.floor(v / PIN_CELL)
-	set.cells = set.cells or {}
-	local key = i * 4096 + j
-	local cell = set.cells[key]
-	if not cell then
-		cell = CreateFrame("Frame", nil, set.frame)
-		cell:SetAllPoints(set.frame)
-		cell:SetFrameLevel(set.frame:GetFrameLevel())
-		cell.u0, cell.v0 = i * PIN_CELL, j * PIN_CELL
-		set.cells[key] = cell
-		if cullBox then                         -- (until the next view change: judged against the last)
-			cell.here = cell.u0 + PIN_CELL > cullBox[1] and cell.u0 < cullBox[3] and cell.v0 + PIN_CELL > cullBox[2] and cell.v0 < cullBox[4]
-			cell:SetShown(cell.here)
-		end
-	end
-	return cell
-end
-
-function S.AddPin(set, u, v, look, data)
-	local pin = tremove(set.pinPool)
-	if not pin then
-		pin = CreateFrame("Button", nil, set.frame)
-		pin.Icon = pin:CreateTexture(nil, "ARTWORK")
-		pin.Icon:SetAllPoints()
-		pin.Highlight = pin:CreateTexture(nil, "HIGHLIGHT")
-		pin.Highlight:SetAllPoints()
-		pin.Highlight:SetBlendMode("ADD")
-		pin.Highlight:SetAlpha(0.3)               -- (a lift, not a flare)
-		pin:SetScript("OnMouseDown", function(self, button) if S.OnPinMouseDown then S.OnPinMouseDown(self, button) end end)
-		pin:SetScript("OnMouseUp", function(self, button) if S.OnPinMouseUp then S.OnPinMouseUp(self, button) end end)
-	end
-	local size = look.size or 16
-	pin:SetParent(PinCell(set, u, v))
-	pin:SetSize(size, size)
-	pin:SetScale(S.iconScale or 1)           -- (the menu's Icon size: S.SetIconScale)
-	pin:SetFrameLevel(set.frame:GetFrameLevel())
-	pin.anchor = Anchor(u * W, v * H)
-	pin:ClearAllPoints()
-	pin:SetPoint("CENTER", pin.anchor, "TOPLEFT")
-	pin.u, pin.v, pin.data, pin.look = u, v, data, look
-	Look(pin.Icon, look)
-	Look(pin.Highlight, look)
-	pin.Icon:SetDesaturated(false)
-	pin.Icon:SetAlpha(1)
-	pin:SetScript("OnEnter", nil)
-	pin:SetScript("OnLeave", nil)
-	pin.OnClick = nil
-	pin:EnableMouse(true)
-	pin:Show()
-	set.pins[#set.pins + 1] = pin
-	return pin
-end
-
--- Move the existing anchor so the button keeps its mouseover state.
-function S.MovePin(set, pin, u, v)
-	if pin.u == u and pin.v == v then return end
-	local rec = dynamic[pin.anchor]
-	rec[2], rec[3] = u * W, v * H
-	PlaceRecord(rec)
-	pin.u, pin.v = u, v
-
-	local cell = PinCell(set, u, v)
-	if cell ~= pin:GetParent() then
-		pin:SetParent(cell)
-		pin:SetFrameLevel(set.frame:GetFrameLevel())
-	end
-end
-
--- a line between two world points (normalized), `thickness` px on screen
-function S.AddLine(set, u1, v1, u2, v2, thickness, r, g, b, a, texture)
-	local line = tremove(set.linePool) or set.frame:CreateLine(nil, "ARTWORK")
-	local a1, a2 = Anchor(u1 * W, v1 * H), Anchor(u2 * W, v2 * H)
-	line:ClearAllPoints()
-	line:SetStartPoint("TOPLEFT", a1)
-	line:SetEndPoint("TOPLEFT", a2)
-	line:SetThickness(thickness or 3)
-	if texture then line:SetTexture(texture, "REPEAT", "CLAMP") else line:SetColorTexture(1, 1, 1, 1) end
-	line:SetVertexColor(r or 1, g or 1, b or 1, a or 1)
-	line:Show()
-	set.lines[#set.lines + 1] = line
-	set.anchors[#set.anchors + 1] = a1
-	set.anchors[#set.anchors + 1] = a2
-	return line
-end
-
--- a path through world points (normalized: { u1, v1, u2, v2, ... }), `thickness` px on screen: a
--- line between each two, sharing their anchors (a drawing's stroke: Sketch.lua); `sub`: its draw
--- sublevel, so one path can lie over another
-function S.AddPath(set, pts, thickness, r, g, b, a, sub)
-	local prev
-	for i = 1, #pts - 1, 2 do
-		local anchor = Anchor(pts[i] * W, pts[i + 1] * H)
-		set.anchors[#set.anchors + 1] = anchor
-		if prev then
-			local line = tremove(set.linePool) or set.frame:CreateLine(nil, "ARTWORK")
-			line:SetDrawLayer("ARTWORK", sub or 0)
-			line:ClearAllPoints()
-			line:SetStartPoint("TOPLEFT", prev)
-			line:SetEndPoint("TOPLEFT", anchor)
-			line:SetThickness(thickness or 3)
-			line:SetColorTexture(1, 1, 1, 1)
-			line:SetVertexColor(r or 1, g or 1, b or 1, a or 1)
-			line:Show()
-			set.lines[#set.lines + 1] = line
-		end
-		prev = anchor
-	end
-end
-
--- a plain dot (a texture, not a button: routes have hundreds) at a world point (normalized),
--- on the set's frame or `parent` (a frame in it)
-function S.AddDot(set, u, v, size, look, r, g, b, a, parent)
-	local dot = (parent or set.frame):CreateTexture(nil, "ARTWORK")
-	S.Look(dot, look)
-	dot:SetVertexColor(r, g, b, a)
-	dot:SetSize(size, size)
-	local anchor = Anchor(u * W, v * H)
-	dot:SetPoint("CENTER", anchor, "TOPLEFT")
-	set.anchors[#set.anchors + 1] = anchor
-	return dot
-end
-
-do
-	local function RecyclePin(set, pin)
-		pin:Hide()
-		pin:ClearAllPoints()
-		DropAnchor(pin.anchor)
-		set.pinPool[#set.pinPool + 1] = pin
-	end
-
-	function S.RemovePin(set, pin)
-		for i, active in ipairs(set.pins) do
-			if active == pin then
-				RecyclePin(set, pin)
-				tremove(set.pins, i)
-				return
-			end
-		end
-	end
-
-	function S.ClearPinSet(set)
-		for _, pin in ipairs(set.pins) do RecyclePin(set, pin) end
-		for _, line in ipairs(set.lines) do
-			line:Hide()
-			set.linePool[#set.linePool + 1] = line
-		end
-		for _, a in ipairs(set.anchors) do DropAnchor(a) end
-		wipe(set.pins) wipe(set.lines) wipe(set.anchors)
-	end
-end
-
--- a set with `build` makes its pins the first time it shows
--- the places' icons (dungeons, boats, zeppelins, flight masters, townsfolk) from this zoom at the least:
--- the menu's Icons from (WorldMap.lua). Yours (pins, drawings, the party, the waypoint) aren't held back
--- (one local: this file is near Lua's 200 a chunk)
--- from: nil, each from its own zoom (Auto); else that zoom, further out or further in than its own.
--- (Townsfolk are never shown further out than their own: there are thousands of them)
-local places = { from = nil, sets = { dungeons = true, boats = true, zeppelins = true, flight = true },
-	world = { friends = true, friendzones = true, boats = true, zeppelins = true,
-		routes = true, flight = true, route = true, quests = true } }
-
-function S.WorldPinsHidden(key)
-	return places.hidden and places.world[key] or false
-end
-
-local function ShowSets()
-	for key, set in pairs(sets) do
-		local from = set.minZoom
-		local folk = key:sub(1, 3) == "tf_"
-		if places.from and (places.sets[key] or folk) then from = folk and math.max(from, places.from) or places.from end
-		-- (further out than the whole world, on the sea chart: as at the whole world)
-		local shown = set.on and not S.WorldPinsHidden(key)
-			and math.max(zoomNow, 1) >= from and (not set.maxZoom or zoomNow < set.maxZoom)
-		if shown and set.build then
-			local build = set.build
-			set.build = nil
-			build(set)
-		end
-		if set.shownNow ~= shown then set.shownNow = shown set.frame:SetShown(shown) end
-	end
-end
-
-function S.GetPinSet(key) return sets[key] end
-
--- A temporary visibility filter, independent of each set's saved choice and refreshes.
-function S.SetWorldPinsHidden(hidden)
-	places.hidden = hidden and true or false
-	ShowSets()
-end
-
--- the menu's Icon size: every icon of OpenMap's at this times its own size (each about its own
--- middle: it's anchored there)
-function S.SetIconScale(k)
-	k = tonumber(k) or 1
-	if k == (S.iconScale or 1) then return end
-	S.iconScale = k
-	for _, set in pairs(sets) do
-		for _, pin in ipairs(set.pins) do pin:SetScale(k) end
-	end
-end
-
-function S.SetPlacesFrom(zoom)
-	local z = tonumber(zoom) or 0
-	places.from = z > 0 and math.max(1, z) or nil
-	ShowSets()
-end
-
--- the shown pin nearest a screen point (px, as GetCursorPosition) within `reach` px: for the
--- gamepad's cursor, which has no mouse-over of its own
-function S.PinAt(x, y, reach)
-	local best, bestD = nil, reach * reach
-	for _, set in pairs(sets) do
-		if set.frame:IsVisible() then
-			for _, pin in ipairs(set.pins) do
-				if pin:IsVisible() and pin:IsMouseEnabled() then
-					local cx, cy = pin:GetCenter()
-					if cx then
-						local es = pin:GetEffectiveScale()
-						local dx, dy = cx * es - x, cy * es - y
-						local d = dx * dx + dy * dy
-						if d < bestD then best, bestD = pin, d end
-					end
-				end
-			end
-		end
-	end
-	return best
-end
-
--- paint marks (the map paint tool's preview): soft dabs in world units, so they
--- grow and shrink with the map; above the art, under the icons
-local marksRoot
-local marks, markPool = {}, {}
-
-function S.AddMark(u, v, radius, r, g, b, a)
-	local tex = tremove(markPool) or marksRoot:CreateTexture(nil, "OVERLAY")
-	tex:SetTexture(FEATHER_ROUND)
-	tex:SetVertexColor(r, g, b, a)
-	local rw = radius * W
-	local rec = { tex, u * W - rw, v * H - rw, 2 * rw, 2 * rw }
-	dynamic[tex] = rec
-	PlaceRecord(rec)
-	tex:Show()
-	marks[#marks + 1] = tex
-	return tex
-end
-
-function S.ClearMarks()
-	for _, tex in ipairs(marks) do
-		dynamic[tex] = nil
-		tex:Hide()
-		markPool[#markPool + 1] = tex
-	end
-	wipe(marks)
-end
-
-function S.SetMarksShown(shown)
-	if marksRoot then marksRoot:SetShown(shown) end
-end
 
 -- the gaps painted by hand on or off (Options' Filled gaps; off: the gaps' paper, as before). The
 -- baked tiles have them in, so off the live layers draw (S.ApplyGrade: call it after this)
 function S.SetGapFillsShown(shown)
 	Baked.noFills = not shown
 	if S.fillRoot then S.fillRoot:SetShown(shown and true or false) end
-end
-
-function S.SetPinSetOn(set, on)
-	set.on = on and true or false
-	ShowSets()
 end
 
 --------------------------------------------------------------------------------
@@ -1147,99 +793,6 @@ function S.FromYards(cont, wx, wy)
 		end
 	end
 	return Project(c, wx, wy, swap)
-end
-
---------------------------------------------------------------------------------
--- Places (ns.MapPlaces, from the game's tables): instance entrances, boats, zeppelins
---------------------------------------------------------------------------------
-
--- Blizzard's own icons (atlases and textures in the client); dungeons' are Dungeons.lua's
-local LOOK = {
-	boat     = { atlas = "Ships_CargoShip-Map", texture = "Interface\\Minimap\\ObjectIcons", size = 30 },
-	-- Blizzard's Horde airship (the battleground maps' flying-vehicle icon); the old seat
-	-- indicator outline where a client lacks it
-	zeppelin = { atlas = "vehicle-air-horde", texture = "Interface\\Vehicles\\SeatIndicator\\Vehicle-HordeZeppelin", size = 30 },
-}
-LOOK.airship = LOOK.boat         -- (the flying boats to Zephras Isle: a boat's icon, under the Boats switch)
-
--- continents off the stitched world a dock sails to: the map its icon opens instead of going there.
--- Zephras Isle is its own continent (Map 2991), whose map is UiMap 2521 (UiMapAssignment)
-local AWAY_MAP = { [2991] = 2521 }
-S.AWAY_MAP = AWAY_MAP              -- (Dungeons.lua: the map opened while you stand on one)
-
--- an instance's name in the player's language (the game's own), else the data's English. A wing
--- (the group finder's name for part of a dungeon, "Dire Maul - East") keeps its own name in English,
--- and in another language is the dungeon's name with the wing's after it
-function S.InstanceName(inst)
-	local name = GetRealZoneText and inst[1] > 0 and ns.Safe.Call(GetRealZoneText, inst[1])   -- (0: not in the tables)
-	if not name or name == "" then return inst[2] end
-	if inst.wing == nil then
-		local en = GetLocale and GetLocale():sub(1, 2) == "en"
-		inst.wing = false
-		for _, g in ipairs((ns.MapPlaces or {}).instances or {}) do
-			for _, other in ipairs(g[4]) do
-				if other ~= inst and other[1] == inst[1] and other[2] ~= inst[2] then inst.wing = en and inst[2] or (name .. " (" .. inst[2] .. ")") end
-			end
-		end
-	end
-	return inst.wing or name
-end
-local L = ns.L
-
-local function DockEnter(pin)
-	GameTooltip:SetOwner(pin, "ANCHOR_RIGHT")
-	GameTooltip:AddLine(pin.kind == "zeppelin" and L["Zeppelin"] or pin.kind == "airship" and L["Airship"] or L["Boat"], 1, 0.82, 0)
-	local info = pin.away and C_Map.GetMapInfo(pin.away)
-	if info then
-		GameTooltip:AddLine(L["To"] .. " " .. (info.name or "?"), 1, 1, 1)
-		GameTooltip:AddLine(L["Click to open its map"], 0.6, 0.6, 0.6)
-	elseif pin.to then
-		-- where it goes: the zone at the other end, in the player's language
-		local chain = S.ChainAt(pin.to[1], pin.to[2])
-		local info = C_Map.GetMapInfo(chain[#chain])
-		if info and info.name then GameTooltip:AddLine(L["To"] .. " " .. info.name, 1, 1, 1) end
-		GameTooltip:AddLine(L["Click to go to the other end"], 0.6, 0.6, 0.6)
-	end
-	GameTooltip:Show()
-end
-
-local function DockClick(pin)
-	local mod = ns:GetModule("worldmap")
-	if pin.away and mod and mod.OpenAwayMap and mod.OpenAwayMap(pin.away) then return end
-	if pin.to and S.GlideToWorld then S.GlideToWorld(pin.to[1], pin.to[2], 6) end
-end
-
-local function BuildPins()
-	local P = ns.MapPlaces or {}
-	local dungeons = S.PinSet("dungeons", 1.5)
-	local travel = { boat = S.PinSet("boats", 2.5), zeppelin = S.PinSet("zeppelins", 2.5) }   -- (each its own switch)
-	travel.airship = travel.boat
-	if S.BuildDungeonPins then
-		for _, pin in ipairs(S.BuildDungeonPins(dungeons)) do pins[#pins + 1] = pin end   -- (Dungeons.lua)
-	end
-	-- (a dock for one faction, retail's: its own; the rest for everyone, zeppelins too: the goblins'
-	-- towers take the Alliance as well, as their routes show)
-	local faction = UnitFactionGroup("player")
-	for _, d in ipairs(P.transports or {}) do
-		local u, v = S.FromYards(d[3], d[4], d[5])
-		if u and travel[d[1]] and LOOK[d[1]] and (not d.faction or d.faction == faction) then
-			local pin = S.AddPin(travel[d[1]], u, v, LOOK[d[1]])
-			pin.kind = d[1]
-			if d[6] then
-				local tu, tv = S.FromYards(d[6], d[7], d[8])
-				if tu then pin.to = { tu, tv } end
-				pin.away = AWAY_MAP[d[6]]
-			end
-			pin:SetScript("OnEnter", DockEnter)
-			pin:SetScript("OnLeave", GameTooltip_Hide)
-			pin.OnClick = DockClick
-			pins[#pins + 1] = pin
-		end
-	end
-	S.stats.pins = #pins
-	S.RefreshFound()
-
-	if S.BuildRoutes then S.BuildRoutes() end     -- Routes.lua
 end
 
 --------------------------------------------------------------------------------
@@ -1343,19 +896,7 @@ function S.BuildNow(parent, artLevel, range, iconLevel)
 		under = Layer(artLevel + range - 4),
 	}
 	labelsRoot = Layer(artLevel + range - 3)
-	marksRoot = Layer(artLevel + range - 2)
-	marksRoot:Hide()
-	-- (on the map's view, which clips them as the canvas does, not on the canvas: see Pin sets)
-	local view = parent:GetParent() or parent
-	pinRoot = CreateFrame("Frame", nil, view)
-	pinRoot:SetAllPoints(view)
-	pinRoot:SetFrameLevel(iconLevel)
-	if pinRoot.SetClipsChildren then pinRoot:SetClipsChildren(true) end
-	-- (on a frame of its own, so it can be lifted over every icon: S.RaiseArrow)
-	arrow = CreateFrame("Frame", nil, pinRoot):CreateTexture(nil, "OVERLAY", nil, 7)
-	arrow:SetTexture("Interface\\Minimap\\MinimapArrow")
-	arrow:SetSize(28, 28)
-	arrow:Hide()
+	-- (the icons and the player's arrow: Plus/Map/PinSets.lua, on the map's view)
 
 	-- the sea runs on well past the world art, so a wide (or tall) view shows more ocean,
 	-- not the edge of the paper: its colour (the world's sea colours carried outward, keeping
@@ -1614,7 +1155,6 @@ function S.BuildNow(parent, artLevel, range, iconLevel)
 	cities.Build()
 	Baked.Build()
 	S.Pace()
-	BuildPins()
 	S.built = true
 	return true
 end
@@ -1713,7 +1253,6 @@ function S.SetShown(shown)
 	if root and root:IsShown() ~= (shown and true or false) then root:SetShown(shown) end
 	local chart = S.Chart and S.Chart.Frame()
 	if chart and chart:IsShown() ~= (shown and S.Chart.on or false) then chart:SetShown(shown and S.Chart.on or false) end
-	if pinRoot and pinRoot:IsShown() ~= (shown and true or false) then pinRoot:SetShown(shown) end
 end
 
 function S.IsShownNow() return root and root:IsShown() or false end
@@ -1751,7 +1290,7 @@ function S.Parts()
 	for _, e in ipairs(twins) do copies[#copies + 1] = e[1] end
 	local L = S.closeLayers or {}
 	return {
-		{ "all My Map Is Rich art and icons", { root, pinRoot } },
+		{ "all My Map Is Rich art and icons", { root } },
 		{ "sea and world art", own },
 		{ "continents, land, gap paper", { contRoot } },
 		{ "zone base art", { tilesRoot } },
@@ -1766,7 +1305,6 @@ function S.Parts()
 		{ "grain", { L.grain } },
 		{ "caves", { L.under } },
 		{ "names", { labelsRoot } },
-		{ "My Map Is Rich icons", { pinRoot } },
 	}
 end
 
@@ -1782,9 +1320,6 @@ function S.ResetShown()
 	end
 	for _, c in ipairs(culled) do c.here = nil end
 	for _, n in ipairs(names) do n.near = nil end
-	for _, set in pairs(sets) do
-		for _, cell in pairs(set.cells or NONE) do cell.here = nil end
-	end
 end
 
 -- the blur's copies (see S.SetBlur): offset diagonally each way by a fraction of an art pixel
@@ -2085,12 +1620,10 @@ function S.SetZoom(zoom, scale)
 	for _, tex in ipairs(landFill) do Fade(tex, math.max(m, underNow)) end
 	Step("land")
 
-	-- (the icons keep their size on screen by themselves: pinRoot is on the view, PlacePlayer's units)
 	scaleNow = scale
-	ShowSets()
+	-- (the icons, and which of their sets show at this zoom: Plus/Map/PinSets.lua)
+	if S.OnZoomIcons then S.OnZoomIcons(zoomNow) end
 	Step("icon sets")
-	S.PlacePlayer()
-	Step("player")
 end
 
 --------------------------------------------------------------------------------
@@ -2258,36 +1791,6 @@ function S.ToYards(cont, u, v)
 end
 
 S.CaveMasks = ns.Media.tex .. "MapCave\\"
-
--- our own player arrow, for when the host map can't show the player
-local player = {}
-local playerHidden = false      -- (Your arrow off: WorldMap.lua)
-function S.SetPlayerHidden(hidden)
-	playerHidden = hidden and true or false
-	S.PlacePlayer()
-end
-function S.SetPlayer(u, v, facing)
-	player.u, player.v, player.facing = u, v, facing
-	S.PlacePlayer()
-end
-
-function S.PlacePlayer()
-	if not root then return end
-	if not player.u or scaleNow <= 0 or playerHidden then arrow:Hide() return end
-	local s = scaleNow * host.k                 -- (world units -> the arrow's, pinRoot's, units)
-	arrow:ClearAllPoints()
-	arrow:SetPoint("CENTER", root, "TOPLEFT", player.u * W * s, -player.v * H * s)
-	if player.facing then arrow:SetRotation(player.facing) end
-	arrow:Show()
-end
--- (our arrow up: WorldMap.lua sizes Blizzard's away, so there's one, not two: #229)
-function S.PlayerShown() return arrow ~= nil and arrow:IsShown() end
-
--- our arrow over every icon on the map, at frame level `level` (WorldMap.lua: with Blizzard's own)
-function S.RaiseArrow(level)
-	local f = arrow and arrow:GetParent()
-	if f and f:GetFrameLevel() ~= level then f:SetFrameLevel(level) end
-end
 
 -- colour matching: the border copies move `strength` of the way to the shared
 -- palette (ns.MapGrade); `desat` takes some colour out of every zone. `unexplored`:
@@ -3105,16 +2608,8 @@ function S.Cull(u0, v0, u1, v1)
 		end
 	end
 	if Shade.Hide.mode then Shade.Places.Show() end   -- (the places a painted gap shows, near the box)
-	-- the pins' cells (S.AddPin)
-	for _, set in pairs(sets) do
-		for _, cell in pairs(set.cells or NONE) do
-			local here = cell.u0 + PIN_CELL > u0 and cell.u0 < u1 and cell.v0 + PIN_CELL > v0 and cell.v0 < v1
-			if cell.here ~= here then
-				cell.here = here
-				cell:SetShown(here)
-			end
-		end
-	end
+	-- the icons' cells (Plus/Map/PinSets.lua)
+	if S.OnCullIcons then S.OnCullIcons(u0, v0, u1, v1) end
 	cullBox.done = true
 end
 
@@ -3425,7 +2920,7 @@ function S.RefreshExplored()
 	if cities.Refresh() then changed = true end
 	if changed then Shade.Places.Refresh() end
 	if changed and lastGrade then S.ApplyGrade(unpack(lastGrade)) end
-	if changed then S.RefreshFound() end
+	if changed and S.RefreshFound then S.RefreshFound() end   -- (the icons: Plus/Map/PinSets.lua)
 end
 
 -- /mmir carte status: a zone's explored-area pieces, explored and all, and the game's own count of what it
@@ -3439,10 +2934,10 @@ function S.ExploredCount(mapID)
 	return found, all, ok and type(game) == "table" and #game or 0
 end
 
--- Only places you've found (the menu's): a dungeon's entrance, a dock or a zeppelin tower shown once
+-- Only places you've found (the map's setting, Plus/Map/PinSets.lua): a dungeon's entrance, a dock or a zeppelin tower shown once
 -- you've explored the zone's land where it is (or a little round it: a dock stands in the water), as
 -- Blizzard's own map reveals it; one in no zone always (a player's request)
-function places.Found(u, v)
+function S.Found(u, v)
 	-- in a city (Ragefire Chasm, in Orgrimmar's Cleft of Shadow): found with the city, whose own map has
 	-- no pieces to explore (#113)
 	for _, c in ipairs(cities) do
@@ -3464,23 +2959,3 @@ function places.Found(u, v)
 	return false
 end
 
-function S.SetFoundOnly(on)
-	on = on and true or false
-	if places.foundOnly == on then return end
-	places.foundOnly = on
-	S.RefreshFound()
-end
-
-function S.RefreshFound()
-	for _, pin in ipairs(pins) do
-		if pin.u then
-			if places.foundOnly then
-				-- (an entrance: found too once you've been inside, Dungeons.lua's S.Entered: #256)
-				if pin.found == nil or not pin.found then pin.found = places.Found(pin.u, pin.v) or (S.Entered and S.Entered(pin)) or false end
-				pin:SetShown(pin.found)
-			else
-				pin:Show()
-			end
-		end
-	end
-end

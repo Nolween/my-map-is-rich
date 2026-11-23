@@ -162,11 +162,8 @@ end)
 ns.On("MAP_HIDE", function() ticker:Hide() end)
 ns.On("MAP_REFRESH", function() ns.Map.RefreshGroup() end)
 
--- (les ponts : la vue d'OpenMap, Map/PadView.lua, demande aussi un rafraîchissement)
 ns.On("MAP_ATTACHED", function()
     ns.Map.Migrate("group", function(old, new)
         if old.group ~= nil then new.settings.group = old.group end
     end)
-    local mod = ns.Map.Legacy()
-    if mod then mod.RefreshGroup = function() ns.Map.RefreshGroup() end end
 end)

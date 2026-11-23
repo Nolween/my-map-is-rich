@@ -229,10 +229,8 @@ end
 function E.SetHidden(hidden)
     hidden = hidden and true or false
     Settings.Set("pinsHidden", hidden)
-    -- (la plume d'OpenMap lit encore sa propre clé : ses dessins sur les épingles suivent)
-    local mod = ns.Map.Legacy()
-    if mod and mod.db then mod.db.pinsHidden = hidden end
     E.Refresh()
+    -- (les dessins attachés aux épingles se cachent avec elles : Layers/Sketch.lua)
     ns.Map.Sketch.Redraw()
 end
 
@@ -442,23 +440,11 @@ local function OnAddonMessage(prefix, text, channel, from)
 end
 
 ---------------------------------------------------------------------------
--- Les ponts vers le code d'OpenMap qui reste (la plume, le point de
--- destination, la vue) : ce qu'il appelait dans Map/Pins.lua
+-- Le pont vers le code d'OpenMap qui reste (/mmir carte pins : Init.lua)
 ---------------------------------------------------------------------------
 local function Bridge()
     local mod = ns.Map.Legacy()
-    if not mod then return end
-    mod.RefreshPins = function() E.Refresh() end                     -- (Map/Nav.lua, Map/Sketch.lua)
-    mod.PinAt = function(mapID, x, y) return E.At(mapID, x, y) end   -- (Map/Nav.lua : le point de destination sur une épingle)
-    mod.AddPin = function(mapID, x, y) return E.Add(mapID, x, y) end -- (Map/Nav.lua : Ctrl+clic, le mode épingle)
-    mod.SetPinsHidden = function(hidden) E.SetHidden(hidden) end
-    mod.PinsHidden = function() return E.Hidden() end
-    mod.TogglePins = function(_, on) E.Toggle(on) end                -- (/mmir carte pins)
-    mod.SetupPins = function() end                                   -- (Map/PadView.lua : un clic sur l'épingle ouvre sa fiche)
-    -- (la plume : son bouton Fini, et ses changements, pour la fiche ouverte)
-    mod.FinishPin = function() if ns.PinsWindow then ns.PinsWindow.FinishDrawing() end end
-    mod.OnSketchChanged = function() if ns.PinsWindow then ns.PinsWindow.DrawingChanged() end end
-    if mod.db then mod.db.pinsHidden = E.Hidden() end
+    if mod then mod.TogglePins = function(_, on) E.Toggle(on) end end
 end
 
 ---------------------------------------------------------------------------

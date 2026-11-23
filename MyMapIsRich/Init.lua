@@ -4,9 +4,9 @@
 -- l'onglet Carte de /mmir, Plus/UI/MapPage.lua.)
 --
 --   /mmir carte                the map's settings (Plus/Core.lua)
---   /mmir carte status         what the map is doing
---   /mmir carte pins           the map pins (Pins.lua)
---   /mmir carte draw           the quill: draw on the map (Sketch.lua)
+--   /mmir carte status         what the map's view is doing (Plus/Map/View.lua)
+--   /mmir carte pins           the map pins (Plus/Layers/MyPins.lua)
+--   /mmir carte draw           the quill: draw on the map (Plus/Layers/Sketch.lua)
 --------------------------------------------------------------------------------
 
 local ADDON, ns = ...
@@ -17,32 +17,13 @@ local function Slash(msg)
 	local raw = (msg or ""):match("^%s*(.-)%s*$")
 	msg = raw:lower()
 	local mod = ns:GetModule("worldmap")
-	local word, rest = msg:match("^(%S+)%s+(.+)$")
-	local takes = {}
-	if takes[word] then msg, rest = word, raw:match("^%S+%s+(.+)$") end
 	-- (My Map Is Rich 0.5.0 : paint, notes, debug, bench, news, welcome, highlights et reset sont partis
-	-- avec la carte classique et les outils d'OpenMap ; 0.10.0 : entrance, dungeons et bosses, avec
-	-- Map/Dungeons.lua)
-	local run = {
-		status = "Diag", pins = "TogglePins", draw = "ToggleSketch", forgetflights = "ForgetFlights",
-		warm = "ToggleWarm",
-	}
-	-- (the controller view's diagnostics: it runs while OpenMap's usual map is off, PadView.lua)
-	if msg == "padview" and mod.PadViewDiag then mod.PadViewDiag() return true end
-	-- the controller view's map (PadView.lua): what works on it, its status its own
-	if run[msg] and mod.padWaits and mod.PadViewOn and mod.PadViewOn() then
-		local onView = { pins = true, draw = true }
-		if msg == "status" and mod.PadViewDiag then mod.PadViewDiag()
-		elseif onView[msg] and mod[run[msg]] then mod[run[msg]](mod)
-		elseif not mod.db.classicMap then ns:Print(ns.L["That isn't available on the full-screen map yet."])
-		else ns:Print(ns.L["That isn't available with the Gamepad UI yet."]) end
-		return true
-	end
-	if run[msg] then
-		if mod.enabled and mod[run[msg]] then mod[run[msg]](mod, takes[msg] and rest or nil)
-		elseif mod.padWaits and not mod.db.classicMap then ns:Print(ns.L["That isn't available on the full-screen map yet."])
-		elseif mod.padWaits then ns:Print(mod.PadOffText())
-		else ns:Print(ns.L["The map is off."]) end
+	-- avec la carte classique et les outils d'OpenMap ; 0.10.0 : entrance, dungeons et bosses ; 0.12.0 :
+	-- warm, et padview devient status. Ce que font les autres : les ponts de Plus, Plus/Layers/ et Plus/Map/)
+	local run = { status = "Diag", padview = "Diag", pins = "TogglePins", draw = "ToggleSketch", forgetflights = "ForgetFlights" }
+	local fn = run[msg] and mod and mod[run[msg]]
+	if fn then
+		fn(mod)
 		return true
 	end
 	return false

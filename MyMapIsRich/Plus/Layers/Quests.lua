@@ -336,14 +336,9 @@ ns.On("MAP_HIDE", function()
 end)
 ns.On("MAP_REFRESH", function() if ns.Map.IsBuilt() and ns.MapShown() then Soon() end end)
 
--- (les ponts : la vue d'OpenMap, Map/PadView.lua, et mod:Refresh)
 ns.On("MAP_ATTACHED", function()
     ns.Map.Migrate("quests", function(old, new)
         if old.questIcons ~= nil then new.settings.questIcons = old.questIcons end
         if old.allQuests ~= nil then new.settings.allQuests = old.allQuests end
     end)
-    local mod = ns.Map.Legacy()
-    if not mod then return end
-    mod.SetupQuests = function() Hook() end
-    mod.RefreshQuests = function() ns.Map.RefreshQuests() end
 end)

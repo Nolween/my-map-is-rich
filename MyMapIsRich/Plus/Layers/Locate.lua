@@ -65,13 +65,6 @@ local function MaxZoom()
     return ns.Map.Settings.Get("maxZoom") or math.huge
 end
 
--- (la vue de la carte du jeu pour un donjon : là où tu étais dehors)
-local function RememberOutside()
-    local u, v, best = K.UnitWorld("player")
-    local mod = ns.Map.Legacy()
-    if u and mod then mod.outsideInstanceView = { u, v, best } end
-end
-
 local function OnMapHidden()
     local u, v, zoom = V.Now()
     -- (jamais une vue qui n'en est pas une, NaN : la carte rouvrait vide)
@@ -102,27 +95,18 @@ function E.SetMode(on)
     ns.Fire("MAP_PIN_MODE", armed)
 end
 
--- Une épingle là où l'on a appuyé, dans le mode épingle (Map/PadView.lua)
-local function DropAt(u, v)
+-- Une épingle là où l'on a appuyé, dans le mode épingle (Map/View.lua)
+function E.DropAt(u, v)
     local id, x, y = K.ZoneAt(u, v)
     if id then E.Add(id, x, y) end
 end
 
 ---------------------------------------------------------------------------
--- Les ponts vers le code d'OpenMap qui reste (la vue : Map/PadView.lua,
--- Map/WorldMap.lua)
+-- Pour la vue (Map/View.lua) : la vue où rouvrir, et celle à garder quand
+-- la carte se ferme
 ---------------------------------------------------------------------------
-ns.On("MAP_ATTACHED", function()
-    local mod = ns.Map.Legacy()
-    if not mod then return end
-    mod.FindMe = function(_, keepZoom) return V.FindMe(keepZoom) end
-    mod.SavedView = SavedView
-    mod.OnMapHidden = function() OnMapHidden() end
-    mod.RememberOutsideInstance = RememberOutside
-    mod.PinMode = function() return armed end
-    mod.SetPinMode = function(on) E.SetMode(on) end
-    mod.DropWaypoint = DropAt
-end)
+function V.SavedView() return SavedView() end
+function V.Remember() OnMapHidden() end
 
 -- (la carte fermée : le mode épingle aussi)
 ns.On("MAP_HIDE", function() if armed then E.SetMode(false) end end)

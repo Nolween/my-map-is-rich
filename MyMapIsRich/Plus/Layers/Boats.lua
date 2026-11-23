@@ -10,8 +10,8 @@
 --            ou celui de la manette) en approche : elle s'éclaire et dit
 --            d'où à où elle va.
 -- Bleu : l'Alliance ; rouge : la Horde ; neutre (les ports gobelins) : rouge.
--- Le calque « routes » et les réglages « boats » et « zeppelins » restent
--- ceux de la carte d'OpenMap tant que les quais s'en servent (Map/Stitch.lua).
+-- Les quais eux-mêmes (leurs icônes) sont plus bas ; leurs réglages,
+-- « boats », « zeppelins » et « routes », sont ceux de Map/Look.lua.
 local _, root = ...
 local ns = root.Plus
 local L = ns.L
@@ -283,5 +283,75 @@ local function Build()
     RefreshKinds()
 end
 
-ns.On("MAP_BUILT", Build)
+---------------------------------------------------------------------------
+-- Les quais : bateaux, tours des zeppelins, dirigeables (MapPlaces.transports,
+-- tirés des tables du jeu). En code de My Map Is Rich depuis la 0.13.0 (ils
+-- venaient de Map/Stitch.lua). Le survol dit où va la traversée ; le clic
+-- glisse jusqu'à l'autre bout. Un quai d'une seule faction (ceux de retail)
+-- n'est que pour elle ; les autres pour tous (les tours gobelines prennent
+-- aussi l'Alliance, comme leurs routes le montrent).
+---------------------------------------------------------------------------
+local DOCK = {
+    boat = { atlas = "Ships_CargoShip-Map", texture = "Interface\\Minimap\\ObjectIcons", size = 30 },
+    -- (le dirigeable de la Horde des champs de bataille ; l'ancien contour de siège sinon)
+    zeppelin = { atlas = "vehicle-air-horde", texture = "Interface\\Vehicles\\SeatIndicator\\Vehicle-HordeZeppelin", size = 30 },
+}
+DOCK.airship = DOCK.boat          -- (les bateaux volants vers l'île de Zephras : une icône de bateau, sous « bateaux »)
+-- (les continents hors du monde dessiné où un quai mène : la carte de ce continent)
+local AWAY_MAP = { [2991] = 2521 }
+
+local function DockEnter(pin)
+    GameTooltip:SetOwner(pin, "ANCHOR_RIGHT")
+    GameTooltip:AddLine(pin.kind == "zeppelin" and L.BOATS_ZEPPELIN or pin.kind == "airship" and L.BOATS_AIRSHIP or L.BOATS_BOAT, 1, 0.82, 0)
+    local info = pin.away and C_Map.GetMapInfo(pin.away)
+    if info then
+        GameTooltip:AddLine(L.BOATS_TO:format(info.name or "?"), 1, 1, 1)
+    elseif pin.to then
+        -- (où elle va : la zone à l'autre bout, dans la langue du joueur)
+        local zone = K.ZoneAt(pin.to[1], pin.to[2])
+        local to = zone and C_Map.GetMapInfo(zone)
+        if to and to.name then GameTooltip:AddLine(L.BOATS_TO:format(to.name), 1, 1, 1) end
+        GameTooltip:AddLine(L.BOATS_CLICK_OTHER_END, 0.6, 0.6, 0.6)
+    end
+    GameTooltip:Show()
+end
+
+local function DockClick(pin)
+    if not pin.to then return end
+    local _, _, zoom = ns.Map.View.Now()
+    ns.Map.View.Glide(pin.to[1], pin.to[2], math.max(zoom or 1, 6))
+end
+
+local function BuildDocks()
+    local places = ns.Map.Data.Places() or {}
+    local kinds = { boat = Pins.Set("boats", 2.5), zeppelin = Pins.Set("zeppelins", 2.5) }   -- (chacun son réglage)
+    if not (kinds.boat and kinds.zeppelin) then return end
+    kinds.airship = kinds.boat
+    local faction = UnitFactionGroup("player")
+    for _, d in ipairs(places.transports or {}) do
+        local u, v = K.FromYards(d[3], d[4], d[5])
+        if u and kinds[d[1]] and DOCK[d[1]] and (not d.faction or d.faction == faction) then
+            local pin = Pins.Add(kinds[d[1]], u, v, DOCK[d[1]])
+            if pin then
+                pin.kind = d[1]
+                pin.to, pin.away = nil, nil
+                if d[6] then
+                    local tu, tv = K.FromYards(d[6], d[7], d[8])
+                    if tu then pin.to = { tu, tv } end
+                    pin.away = AWAY_MAP[d[6]]
+                end
+                pin:SetScript("OnEnter", DockEnter)
+                pin:SetScript("OnLeave", GameTooltip_Hide)
+                pin.OnClick = DockClick
+            end
+        end
+    end
+    Pins.RefreshFound()
+end
+
+ns.On("MAP_BUILT", function()
+    local ok, err = pcall(BuildDocks)
+    if not ok and geterrorhandler then geterrorhandler()(err) end
+    Build()
+end)
 ns.On("MAP_REFRESH", RefreshKinds)

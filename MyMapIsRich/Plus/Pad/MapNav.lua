@@ -19,8 +19,8 @@
 -- L'aimant : le curseur au repos tout près d'une icône, la vue se recale
 -- pour la mettre dessous (son info-bulle s'ouvre, A l'appuie).
 --
--- La plume d'OpenMap sortie (contexte « sketch ») : A pose et lève la plume,
--- X la range (OpenMap) ; View passe dans ses outils.
+-- La plume sortie (contexte « sketch », Layers/Sketch.lua) : A pose et lève la plume,
+-- X la range ; View passe dans ses outils.
 local _, root = ...
 local ns = root.Plus
 local L = ns.L
@@ -281,14 +281,8 @@ ns.On("MAP_HIDE", function() follow:Hide() end)
 
 local function Sketching() return ns.Map.Sketch.Drawing() end
 
--- Le plateau de la plume (Sketch.lua : sa fenêtre, donnée au curseur)
-local function Tray()
-    local roots = ns.Map.Cursor.Roots()
-    if not roots then return end
-    for _, f in ipairs(roots) do
-        if type(f) == "table" and f.tools and f.head and f.IsVisible and f:IsVisible() then return f end
-    end
-end
+-- Le plateau de la plume (Layers/Sketch.lua : sa fenêtre, donnée au curseur)
+local function Tray() return ns.Map.Sketch.Tray() end
 
 -- La carte a le focus de la manette (le curseur du jeu, SoftCursor, est à
 -- elle). Tant qu'elle ne l'a pas (le focus est sur le journal de quêtes ou
@@ -432,7 +426,7 @@ end, function()
 end)
 P.SetPassive("map", "PAD2", function() return ns.FullMap() and "HINT_CLOSE_MAP" or nil end)
 
--- La plume sortie : A pose et lève la plume, X la range (OpenMap) ; View
+-- La plume sortie : A pose et lève la plume, X la range ; View
 -- passe dans ses outils, RB recentre
 P.DefineContext("sketch", 45, function() return Sketching() and CanvasFocus() end, nil, "read")
 P.SetAction("sketch", "PADBACK", function()

@@ -138,6 +138,10 @@ function ns:GetModule(key)
 	return ns.modules[key]
 end
 
+-- the map's module: its saved settings (MyMapIsRichDB.worldmap), for what's left of OpenMap's code (Close.lua
+-- adds its defaults). (My Map Is Rich 0.12.0 : la vue est Plus/Map/View.lua ; ce module partira en 1.0.0)
+ns:NewModule("worldmap")
+
 -- missing keys from defaults, recursively
 local function Fill(t, defaults)
 	for k, v in pairs(defaults) do

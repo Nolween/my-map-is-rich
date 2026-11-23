@@ -172,7 +172,7 @@ end
 -- La plume sur la carte d'un donjon : ses traits sur l'image de l'étage, à
 -- sa mesure (0..1 en largeur et en hauteur : ils gardent leur place au zoom),
 -- chacun sur l'étage où il a été tracé. Ils sont gardés avec les dessins de
--- la plume (Map/Sketch.lua jusqu'en 0.11.0), par mapID de l'instance.
+-- la plume (Layers/Sketch.lua, sketch.dungeons), par mapID de l'instance.
 -- Tirer à gauche trace, tirer à droite déplace ; sa barre : Défaire, Effacer, Terminé.
 ---------------------------------------------------------------------------
 local function StrokesKey(inst)
@@ -311,7 +311,7 @@ EndMarkup = function()
     SK.Changed()
 end
 
--- La plume sur la carte du donjon montrée (Map/Sketch.lua, ToggleSketch) : on ou off
+-- La plume sur la carte du donjon montrée (Layers/Sketch.lua, SKM.Toggle) : on ou off
 function DG.Draw(on)
     if not view then return end
     if not on then

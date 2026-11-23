@@ -292,8 +292,4 @@ ns.On("MAP_ATTACHED", function()
     end)
     local db = ns.Map.DB()
     if db and type(db.settings.townsfolk) ~= "table" then db.settings.townsfolk = {} end
-    local mod = ns.Map.Legacy()
-    if not mod then return end
-    mod.RefreshTownsfolk = function() ns.Map.Townsfolk.Refresh() end
-    mod.HasTownsfolk = function() return ns.Map.Townsfolk.Has() end
 end)

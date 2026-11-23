@@ -7,7 +7,7 @@
 -- qui s'applique est choisi ; s'il change, ses boutons sont posés.
 --   keyboard (100) : le clavier virtuel ouvert (UI/Keyboard.lua)
 --   window    (50) : une fenêtre d'OpenMap ou de l'addon (Pad/Focus.lua)
---   sketch    (45) : la plume d'OpenMap sortie (Pad/MapNav.lua)
+--   sketch    (45) : la plume sortie (Pad/MapNav.lua)
 --   dungeon   (40) : la carte d'un donjon (Pad/Dungeon.lua)
 --   questlog  (20) : une quête de la liste de droite a le focus (Travel/Quests.lua)
 --   mapidle   (15) : la carte plein écran sans son curseur, hors de nos quêtes (UI/QuestPanel.lua)

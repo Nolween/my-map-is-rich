@@ -113,13 +113,9 @@ function ZI.PlaceLabel(id, x, y, whole)
     if name then return name .. LevelText(id), FishingText(id) end
 end
 
--- (les ponts : la vue d'OpenMap, Map/PadView.lua, et les donjons, Map/Dungeons.lua)
+-- (la migration ; la vue, Map/View.lua, appelle ZI.PlaceLabel)
 ns.On("MAP_ATTACHED", function()
     ns.Map.Migrate("zoneLevels", function(old, new)
         if old.zoneLevels ~= nil then new.settings.zoneLevels = old.zoneLevels end
     end)
-    local mod = ns.Map.Legacy()
-    if not mod then return end
-    mod.PlaceLabel = ZI.PlaceLabel
-    mod.LevelColor = ZI.LevelColor
 end)

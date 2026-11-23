@@ -67,12 +67,6 @@ DN.Places = Places
 
 function DN.MapsOn() return Get("dungeonMaps") ~= false end
 
--- (la carte d'OpenMap lit encore dungeonMaps : Map/WorldMap.lua, jusqu'en 0.12.0)
-local function Mirror()
-    local mod = ns.Map.Legacy()
-    if mod and mod.db then mod.db.dungeonMaps = DN.MapsOn() end
-end
-
 ---------------------------------------------------------------------------
 -- Un donjon des données : { mapID de l'instance (0 : inconnu du jeu), nom
 -- anglais, raid, niveau mini, niveau maxi }
@@ -442,7 +436,7 @@ local function Relabel()
     end
 end
 
--- Les entrées (le dessin de la carte les demande : Map/Stitch.lua, BuildPins) :
+-- Les entrées (posées quand la carte est dessinée : MAP_BUILT, plus bas) :
 -- celles des données, puis celles que le jeu connaît (son journal des
 -- rencontres, s'il en a un) pour un donjon dont les données n'ont pas l'entrée
 function DN.BuildPins(set)
@@ -602,7 +596,6 @@ function DG.MapsOn() return DN.MapsOn() end
 function DG.CanSetMaps() return true end
 function DG.SetMaps(on)
     Settings.Set("dungeonMaps", on and true or false)
-    Mirror()
     if not on and DG.Shown() then DG.Close() end
     Settings.Refresh()
 end
@@ -613,29 +606,6 @@ function DG.Tab() return Get("dungeonTab") end
 function DN.Refresh()
     Relabel()
     if ns.DungeonView then ns.DungeonView.Refresh() end
-end
-
----------------------------------------------------------------------------
--- Ce que le reste de la carte d'OpenMap appelle encore (Map/PadView.lua,
--- Stitch.lua, Sketch.lua, WorldMap.lua) : branché sur ce module
----------------------------------------------------------------------------
-local function Bridge()
-    local mod, S = ns.Map.Legacy()
-    if not mod then return end
-    mod.DungeonMapsOn = DN.MapsOn
-    mod.SetDungeonMaps = DG.SetMaps
-    mod.DungeonViewShown = function() return DG.Shown() end
-    -- (X à la manette ; ou la carte qui se ferme : alors sans bruit, le monde laissé tel quel)
-    mod.CloseDungeonView = function() DG.Close(not ns.MapShown()) end
-    mod.DungeonDraw = function(on) DG.Draw(on) end
-    mod.DungeonDrawing = function() return DG.Drawing() end
-    mod.InstanceEntranceView = DN.EntranceView
-    if S then
-        S.BuildDungeonPins = DN.BuildPins
-        S.Entered = DN.Entered
-        S.EntranceAt = K.EntranceAt
-    end
-    Mirror()
 end
 
 local function Migrate()
@@ -652,9 +622,14 @@ local function Migrate()
     end, true)
 end
 
-ns.On("MAP_ATTACHED", function()
-    Migrate()
-    Bridge()
+ns.On("MAP_ATTACHED", Migrate)
+-- (la carte dessinée : ses entrées, dès le zoom 1,5 ; « seulement les lieux trouvés » les revoit)
+ns.On("MAP_BUILT", function()
+    local set = ns.Map.Pins.Set("dungeons", 1.5)
+    if not set then return end
+    local ok, err = pcall(DN.BuildPins, set)
+    if not ok and geterrorhandler then geterrorhandler()(err) end
+    ns.Map.Pins.RefreshFound()
 end)
 ns.On("MAP_REFRESH", DN.Refresh)
 ns.On("MAP_SHOW", function() C_Timer.After(0.1, OpenInside) end)

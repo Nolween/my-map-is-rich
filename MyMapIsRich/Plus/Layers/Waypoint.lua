@@ -135,19 +135,12 @@ end
 function W.CanTrack() return true end
 
 ---------------------------------------------------------------------------
--- Les ponts vers le code d'OpenMap qui reste (la vue : Map/PadView.lua), et
--- la migration du point d'OpenMap (MyMapIsRichCharDB.worldmap.pin)
+-- La migration du point d'OpenMap (MyMapIsRichCharDB.worldmap.pin)
 ---------------------------------------------------------------------------
 ns.On("MAP_ATTACHED", function()
     ns.Map.Migrate("waypoint", function(old, new, copy)
         if type(old.pin) == "table" and old.pin[1] then new.waypoint = copy(old.pin) end
     end, true)
-    local mod = ns.Map.Legacy()
-    if not mod then return end
-    mod.TrackPoint = function(mapID, x, y, title) return W.Track(mapID, x, y, title) end
-    mod.WaypointPoint = function() return W.Point() end
-    mod.ClearPin = function() W.Clear() end
-    mod.RefreshWaypoint = function() W.Refresh() end
 end)
 
 ns.On("MAP_BUILT", function() W.Refresh() end)

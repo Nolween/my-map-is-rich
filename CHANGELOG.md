@@ -1,5 +1,46 @@
 # Journal des versions — My Map Is Rich
 
+## 0.13.0
+
+**Les icônes de la carte, en code de My Map Is Rich.**
+
+Après la mise à jour, **relance le jeu** (un `/reload` ne suffit pas : l'addon a un fichier nouveau).
+
+- **Toutes les icônes de la carte** passent par notre propre moteur : les entrées de donjon, les quais, les maîtres de vol, les quêtes, les citadins, ton groupe, tes épingles, tes dessins, le point de destination et ta flèche. À l'écran, rien ne devrait changer : elles gardent leur taille quand on zoome, seules celles près de la vue sont dessinées, et chaque calque se montre à son zoom.
+- **Les quais** (bateaux, tours des zeppelins, dirigeables) : leur info-bulle dit où va la traversée, dans la langue du jeu ; un clic glisse jusqu'à l'autre bout.
+- « Seulement les lieux trouvés », la taille des icônes, le zoom d'où viennent celles des lieux et « Cacher les épingles du monde en instance » marchent comme avant.
+
+## 0.12.0
+
+**La vue de la carte, en code de My Map Is Rich.**
+
+Après la mise à jour, **relance le jeu** (un `/reload` ne suffit pas : l'addon a des fichiers nouveaux).
+
+- **La carte plein écran et la carte réduite** sont désormais notre propre vue. À l'écran, rien ne devrait changer :
+  - à la souris : la molette, tirer, le clic gauche pour entrer dans une zone, le clic droit pour en sortir, le bouton du milieu pour te localiser ;
+  - à la manette : le curseur jusqu'aux bords, le stick droit pour zoomer, A et X, le stick gauche enfoncé pour le point de destination ;
+  - ta flèche, la zone d'une quête, les icônes de Questie et des autres addons (TomTom…) avec leurs info-bulles, les chemins des monstres de Questie.
+- **Les réglages de l'aspect de la carte** (onglet Carte, rail des calques) sont repris : zones inexplorées (pour le compte ou ce personnage), assombrissement, couleurs, taille et zoom des icônes, zoom le plus profond, ta flèche, « seulement les lieux trouvés », « Cacher les épingles du monde en instance ».
+- « Cacher les épingles du monde en instance » suit maintenant chaque entrée et sortie d'instance, carte fermée aussi.
+- `/mmir carte status` dit où en est la vue (`/mmir carte padview` fait de même). `/mmir carte warm` est parti avec l'ancien code.
+
+## 0.11.0
+
+**La plume, en code de My Map Is Rich, et son plateau aux couleurs de l'addon.**
+
+Après la mise à jour, **relance le jeu** (un `/reload` ne suffit pas : l'addon a un fichier nouveau).
+
+- **Le plateau de la plume** (la roue, la fiche d'un point, le raccourci du jeu, `/mmir carte draw`), refait aux couleurs de l'addon :
+  - les outils : stylo, ligne, flèche, cercle, marques de raid, gomme ;
+  - six encres et trois épaisseurs ;
+  - Défaire, Effacer (deux clics) et Terminé ;
+  - en bas, le nombre de tes dessins.
+- **À la souris, sur la carte plein écran** : on dessine en tirant (avant, il fallait cliquer, bouger, cliquer), tirer au clic droit déplace la carte, et la molette zoome. Ctrl+Z défait, Échap range la plume.
+- **À la manette**, comme avant : A pose la plume puis la lève, X la range, View passe dans le plateau. Nouveau : A sur la marque de raid déjà choisie passe à la marque suivante (avant, il fallait un clic droit).
+- **Sur une épingle** (« Dessiner » sur sa fiche), le plateau s'ouvre sous la fiche. Le dessin part avec l'épingle et se cache avec tes épingles.
+- **Sur la carte d'un donjon**, la plume dessine sur l'étage, comme avant.
+- Tous tes dessins sont repris, ceux des donjons aussi, avec le réglage « Tes dessins » du rail des calques.
+
 ## 0.10.0
 
 **Les donjons, en code de My Map Is Rich, et leur carte aux couleurs de l'addon.**

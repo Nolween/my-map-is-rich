@@ -385,15 +385,15 @@ local function Build()
 end
 
 ---------------------------------------------------------------------------
--- Les ponts vers le code d'OpenMap qui reste, et la migration
+-- Le pont vers le code d'OpenMap qui reste (/mmir carte forgetflights :
+-- Init.lua), et la migration
 ---------------------------------------------------------------------------
 local function Bridge()
     local mod = ns.Map.Legacy()
-    if not mod then return end
-    mod.RefreshFlightsFound = function() if set then RefreshLook() end end   -- (Map/PadView.lua, mod:Refresh)
-    mod.ClearFlightRoute = function() ClearRoute() end
-    mod.ForgetFlights = function() FL.Forget() end
+    if mod then mod.ForgetFlights = function() FL.Forget() end end
 end
+-- (un réglage changé, « seulement les lieux trouvés » : l'aspect des maîtres de vol)
+ns.On("MAP_REFRESH", function() if set then RefreshLook() end end)
 
 local function Migrate()
     ns.Map.Migrate("flightTimes", function(old, new, copy)

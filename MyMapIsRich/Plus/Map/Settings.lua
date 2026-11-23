@@ -73,6 +73,24 @@ function Settings.Char(key)
     return mod and mod.char and mod.char[key]
 end
 
+function Settings.SetChar(key, value)
+    if OWNER[key] == "new" then
+        local db = M.CharDB()
+        if db then db.settings[key] = value end
+        return
+    end
+    local mod = Old()
+    if mod and mod.char then mod.char[key] = value end
+end
+
+-- La valeur d'origine d'un réglage repris (nil : il n'en a pas, ou il est
+-- encore à la carte d'OpenMap : les siens sont dans ses défauts)
+function Settings.Default(key)
+    if OWNER[key] == "new" then return DEFAULT[key] end
+    local mod = Old()
+    return mod and mod.defaults and mod.defaults[key]
+end
+
 -- Les réglages du compte, comme une table (lire, écrire une clé) : pour le
 -- rail des calques, qui les parcourt clé par clé
 local proxy = setmetatable({}, {
@@ -83,10 +101,9 @@ function Settings.Table()
     if M.Ready() then return proxy end
 end
 
--- La carte se redessine d'après ses réglages
+-- La carte se redessine d'après ses réglages (Map/Look.lua ; « MAP_REFRESH »)
 function Settings.Refresh()
-    local mod = Old()
-    if mod and type(mod.Refresh) == "function" then pcall(mod.Refresh, mod) end
+    if M.Look and M.Look.Refresh then M.Look.Refresh() end
 end
 
 -- La page des réglages de la carte : l'onglet Carte de /mmir (UI/MapPage.lua)
