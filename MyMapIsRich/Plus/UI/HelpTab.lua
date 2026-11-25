@@ -23,10 +23,11 @@ local MAX_POINTS = 7
 local ICONS = "Interface\\Icons\\"
 
 -- Fermer la fenêtre de l'addon, puis ouvrir la carte (pas en combat : la
--- carte du jeu est protégée)
+-- carte du jeu est protégée ; un geste noté, ns.Risky, comme dans
+-- UI/QuestPanel.lua)
 local function OpenMap()
     UI.Hide()
-    if not InCombatLockdown() and ToggleWorldMap then pcall(ToggleWorldMap) end
+    if not InCombatLockdown() and ToggleWorldMap and ns.Risky("OpenMap") then pcall(ToggleWorldMap) end
 end
 
 -- Fermer la fenêtre de l'addon, puis ouvrir le navigateur de lieux (sur
@@ -121,6 +122,23 @@ local SIDE_W = 260
 
 -- Un texte dont les {mots} sont mis en or (aussi pour le tutoriel, UI/Tutorial.lua)
 function UI.GoldWords(text) return Format(text or "", GOLD) end
+
+-- Une icône dans un rond cerclé d'or, sur le fond « well » (comme celle de
+-- l'étape du guide ; aussi le tutoriel, UI/Tutorial.lua). Rend le cadre ;
+-- f.icon : la texture, à remplir par f.icon:SetTexture
+function UI.RoundIcon(parent, size)
+    local f = CreateFrame("Frame", nil, parent)
+    f:SetSize(size, size)
+    local ring = RoundColor(f, "BORDER", 0, size)
+    ring:SetVertexColor(0.69, 0.54, 0.24, 1)
+    local back = RoundColor(f, "BORDER", 1, size - 6)
+    UI.Tint(back, "well")
+    f.icon = f:CreateTexture(nil, "ARTWORK")
+    f.icon:SetSize(size - 10, size - 10)
+    f.icon:SetPoint("CENTER")
+    Round(f, f.icon)
+    return f
+end
 
 -- Un guide en étapes dans page :
 --   opts.steps    : { { key, icon, go, action, commands } } ; textes

@@ -220,11 +220,24 @@ local function BuildSettings(page)
     Cycle(right, "glyphs", L.OPT_GLYPHS, {
         { "auto", L.OPT_AUTO }, { "xbox", "Xbox" }, { "ps", "PlayStation" },
     }, y)
-    y = y - 38
-    local themes = {}
-    for _, t in ipairs(UI.THEMES) do themes[#themes + 1] = { t.id, L[t.label] } end
-    Cycle(right, "theme", L.OPT_THEME, themes, y, function(id) UI.SetTheme(id, true) end)
-    y = y - 50
+    y = y - 42
+    -- (le thème, comme dans My Gamepad Is Rich : son libellé et, en or, celui
+    -- qui est choisi ; ce qu'il change ; une pastille par thème)
+    local themeLabel = UI.Text(right, "GameFontHighlight", L.OPT_THEME)
+    themeLabel:SetPoint("TOPLEFT", 20, y)
+    local themeName = UI.Text(right, "GameFontNormal")
+    themeName:SetPoint("LEFT", themeLabel, "RIGHT", 8, 0)
+    local themeDesc = UI.Text(right, "GameFontDisableSmall", L.OPT_THEME_DESC)
+    themeDesc:SetPoint("TOPLEFT", 20, y - 18)
+    themeDesc:SetWidth(half - 36)
+    themeDesc:SetJustifyH("LEFT")
+    y = y - 18 - themeDesc:GetStringHeight() - 8
+    local themes = UI.ThemeSwatches(right, 20, y)
+    themes.onRefresh = function(key) themeName:SetText(key and L[key] or "") end
+    themes.Refresh()
+    -- (« Réglages par défaut » change le thème sans prévenir)
+    refreshers[#refreshers + 1] = themes.Refresh
+    y = y - 24 - 18
     -- (le bouton autour de la minimap : réglé par MinimapButton.lua)
     local mm = UI.Check(right, L.OPT_MINIMAP)
     mm:SetPoint("TOPLEFT", 16, y)

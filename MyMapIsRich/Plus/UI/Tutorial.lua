@@ -10,11 +10,11 @@
 -- de le couper ; il n'accroche rien du jeu.
 --
 -- La manette : carte fermée, la manette est au jeu (Pad/Bindings.lua ne
--- prend rien) ; la fenêtre la prend elle-même tant qu'elle est ouverte
--- (EnableGamePadButton) : la croix va d'un élément à l'autre (cadre doré),
--- A appuie, B revient d'une étape, LB / RB changent d'étape. Carte ouverte,
--- c'est Pad/Focus.lua qui la mène, comme les autres fenêtres. En combat, la
--- manette est rendue au jeu.
+-- prend rien) ; la fenêtre prend A, B et la croix tant qu'elle est ouverte,
+-- par des raccourcis prioritaires (BindPad, plus bas) : la croix va d'un
+-- élément à l'autre (cadre doré), A appuie, B revient d'une étape. Carte
+-- ouverte, c'est Pad/Focus.lua qui la mène, comme les autres fenêtres. En
+-- combat, la manette est rendue au jeu.
 --
 -- Textes : L.TUTO_<clé>_TITLE et L.TUTO_<clé>_TEXT ; {mot} y est mis en or
 -- (UI.GoldWords, UI/HelpTab.lua).
@@ -29,12 +29,15 @@ ns.Tutorial = T
 -- (à monter quand le tutoriel change assez pour être remontré à tous)
 T.VERSION = 1
 
-local WIDTH, MIN_HEIGHT = 720, 300
+local WIDTH, MIN_HEIGHT = 640, 260
 local TEXT_W = WIDTH - 56
 local ROW = 30
+local LINES_TOP = -128          -- (sous l'icône, le titre et leur trait)
+local LINE_ICON = 26            -- (l'icône d'une ligne du texte)
+local MAX_LINES = 5
 
 local frame, current, finished, reloading
-local Show
+local Show, Next, Back
 
 local function Opt() return ns.db.options end
 local function Mark() if ns.db then ns.db.tutorialSeen = T.VERSION end end
@@ -135,14 +138,23 @@ end
 
 -- L'apparence : les couleurs, les icônes des boutons, la barre d'aide
 local function BuildLook(c)
-    Label(c, L.OPT_THEME, -4)
+    -- (le thème, comme dans les Réglages : son libellé et, en or, celui qui
+    -- est choisi ; ce qu'il change ; une pastille par thème)
+    local label = UI.Text(c, "GameFontHighlight", L.OPT_THEME)
+    label:SetPoint("TOPLEFT", 4, -4)
+    local name = UI.Text(c, "GameFontNormal")
+    name:SetPoint("LEFT", label, "RIGHT", 8, 0)
+    local desc = UI.Text(c, "GameFontDisableSmall", L.OPT_THEME_DESC)
+    desc:SetPoint("TOPLEFT", 4, -22)
+    desc:SetWidth(TEXT_W - 8)
+    desc:SetJustifyH("LEFT")
+    local y = -22 - desc:GetStringHeight() - 8
+    local themes = UI.ThemeSwatches(c, 4, y)
+    themes.onRefresh = function(key) name:SetText(key and L[key] or "") end
+    themes.Refresh()
+    for _, sw in ipairs(themes.swatches) do c.focus[#c.focus + 1] = sw end
     local col = math.floor(TEXT_W / 3)
-    for i, t in ipairs(UI.THEMES) do
-        local x, y = ((i - 1) % 3) * col, -24 - math.floor((i - 1) / 3) * ROW
-        Radio(c, L[t.label], x, y, function() return (Opt().theme or "brown") == t.id end,
-            function() UI.SetTheme(t.id) end)
-    end
-    local y = -24 - math.ceil(#UI.THEMES / 3) * ROW - 8
+    y = y - 24 - 16
     Label(c, L.OPT_GLYPHS, y - 4)
     y = y - 24
     for i, g in ipairs({ { "auto", L.OPT_AUTO }, { "xbox", "Xbox" }, { "ps", "PlayStation" } }) do
@@ -263,14 +275,26 @@ end
 ---------------------------------------------------------------------------
 -- Les étapes
 ---------------------------------------------------------------------------
+-- icon : la grande icône ronde à côté du titre ; lines : l'icône de chaque
+-- ligne du texte (une ligne par « \n » de TUTO_<clé>_TEXT ; sans icône, la
+-- ligne reste en retrait)
+local ICON = "Interface\\Icons\\"
+local ADDON_ICON = "Interface\\AddOns\\MyMapIsRich\\Media\\Icon"
+local TAKE = "Interface\\GossipFrame\\AvailableQuestIcon"
+local TURN_IN = "Interface\\GossipFrame\\ActiveQuestIcon"
 local STEPS = {
-    { key = "WELCOME" },
-    { key = "MAP", build = BuildMap },
-    { key = "QUESTS", build = BuildQuests },
-    { key = "ROUTES", build = BuildRoutes },
-    { key = "LOOK", build = BuildLook },
-    { key = "ADDONS", build = BuildAddons, refresh = RefreshAddons },
-    { key = "DONE" },
+    { key = "WELCOME", icon = ADDON_ICON,
+        lines = { ICON .. "INV_Misc_Map_01", TAKE, ICON .. "Ability_Tracking", ICON .. "INV_Misc_EngGizmos_20" } },
+    { key = "MAP", build = BuildMap, icon = ICON .. "INV_Misc_Map_01",
+        lines = { ICON .. "INV_Misc_Map02", ICON .. "INV_Misc_Spyglass_02", ICON .. "INV_Misc_Head_Dragon_01" } },
+    { key = "QUESTS", build = BuildQuests, icon = ICON .. "INV_Scroll_03",
+        lines = { ICON .. "INV_Misc_Book_09", TAKE, TURN_IN, ICON .. "INV_Misc_Note_02" } },
+    { key = "ROUTES", build = BuildRoutes, icon = ICON .. "Ability_Tracking",
+        lines = { ICON .. "INV_Misc_PocketWatch_01", ICON .. "INV_Misc_Rune_01" } },
+    { key = "LOOK", build = BuildLook, icon = ICON .. "INV_Inscription_Tradeskill01" },
+    { key = "ADDONS", build = BuildAddons, refresh = RefreshAddons, icon = ICON .. "Trade_Engineering" },
+    { key = "DONE", icon = ADDON_ICON,
+        lines = { ICON .. "INV_Misc_Map_01", ICON .. "INV_Misc_Gear_01", ICON .. "INV_Misc_Book_08" } },
 }
 
 -- Les cases cochées d'après les réglages (un réglage changé ailleurs, une
@@ -354,10 +378,84 @@ local function OwnPad()
         and not (ns.MapShown and ns.MapShown())
 end
 
+-- Les boutons pris : par des raccourcis prioritaires (SetOverrideBindingClick)
+-- vers des boutons invisibles à nous, comme Pad/Bindings.lua. Surtout pas en
+-- prenant toute la manette (EnableGamePadButton) : le jeu exécutait alors les
+-- autres boutons depuis le code de l'addon, et bloquait ensuite
+-- SetPreferredGamepadInteractTarget (le ciblage de la manette) jusqu'au
+-- /reload. Seuls A, B et la croix sont pris : le reste reste au jeu.
+local PAD_KEYS = { "PAD1", "PAD2", "PADDUP", "PADDDOWN", "PADDLEFT", "PADDRIGHT" }
+local padOwner = CreateFrame("Frame")
+local padButtons = {}
+local bound = false
+
+local function PadPress(key)
+    if not (frame and frame:IsShown()) then return end
+    if key == "PADDUP" or key == "PADDLEFT" then Move(-1)
+    elseif key == "PADDDOWN" or key == "PADDRIGHT" then Move(1)
+    elseif key == "PAD1" then
+        if focus and focus:IsVisible() and focus:IsEnabled() then focus:Click() else Next() end
+    elseif key == "PAD2" then Back()
+    end
+end
+
+for _, key in ipairs(PAD_KEYS) do
+    local b = CreateFrame("Button", "MyMapIsRichPlusTutoPad" .. key, UIParent)
+    b:SetSize(1, 1)
+    b:SetPoint("TOPLEFT", UIParent, "TOPLEFT", -10, 10)
+    b:RegisterForClicks("AnyDown")
+    b:SetScript("OnClick", function() PadPress(key) end)
+    padButtons[key] = b
+end
+
+-- Un de nos boutons encore enfoncé ? (son relâchement irait au jeu)
+local function PadHeld()
+    if not (ns.Pad and ns.Pad.IsPadDown) then return false end
+    for _, key in ipairs(PAD_KEYS) do
+        if ns.Pad.IsPadDown(key) then return true end
+    end
+    return false
+end
+
+local releaseWait
+local function BindPad(on, now)
+    if InCombatLockdown() then
+        -- (le combat commence : PLAYER_REGEN_DISABLED arrive avant le
+        -- verrouillage, les raccourcis sont rendus là ; sinon à sa fin)
+        return
+    end
+    if on then
+        releaseWait = nil
+        if bound then return end
+        bound = true
+        for _, key in ipairs(PAD_KEYS) do
+            SetOverrideBindingClick(padOwner, true, key, padButtons[key]:GetName(), "LeftButton")
+        end
+        return
+    end
+    if not bound then return end
+    -- (rendus une fois le bouton relâché, 1,5 s au plus : sinon A sur
+    -- « Terminer » irait au jeu en remontant. now : tout de suite, avant un
+    -- combat)
+    if not now and PadHeld() and (not releaseWait or GetTime() - releaseWait < 1.5) then
+        releaseWait = releaseWait or GetTime()
+        C_Timer.After(0.05, function()
+            if releaseWait and not OwnPad() then BindPad(false) end
+        end)
+        return
+    end
+    releaseWait = nil
+    bound = false
+    ClearOverrideBindings(padOwner)
+end
+
+-- (lu par Pad/Bindings.lua : ns.Active, pour que My Gamepad Is Rich s'efface)
+function T.HasPad() return bound end
+
 local function UpdatePad()
     if not frame then return end
     local on = OwnPad() and true or false
-    if frame.EnableGamePadButton then pcall(frame.EnableGamePadButton, frame, on) end
+    BindPad(on)
     for _, g in ipairs(frame.glyphs) do g:SetShown(PadEnabled()) end
     if on then
         if not (focus and focus:IsVisible()) then SetFocus(frame.next) end
@@ -369,19 +467,22 @@ end
 ---------------------------------------------------------------------------
 -- La fenêtre
 ---------------------------------------------------------------------------
-local function Next()
+function Next()
     if current < #STEPS then
         Show(current + 1)
         return
     end
-    -- (la dernière étape : la carte ouverte, sauf en veille ou en combat)
+    -- (la dernière étape : la carte ouverte, sauf en veille ou en combat ;
+    -- un geste noté, ns.Risky, comme dans UI/QuestPanel.lua)
     finished = true
     Mark()
     frame:Hide()
-    if not ns.Conflict() and not InCombatLockdown() and ToggleWorldMap then pcall(ToggleWorldMap) end
+    if not ns.Conflict() and not InCombatLockdown() and ToggleWorldMap and ns.Risky("OpenMap") then
+        pcall(ToggleWorldMap)
+    end
 end
 
-local function Back()
+function Back()
     if current > 1 then Show(current - 1) end
 end
 
@@ -392,7 +493,34 @@ function Show(i)
         if s.content then s.content:Hide() end
     end
     frame.stepTitle:SetText(L["TUTO_" .. step.key .. "_TITLE"])
-    frame.body:SetText(Gold(L["TUTO_" .. step.key .. "_TEXT"]))
+    frame.stepIcon.icon:SetTexture(step.icon)
+
+    -- (le texte : une ligne courte par point, chacune avec son icône)
+    local texts = {}
+    for line in (L["TUTO_" .. step.key .. "_TEXT"] or ""):gmatch("[^\n]+") do texts[#texts + 1] = line end
+    local y = LINES_TOP
+    for i, row in ipairs(frame.lines) do
+        local line = texts[i]
+        row.text:SetShown(line ~= nil)
+        row.icon:SetShown(false)
+        if line then
+            row.text:SetText(Gold(line))
+            row.text:ClearAllPoints()
+            row.text:SetPoint("TOPLEFT", 28 + LINE_ICON + 10, y - 4)
+            local tex = step.lines and step.lines[i]
+            if tex then
+                row.icon:SetTexture(tex)
+                -- (une icône d'objet : son bord rogné)
+                if tex:find("\\Icons\\", 1, true) then row.icon:SetTexCoord(0.08, 0.92, 0.08, 0.92)
+                else row.icon:SetTexCoord(0, 1, 0, 1) end
+                row.icon:ClearAllPoints()
+                row.icon:SetPoint("TOPLEFT", 28, y)
+                row.icon:Show()
+            end
+            y = y - math.max(LINE_ICON, row.text:GetStringHeight() + 4) - 10
+        end
+    end
+    local linesH = LINES_TOP - y
 
     local contentH = 0
     if step.build then
@@ -404,10 +532,10 @@ function Show(i)
             step.height = step.build(c)
         end
         step.content:ClearAllPoints()
-        step.content:SetPoint("TOPLEFT", frame.body, "BOTTOMLEFT", 0, -16)
+        step.content:SetPoint("TOPLEFT", frame, "TOPLEFT", 28, y - 6)
         step.content:SetHeight(step.height)
         step.content:Show()
-        contentH = step.height + 16
+        contentH = step.height + 6
     end
     T.Refresh()
 
@@ -415,7 +543,7 @@ function Show(i)
     frame.back:SetEnabled(current > 1)
     frame.next:SetText(current == #STEPS and L.TUTO_FINISH or L.TUTO_NEXT)
     -- (la hauteur suit le texte, qui change avec la langue)
-    local h = 52 + frame.stepTitle:GetStringHeight() + 14 + frame.body:GetStringHeight() + contentH + 74
+    local h = -LINES_TOP + linesH + contentH + 74
     frame:SetHeight(math.max(MIN_HEIGHT, h))
     if OwnPad() then SetFocus(frame.next) else SetFocus(nil) end
 end
@@ -448,16 +576,28 @@ local function Build()
     f:SetScript("OnDragStart", f.StartMoving)
     f:SetScript("OnDragStop", f.StopMovingOrSizing)
 
-    f.stepTitle = UI.Text(f, "GameFontNormalLarge")
-    f.stepTitle:SetPoint("TOPLEFT", 28, -52)
-    f.stepTitle:SetWidth(TEXT_W)
+    -- (en haut : la grande icône ronde de l'étape, son titre à côté)
+    f.stepIcon = UI.RoundIcon(f, 56)
+    f.stepIcon:SetPoint("TOPLEFT", 22, -48)
+    f.stepTitle = UI.Text(f, "GameFontNormalHuge")
+    f.stepTitle:SetPoint("LEFT", f.stepIcon, "RIGHT", 14, 0)
+    f.stepTitle:SetPoint("RIGHT", f, "RIGHT", -24, 0)
     f.stepTitle:SetJustifyH("LEFT")
+    local headRule = UI.Rule(f)
+    headRule:SetPoint("TOPLEFT", 22, -114)
+    headRule:SetPoint("TOPRIGHT", -22, -114)
 
-    f.body = UI.Text(f, "GameFontHighlight")
-    f.body:SetPoint("TOPLEFT", f.stepTitle, "BOTTOMLEFT", 0, -14)
-    f.body:SetWidth(TEXT_W)
-    f.body:SetJustifyH("LEFT")
-    f.body:SetSpacing(3)
+    -- (les lignes du texte, chacune avec son icône : posées par Show)
+    f.lines = {}
+    for i = 1, MAX_LINES do
+        local icon = f:CreateTexture(nil, "ARTWORK")
+        icon:SetSize(LINE_ICON, LINE_ICON)
+        local text = UI.Text(f, "GameFontHighlight")
+        text:SetWidth(TEXT_W - LINE_ICON - 10)
+        text:SetJustifyH("LEFT")
+        text:SetSpacing(2)
+        f.lines[i] = { icon = icon, text = text }
+    end
 
     -- (en bas, sous un trait doré : passer à gauche ; précédent, suivant)
     local rule = UI.Rule(f)
@@ -477,26 +617,13 @@ local function Build()
     PadGlyph(f.next, "PAD1")
     PadGlyph(f.back, "PAD2")
 
-    -- La manette, carte fermée (OwnPad) : rien ne passe au jeu
-    f:SetScript("OnGamePadButtonDown", function(self, button)
-        if not InCombatLockdown() then pcall(self.SetPropagateKeyboardInput, self, false) end
-        if button == "PADDUP" or button == "PADDLEFT" then Move(-1)
-        elseif button == "PADDDOWN" or button == "PADDRIGHT" then Move(1)
-        elseif button == "PAD1" then
-            if focus and focus:IsVisible() and focus:IsEnabled() then focus:Click() else Next() end
-        elseif button == "PAD2" or button == "PADLSHOULDER" then Back()
-        elseif button == "PADRSHOULDER" then Next()
-        end
-    end)
-    if f.EnableGamePadButton then pcall(f.EnableGamePadButton, f, false) end
-
     f:SetScript("OnShow", function()
         finished = false
         UpdatePad()
     end)
     f:SetScript("OnHide", function()
         SetFocus(nil)
-        if f.EnableGamePadButton then pcall(f.EnableGamePadButton, f, false) end
+        BindPad(false)
         if reloading then return end
         if not finished then
             Mark()
@@ -513,7 +640,15 @@ local function Build()
     local events = CreateFrame("Frame", nil, f)
     events:RegisterEvent("PLAYER_REGEN_DISABLED")
     events:RegisterEvent("PLAYER_REGEN_ENABLED")
-    events:SetScript("OnEvent", UpdatePad)
+    events:SetScript("OnEvent", function(_, event)
+        -- (le combat commence : la manette rendue au jeu avant le verrouillage)
+        if event == "PLAYER_REGEN_DISABLED" then
+            BindPad(false, true)
+            SetFocus(nil)
+        else
+            UpdatePad()
+        end
+    end)
     ns.On("MAP_SHOW", UpdatePad)
     ns.On("MAP_HIDE", UpdatePad)
     ns.On("OPTIONS", T.Refresh)

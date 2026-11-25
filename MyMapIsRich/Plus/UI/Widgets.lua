@@ -343,6 +343,53 @@ function UI.Tip(frame, title, text)
     frame:HookScript("OnLeave", function() GameTooltip:Hide() end)
 end
 
+-- Le choix du thème, comme dans My Guild Is Rich et My Gamepad Is Rich :
+-- une pastille par thème (un aperçu de ses couleurs, du haut d'un panneau
+-- au liseré de la fenêtre), la choisie cerclée d'or, son nom en info-bulle.
+-- Posées à (x, y) dans parent ; un clic change le thème. Rend { swatches,
+-- Refresh } : Refresh() replace le cercle d'or et rend la clé du nom du
+-- thème choisi (pour l'écrire en or à côté du libellé).
+function UI.ThemeSwatches(parent, x, y)
+    local picker = { swatches = {} }
+    function picker.Refresh()
+        local theme, label = UI.Theme(), nil
+        for _, sw in ipairs(picker.swatches) do
+            local on = sw.id == theme
+            sw.ring:SetColor(on and 1 or 0.35, on and 0.82 or 0.35, on and 0 or 0.35, 1)
+            if on then label = sw.label end
+        end
+        if picker.onRefresh then picker.onRefresh(label) end
+        return label
+    end
+    for i, t in ipairs(UI.THEMES) do
+        local sw = CreateFrame("Button", nil, parent)
+        sw:SetSize(44, 24)
+        sw:SetPoint("TOPLEFT", x + (i - 1) * 52, y)
+        local fill = sw:CreateTexture(nil, "BACKGROUND")
+        fill:SetPoint("TOPLEFT", 2, -2)
+        fill:SetPoint("BOTTOMRIGHT", -2, 2)
+        local r1, g1, b1 = UI.ThemeColor(t.id, "panelTop")
+        local r2, g2, b2 = UI.ThemeColor(t.id, "windowInner")
+        UI.Gradient(fill, "VERTICAL", r1, g1, b1, 1, r2, g2, b2, 1)
+        UI.Border(sw, 0, 0, 0, 0.8, 1)
+        sw.ring = UI.Border(sw, 1, 0.82, 0, 1)
+        local hl = sw:CreateTexture(nil, "HIGHLIGHT")
+        hl:SetAllPoints()
+        hl:SetColorTexture(1, 0.82, 0, 0.15)
+        UI.Tip(sw, L[t.label])
+        sw:SetScript("OnClick", function()
+            UI.SetTheme(t.id)
+            picker.Refresh()
+        end)
+        sw.id, sw.label = t.id, t.label
+        picker.swatches[i] = sw
+    end
+    -- (un thème changé ailleurs : le tutoriel, la fenêtre de l'addon)
+    if ns.On then ns.On("THEME", picker.Refresh) end
+    picker.Refresh()
+    return picker
+end
+
 -- Un nom de joueur dans la couleur de sa classe (classFile : « MAGE »...),
 -- grisé s'il est hors ligne (dim)
 function UI.ClassColored(name, classFile, dim)

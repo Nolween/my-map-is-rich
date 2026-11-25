@@ -387,9 +387,13 @@ function P.Refresh(now)
     if now then dirty = false end
 end
 
--- L'addon a la manette (lu par My Gamepad Is Rich, qui s'efface alors)
+-- L'addon a la manette (lu par My Gamepad Is Rich, qui s'efface alors) :
+-- la carte, ou le tutoriel carte fermée (UI/Tutorial.lua)
 function P.Active() return P.current ~= nil end
-function ns.Active() return P.current ~= nil end
+function ns.Active()
+    if P.current ~= nil then return true end
+    return ns.Tutorial and ns.Tutorial.HasPad and ns.Tutorial.HasPad() or false
+end
 
 -- Rendre les boutons tout de suite (la sonde : lire ceux du jeu) ; ils sont
 -- reposés au passage suivant

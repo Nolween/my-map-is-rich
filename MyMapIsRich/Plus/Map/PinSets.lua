@@ -17,10 +17,16 @@ local P = ns.Map.Pins
 local A = ns.Map.Art
 
 local CELL = 0.04                -- la largeur d'une case (le monde, 0..1)
-local ARROW_SIZE = 28
+local ARROW_SIZE = 40
+-- (son halo doré, qui pulse doucement : on se trouve d'un coup d'œil)
+local GLOW_TEXTURE = "Interface\\AddOns\\MyMapIsRich\\Media\\Textures\\Glow.tga"
+local GLOW_SIZE = 76
+local GLOW_LOW, GLOW_HIGH = 0.35, 0.8      -- son éclat, entre ces deux-là
+local GLOW_PULSE = 1.1                     -- s pour aller de l'un à l'autre
 
 local layer                      -- le calque des icônes, sur la vue
 local arrow                      -- ta flèche, sur un cadre à elle (levé au-dessus de toutes les icônes)
+local glow                       -- son halo, dessous
 local sets = {}                  -- clé -> { frame, on, minZoom, pins, lines, anchors, pinPool, linePool, cells }
 local anchorPool = {}
 local zoomNow = 1
@@ -410,15 +416,22 @@ end
 ---------------------------------------------------------------------------
 -- Ta flèche
 ---------------------------------------------------------------------------
+local function HideArrow()
+    arrow:Hide()
+    glow:Hide()
+end
+
 function P.PlacePlayer()
     if not arrow then return end
-    if not player.u or playerHidden then arrow:Hide() return end
+    if not player.u or playerHidden then HideArrow() return end
     local ox, oy = ns.Map.View.Offset(player.u, player.v)
-    if not ox then arrow:Hide() return end
+    if not ox then HideArrow() return end
     arrow:ClearAllPoints()
     arrow:SetPoint("CENTER", layer, "CENTER", ox, -oy)
     if player.facing then arrow:SetRotation(player.facing) end
     arrow:Show()
+    glow:Show()
+    if not glow.pulse:IsPlaying() then glow.pulse:Play() end
 end
 
 function P.SetPlayer(u, v, facing)
@@ -451,10 +464,27 @@ function P.Setup(view, level)
     layer:SetAllPoints(view)
     layer:SetFrameLevel(level)
     if layer.SetClipsChildren then layer:SetClipsChildren(true) end
-    arrow = CreateFrame("Frame", nil, layer):CreateTexture(nil, "OVERLAY", nil, 7)
+    local holder = CreateFrame("Frame", nil, layer)
+    arrow = holder:CreateTexture(nil, "OVERLAY", nil, 7)
     arrow:SetTexture("Interface\\Minimap\\MinimapArrow")
     arrow:SetSize(ARROW_SIZE, ARROW_SIZE)
     arrow:Hide()
+    -- (le halo : un disque doré ajouté à la carte sous la flèche, sans tourner avec elle)
+    glow = holder:CreateTexture(nil, "OVERLAY", nil, 6)
+    glow:SetTexture(GLOW_TEXTURE)
+    glow:SetBlendMode("ADD")
+    glow:SetVertexColor(1, 0.82, 0)
+    glow:SetSize(GLOW_SIZE, GLOW_SIZE)
+    glow:SetPoint("CENTER", arrow, "CENTER")
+    glow:SetAlpha(GLOW_LOW)
+    glow:Hide()
+    glow.pulse = glow:CreateAnimationGroup()
+    glow.pulse:SetLooping("BOUNCE")
+    local fade = glow.pulse:CreateAnimation("Alpha")
+    fade:SetFromAlpha(GLOW_LOW)
+    fade:SetToAlpha(GLOW_HIGH)
+    fade:SetDuration(GLOW_PULSE)
+    fade:SetSmoothing("IN_OUT")
     -- (le zoom : quels jeux se montrent ; la vue triée : les cases près d'elle ; un lieu exploré)
     A.OnZoomIcons = function(zoom)
         zoomNow = zoom or zoomNow

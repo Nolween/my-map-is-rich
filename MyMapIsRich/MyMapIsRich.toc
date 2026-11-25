@@ -115,6 +115,7 @@ Plus\Layers\Boats.lua
 Plus\Layers\Waypoint.lua
 Plus\Layers\Locate.lua
 Plus\Layers\Group.lua
+Plus\Layers\Corpse.lua
 Plus\Layers\ZoneInfo.lua
 Plus\Layers\Quests.lua
 Plus\Layers\QuestMarks.lua
