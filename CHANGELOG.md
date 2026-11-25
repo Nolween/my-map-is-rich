@@ -1,5 +1,22 @@
 # Journal des versions — My Map Is Rich
 
+## 1.3.0
+
+**Un tutoriel pour bien démarrer, une aide en étapes, et la carte qui te montre mieux.**
+
+Après la mise à jour, **relance le jeu** (un `/reload` ne suffit pas : des fichiers s'ajoutent).
+
+- **Le tutoriel du premier lancement** : en quelques étapes, la carte d'un seul tenant, la base des quêtes, les itinéraires, puis tes premiers choix (la carte en plein écran ou réduite, les marqueurs de quêtes, ce qui accompagne un trajet, le thème, les icônes des boutons). Chaque choix compte tout de suite. Il repère aussi **les addons qui font la même chose** (OpenMap, Questie, Leatrix Maps…) et les désactive d'un bouton pour ce personnage. Il se joue à la manette, carte fermée. `/mmir tuto`, ou « Revoir le tutoriel » dans l'onglet Aide.
+- **L'onglet Aide devient un guide en 13 étapes** : la carte, les icônes et leur fiche, les itinéraires, les lieux, la file, les quêtes, le suivi, le groupe, les épingles, les donjons, la manette, les fenêtres, les commandes. On y trouve aussi les Nouveautés et les Crédits.
+- **Ton corps sur la carte** : mort ou en fantôme, la pierre tombale du jeu marque l'endroit où tu es tombé.
+- **Ta flèche est plus grande**, avec un halo doré qui pulse doucement : tu te trouves d'un coup d'œil.
+- **La fiche d'un marqueur de quête** a « Voir la quête » : sa fiche s'ouvre dans le panneau des quêtes. Un « ! » a maintenant **sa fiche** : le niveau de la quête, ce qu'elle a de particulier, ce qui te manque encore, qui la donne et qui la reprend, ses objectifs et sa chaîne, avec l'itinéraire et la file. Un marqueur qui porte plusieurs quêtes a un bouton par quête.
+- **Les citadins du rail** viennent de la base des quêtes de l'addon, sans Questie : marchands, maîtres de classe et de métier, esprits soigneurs, monstres rares, boîtes aux lettres.
+- **Un « ! » démenti** s'efface aussi quand le PNJ ouvre tout de suite une quête ou une liste.
+- **Le thème se choisit en pastilles**, comme dans My Guild Is Rich et My Gamepad Is Rich : une pastille par thème, aux couleurs du thème, la choisie cerclée d'or (onglet Réglages et tutoriel).
+- Au plus près, **les grottes se zooment de nouveau plus loin**, et les villes sont revues à chaque ouverture de la carte.
+- **Les 10 langues sont complètes** : les textes qui manquaient sont traduits.
+
 ## 1.2.0
 
 **Un suivi des quêtes à nous.** À droite de l'écran, à la place de celui du jeu : tes quêtes, la plus proche d'abord, avec ce qu'il reste à faire et où aller.
