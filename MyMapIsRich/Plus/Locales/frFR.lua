@@ -15,8 +15,6 @@ ns.AddLocale("frFR", {
     DISABLED_WHY = "en veille : %s.",
     RESET_DONE = "Réglages remis par défaut.",
     HELP = "/mmir : réglages · /mmir carte : réglages de la carte · /mmir etat : état · /mmir sonde : les boutons de la manette sur la carte (carte ouverte) · /mmir test : quels boutons font perdre son curseur à la carte · /mmir focus · /mmir on / off · /mmir lieux : navigateur de lieux · /mmir news : nouveautés · /mmir trajet : l'itinéraire en cours (trajet stop : l'annuler) · /mmir file : la file · /mmir panneau : remettre le panneau de trajet à sa place · /mmir pourquoi <quête> : pourquoi une quête n'a pas de « ! » · /mmir quetes export : les quêtes apprises en jouant · /mmir reset",
-    PADVIEW_OFF_NOTE = "La vue manette de My Map Is Rich reste active jusqu'à un /reload.",
-    OPTIONS_COMBAT = "Les réglages ne s'ouvrent pas en combat.",
 
     -- Barre d'aide
     HINT_MOVE = "Se déplacer",
@@ -54,11 +52,11 @@ ns.AddLocale("frFR", {
     HINT_FOLLOW = "Me suivre",
     HINT_FOLLOW_STOP = "Ne plus me suivre",
     HINT_ICON_CYCLE = "Icône suivante (LT : précédente)",
-    HINT_ACTIONS = "Actions My Map Is Rich",
+    HINT_ACTIONS = "Actions de la carte",
     HINT_EDGE_PAN = "Curseur au bord : déplacer",
 
     -- Barre d'actions (View)
-    ACTIONS_TITLE = "My Map Is Rich",
+    ACTIONS_TITLE = "Carte",
     ACT_MENU = "Réglages de la carte",
     ACT_PIN = "Poser une épingle",
     ACT_PINS = "Épingles",
@@ -88,11 +86,11 @@ ns.AddLocale("frFR", {
     PLACE_FLIGHT = "Maître de vol",
 
     -- Réglages
-    SETTINGS_DESC = "Rend My Map Is Rich entièrement utilisable à la manette, avec l'interface manette de WoW Forever : la vue manette de My Map Is Rich, la croix dans ses fenêtres, le saut d'icône en icône, un clavier virtuel et un navigateur de lieux.",
+    SETTINGS_DESC = "Une carte du monde d'un seul tenant, entièrement jouable à la manette avec l'interface manette de WoW Forever : la croix dans les fenêtres, le saut d'icône en icône, les itinéraires, le clavier virtuel et le navigateur de lieux.",
     SETTINGS_HELP = "Sur la carte : RB me suivre (RB de nouveau : arrêter) · LB lieux (recherche, file) · LT/RT icône précédente / suivante · View la roue (file, envoyer au groupe, épingles, plume, menu) · R3 itinéraire jusqu'au point sous le curseur. Dans une fenêtre : croix se déplacer · A choisir · View clic droit · B retour · LB/RB onglets. A sur un champ de texte ouvre le clavier.\nLe jeu garde sur la carte le stick gauche (curseur), A, B, Y, la croix et le stick droit (zoom). X : plein écran ou carte réduite. Rien n'est pris en combat.",
-    OPT_ENABLED = "Utiliser la manette sur My Map Is Rich",
+    OPT_ENABLED = "Utiliser la manette sur la carte",
     OPT_ENABLED_TIP = "Carte ouverte et hors combat, l'addon prend la croix et quelques boutons (voir la barre d'aide). Désactivé : la vue manette de My Map Is Rich fonctionne seule.",
-    OPT_PADVIEW = "Activer la vue manette de My Map Is Rich",
+    OPT_PADVIEW = "Activer la vue manette de la carte",
     OPT_PADVIEW_TIP = "L'option « padView » de My Map Is Rich : sa carte dessinée par-dessus celle du jeu, interface manette active. Sans elle, My Map Is Rich laisse la carte à Blizzard dès que l'interface manette est active.",
     OPT_JUMP = "La croix saute d'icône en icône",
     OPT_JUMP_TIP = "Sur la carte, la croix amène sous le curseur l'icône la plus proche dans sa direction (la carte glisse). Désactivé : la croix déplace la carte.",
@@ -119,7 +117,7 @@ ns.AddLocale("frFR", {
     THEME_PINK = "Rose",
 
     -- Diagnostic
-    STATUS_HEAD = "version %s (My Map Is Rich %s)",
+    STATUS_HEAD = "version %s (la carte vient d'OpenMap %s)",
     STATUS_OPENMAP = "My Map Is Rich compatible : %s %s",
     STATUS_PADUI = "interface manette active : %s",
     STATUS_PADVIEW = "vue manette demandée : %s · prête : %s · affichée : %s",
@@ -280,11 +278,6 @@ ns.AddLocale("frFR", {
     WHATSNEW_BUTTON_TIP = "Ce qui a changé dans les dernières versions (aussi : /mmir news).",
     OPT_WHATSNEW = "Nouveautés après une mise à jour",
     OPT_WHATSNEW_TIP = "Une fenêtre montre ce qui a changé, une fois, à la connexion qui suit une mise à jour (/mmir news).",
-    WHATSNEW_0_5_1 = "• |cffffd100L'onglet Soutenir devient Découvrir|r, avec un coffre au trésor pour icône : mes autres addons sont en haut, le don en dessous.",
-    WHATSNEW_0_5_0 = "• |cffffd100R3 sur une quête|r de la liste (carte réduite) : l'itinéraire jusqu'à elle, comme R3 sur la carte. R3 sur la quête du trajet l'annule.\n• |cffffd100Les trajets dans les villes suivent les rues|r, les ponts et les étages (Hurlevent, Orgrimmar, Darnassus...), et prennent les |cffffd100ascenseurs|r (Fossoyeuse, Les Pitons-du-Tonnerre, le Grand Élévateur, le Poste de Librevent).\n• |cffffd100Le portail de Darnassus|r et |cffffd100le tram des profondeurs|r sont des étapes d'un itinéraire (Alliance).\n• |cffffd100Les maîtres de vol appris sont reconnus|r avec la vue manette de My Map Is Rich : ouvre une fois la carte de n'importe quel maître de vol et tous les tiens sont retenus.",
-    WHATSNEW_0_4_0 = "• |cffffd100RB te suit|r : un appui centre la carte sur toi et t'y garde quand tu bouges, et après un zoom. RB de nouveau l'arrête ; LT / RT et le choix d'un lieu l'arrêtent aussi. L'aimant des icônes se met en pause pendant ce temps.\n• |cffffd100La carte s'ouvre centrée sur toi|r, au moins au zoom où ta zone tient (réglage « Centrer sur moi à l'ouverture de la carte »).\n• |cffffd100Cette fenêtre|r : ce qui a changé dans les dernières mises à jour, une fois après chaque mise à jour (/mmir news, ou le bouton Nouveautés de l'onglet Aide).\n• |cffffd100La caméra au stick droit avec la carte réduite|r : quand le curseur est sur la liste de droite et non sur la carte, le stick droit fait tourner la caméra (/mmir camera pour la couper, /mmir camera inverse pour l'axe vertical).",
-    WHATSNEW_0_3_0 = "• |cffffd100Itinéraires avec R3|r : sur la carte, R3 calcule le trajet le plus rapide jusqu'au point sous le curseur, à pied, par tes vols (même depuis un nouveau maître de vol à qui il suffit de parler), en bateau et en zeppelin. R3 sur la destination l'annule.\n• La marche |cffffd100suit les routes et contourne les obstacles|r (falaises, montagnes, eau), calculée en tâche de fond.\n• Le tracé suit ton personnage sur la carte, la flèche du jeu suit les virages de la route, et l'itinéraire est recalculé si tu le quittes. Le trajet restant s'affiche aussi sur la |cffffd100minimap|r.\n• Réseau de routes et grille de marche tirés de Shortest Path Forever de cjber : l'addon passe sous licence GPL-3.0-or-later.",
-    WHATSNEW_0_2_0 = "• |cffffd100La fenêtre de l'addon|r (/mmir) : onglets Réglages, Aide (chaque bouton, carte par carte) et Soutenir.\n• |cffffd100Bouton autour de la minimap|r : clic pour la fenêtre, clic droit pour activer ou désactiver la manette sur la carte, glisser pour le déplacer.\n• Une nouvelle icône pour l'addon.",
 })
 
 -- La caméra au stick droit, carte réduite (Pad/Camera.lua)
@@ -457,22 +450,14 @@ ns.AddLocale("frFR", {
     STATUS_RUMBLE = "Vibrations : permises par le jeu %s · réglage %s",
 
     -- Les nouveautés
-    WHATSNEW_0_6_0 = "• |cffffd100Le panneau de trajet|r : l'étape, le temps restant, l'heure d'arrivée et une barre découpée par étape. En vol, il devient une |cffffd100barre de vol|r, avec une alerte avant l'atterrissage. Dessous, une |cffffd100flèche GPS|r montre où aller (verte dans la bonne direction).\n• |cffffd100Vibrations et sons|r à chaque étape, à l'arrivée et quand tu quittes le chemin.\n• |cffffd100Trajets en plusieurs étapes|r : ajoute des destinations à la file (la roue, X sur un lieu) ; elles sont rangées dans l'ordre le plus rapide et s'enchaînent.\n• |cffffd100Retour au corps|r : en fantôme, un trajet à pied jusqu'à ton corps, puis ton trajet reprend.\n• |cffffd100La roue|r (View) : ajouter à la file, envoyer au groupe, épingles, plume, réglages de la carte, choisis au stick droit.\n• |cffffd100Les lieux|r en une seule liste avec des onglets (LB / RB) : parcourir, |cffffd100rechercher|r au clavier (lieux, PNJ et objets de Questie), récents, la file.\n• |cffffd100Envoyer une destination au groupe|r : ceux qui ont l'addon reçoivent une fenêtre pour y aller, et le temps de chacun s'affiche dans le panneau (ralliement).\n• Un onglet |cffffd100Trajets|r dans /mmir, et une barre d'aide plus simple sur la carte.",
 })
 
 -- My Map Is Rich : ce qui change par rapport à OpenMap On Gamepad
 ns.AddLocale("frFR", {
-    SETTINGS_DESC = "Une carte du monde d'un seul tenant, entièrement jouable à la manette avec l'interface manette de WoW Forever : la croix dans les fenêtres, le saut d'icône en icône, les itinéraires, le clavier virtuel et le navigateur de lieux.",
-    OPT_ENABLED = "Utiliser la manette sur la carte",
-    OPT_PADVIEW = "Activer la vue manette de la carte",
-    HINT_ACTIONS = "Actions de la carte",
-    ACTIONS_TITLE = "Carte",
-    ACT_MENU = "Réglages de la carte",
     DORMANT = "en veille : %s est aussi activé. Désactive-le dans la liste des addons, puis /reload.",
     PROJECT_MMIR = "Une carte du monde d'un seul tenant, à la souris comme à la manette : itinéraires, lieux, groupe.",
     MAP_SETTINGS = "Réglages de la carte…",
     MAP_SETTINGS_TIP = "L'aspect de la carte, au plus près, les épingles et les donjons : l'onglet Carte de la fenêtre de l'addon (aussi /mmir carte).",
-    STATUS_HEAD = "version %s (la carte vient d'OpenMap %s)",
     WHATSNEW_MMIR_0_1_0 = "• |cffffd100My Map Is Rich|r : la carte du monde d'un seul tenant d'OpenMap, et tout OpenMap On Gamepad, dans un seul addon.\n• À la manette : la roue (View), les lieux et la recherche (LB), me suivre (RB), les itinéraires (R3) avec le panneau de trajet, la flèche GPS, la file et le partage au groupe.\n• |cffffd100/mmir|r ouvre la fenêtre de l'addon ; |cffffd100/mmir carte|r reprend les commandes de la carte.\n• Avec OpenMap ou OpenMap On Gamepad activé aussi, My Map Is Rich reste en veille : désactive-les.",
 })
 

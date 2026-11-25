@@ -641,23 +641,6 @@ local function UpdateUnderground(layer, conts, u, v, hu, hv, steps)
     return focus
 end
 
--- la grotte qui contient une position du monde (yards), pour les icônes des entrées : la carte de Blizzard, sinon
--- celle de la minicarte
-function S.CaveAt(cont, x, y)
-    for id, c in pairs(D.MapCaves or EMPTY) do
-        if c[2] == cont and x >= c[3] and x <= c[5] and y >= c[4] and y <= c[6] then
-            local r = RectOf(id)
-            if r then return id, r[1], r[2], r[3], r[4] end
-        end
-    end
-    for i, c in ipairs(D.MapCaveMinimap or EMPTY) do
-        if c[1] == cont and x >= c[2] and x <= c[4] and y >= c[3] and y <= c[5] then
-            local r = RectOf(-i)
-            if r then return -i, r[1], r[2], r[3], r[4] end
-        end
-    end
-end
-
 -- la plus petite grotte autour d'un point du monde (0..1), avec une marge : la vue laisse le zoom aller plus
 -- loin sur une, jusqu'à ce que sa carte remplisse la vue
 local CAVE_MARGIN = 0.25         -- (de sa taille, de chaque côté)

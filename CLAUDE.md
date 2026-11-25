@@ -46,7 +46,7 @@ Aucune chaîne en dur dans le code, même pour un message de discussion ou une i
 - Les clés gardent leur préfixe de rubrique : `HINT_`, `OPT_`, `TRAVEL_`, `HUD_`, `PLACES_`, `SHARE_`, `STATUS_`, `WHATSNEW_`…
 - Les noms du jeu (zones, PNJ, objets) viennent de l'API du jeu, déjà traduits ; on ne les met pas dans les Locales.
 - La longueur compte : l'allemand et le russe sont plus longs, le coréen et le chinois plus courts. Un bouton ou une colonne doit tenir en allemand.
-- **Dette connue (1.2.0)** : `enUS` et `frFR` ont 973 clés, les 8 autres langues 918 ; il en manque 55 (`STATUS_`, `SHARE_`, `TEST_`, `CAMERA_`, `WHATSNEW_`, `SEARCH_`… ; `HUD_` et `TIME_` sont complètes depuis la 1.2.0). Quand on touche une rubrique, on complète ses clés manquantes dans les 8 langues. Pour compter, lire toutes les clés d'une ligne : les 8 langues en rangent souvent plusieurs par ligne.
+- **Les 10 langues ont toutes leurs clés** (970, après la 1.2.0). Pour compter, lire toutes les clés d'une ligne : les 8 langues en rangent souvent plusieurs par ligne. `enUS` et `frFR` ont plusieurs blocs `ns.AddLocale` : une clé redéfinie dans un bloc plus bas remplace la première, alors une clé ne s'écrit qu'une fois. Une clé que le code ne lit plus se retire des 10 fichiers.
 
 **Dans le `.toc`** : `## Notes` existe en anglais et en `Notes-xxXX` pour les 10 autres codes (`esMX` compris). Une fonction majeure ajoutée ou retirée se reporte dans les 11.
 
@@ -89,7 +89,7 @@ Commits : seulement quand on le demande, sur le modèle `Version X.Y.Z : résum�
 ## Vérifier
 
 - Pas de Lua ni de luacheck sur ce poste : relire soigneusement les fins de blocs (`end`), les virgules des tables de Locales et les guillemets dans les traductions (une apostrophe typographique ou un `"` non échappé casse tout le fichier, donc toute la langue).
-- [.luacheckrc](.luacheckrc) existe et parle de `.github/workflows/luacheck.yml`, mais ce workflow **n'est pas encore dans ce dépôt** (il est dans My Guild Is Rich : à reprendre si on le demande).
+- [.luacheckrc](.luacheckrc) et [.github/workflows/luacheck.yml](.github/workflows/luacheck.yml) (repris de My Guild Is Rich) : GitHub vérifie la syntaxe à chaque envoi, données générées exclues. Les avertissements (globales, variables inutilisées) sont encore ignorés.
 - Test en jeu par la jonction décrite dans le README (`K:\World of Warcraft\_forever_\Interface\AddOns\MyMapIsRich`). Diagnostics : `/mmir etat`, `/mmir sonde`, `/mmir sonde carte`, `/mmir test`, `/mmir focus`, `/mmir carte status`.
 - Après un changement, dire au joueur s'il faut `/reload` ou relancer le jeu (fichier ajouté au `.toc`).
 
@@ -103,4 +103,4 @@ Ces fichiers existent, presque identiques, dans My Guild Is Rich, My Gamepad Is 
 
 ## Licences
 
-My Map Is Rich est sous **GPL-3.0-or-later** (à cause des données de marche de Shortest Path Forever, de cjber). Le dessin de la carte, son zoom rapproché et ses données restent sous MIT (`LICENSES/OpenMap.txt`, détail dans `LICENSES/README.txt`), crédits d'OpenMap dans la fenêtre Crédits ([Plus/UI/Credits.lua](MyMapIsRich/Plus/UI/Credits.lua), un texte par langue : `CREDITS_TEXT`). Ace3 n'est plus livré depuis la 0.6.0 (`LICENSES/Ace3.txt` reste, à retirer si on le décide). Ces fichiers ne se suppriment pas, et un code repris d'ailleurs ajoute sa licence et son crédit.
+My Map Is Rich est sous **GPL-3.0-or-later** (à cause des données de marche de Shortest Path Forever, de cjber). Le dessin de la carte, son zoom rapproché et ses données restent sous MIT (`LICENSES/OpenMap.txt`, détail dans `LICENSES/README.txt`), crédits d'OpenMap dans la fenêtre Crédits ([Plus/UI/Credits.lua](MyMapIsRich/Plus/UI/Credits.lua), un texte par langue : `CREDITS_TEXT`). Ace3 n'est plus livré depuis la 0.6.0, et sa licence est retirée. Ces fichiers ne se suppriment pas, et un code repris d'ailleurs ajoute sa licence et son crédit.

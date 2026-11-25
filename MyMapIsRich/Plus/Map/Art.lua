@@ -1008,20 +1008,6 @@ function S.SetShown(shown)
     if root and root:IsShown() ~= (shown and true or false) then root:SetShown(shown) end
 end
 
--- la prochaine S.Cull montre ou cache chaque texture des zones et chaque région triée
--- à nouveau, comme elles doivent l'être
-function S.ResetShown()
-    if not root then return end
-    wipe(inView)
-    wipe(Live.placed)
-    cullBox = nil
-    for _, list in pairs(zoneTex) do
-        for _, e in ipairs(list) do e.shown = nil end
-    end
-    for _, c in ipairs(culled) do c.here = nil end
-    for _, n in ipairs(names) do n.near = nil end
-end
-
 -- les copies du flou (voir S.SetBlur) : décalées en diagonale de chaque côté d'une fraction de pixel d'art
 local BLUR_TAPS = { { -1, -1 }, { 1, -1 }, { -1, 1 }, { 1, 1 } }
 local BLUR_PX = 0.6             -- pixels d'art par prise

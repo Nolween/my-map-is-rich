@@ -9,5 +9,4 @@ Data that come from the Forever database of QuestieDB (GPLv3; its notice: Questi
   Plus/Data/Quests.lua                   quests, their givers and objectives, where to find them
                                          (made by tools/quests/build_quests.py)
 
-No library is bundled since 0.6.0. Ace3.txt is the licence of the Ace3 libraries
-OpenMap shipped (CallbackHandler-1.0, AceGUI-3.0, AceConfig-3.0) until then.
+No library is bundled since 0.6.0 (OpenMap shipped the Ace3 libraries until then).

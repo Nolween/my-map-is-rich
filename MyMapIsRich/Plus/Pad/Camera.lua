@@ -5,8 +5,8 @@
 -- L'interface manette garde le stick pour sa liste, et ne laisse pas la
 -- caméra tourner tant qu'une fenêtre a le focus. Le stick est donc lu sur la
 -- manette (C_GamePad.GetDeviceMappedState, son stick « Camera »), sans
--- aucun raccourci, comme OpenMap lit déjà son zoom (WorldMap.lua :
--- PadStickTilt), et la caméra est tournée par les fonctions du jeu
+-- aucun raccourci, comme la vue lit déjà son zoom (Map/Cursor.lua :
+-- StickXY), et la caméra est tournée par les fonctions du jeu
 -- (MoveViewLeftStart...), plus ou moins vite selon l'inclinaison.
 -- Si le jeu refuse un jour ces appels (ADDON_ACTION_BLOCKED), la caméra au
 -- stick se coupe d'elle-même, avec un message, plutôt que de répéter
@@ -76,7 +76,7 @@ local function Wanted()
     local ours = ns.MapSmall() and (current == "quests" or current == "questpage")
     if current and current ~= "questlog" and not ours then return false end
     if ns.ActionBar and ns.ActionBar.Shown() then return false end
-    -- (le curseur sur la carte : le stick y zoome, OpenMap ; Pad/MapNav.lua)
+    -- (le curseur sur la carte : le stick y zoome, Map/View.lua ; Pad/MapNav.lua)
     return not ns.MapNav.CursorOnMap()
 end
 

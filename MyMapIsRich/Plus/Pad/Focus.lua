@@ -1,15 +1,15 @@
--- La navigation à la croix dans les fenêtres d'OpenMap (son menu, la liste
--- des épingles et leur fiche, le choix d'un donjon, Signaler un problème,
--- les nouveautés...) et dans celles de l'addon (navigateur de lieux, clavier
--- virtuel). Reprise de My Guild Is Rich (UI/Gamepad.lua) :
+-- La navigation à la croix dans les fenêtres de l'addon (sa fenêtre et ses
+-- onglets, les épingles et leur fiche, la fiche d'un point, les lieux, le
+-- panneau des quêtes, la carte d'un donjon, le clavier virtuel, les
+-- nouveautés...). Reprise de My Guild Is Rich (UI/Gamepad.lua) :
 --   croix         : d'un élément à l'autre dans la direction voulue (le plus
 --                   proche) ; un réglage à curseur : gauche / droite changent
 --                   sa valeur ; une liste défile quand on sort de ses lignes
 --   A             : valider (clic) ; un champ de texte : le clavier virtuel
 --   X             : clic droit
 --   B             : retour (ferme la fenêtre du dessus)
---   LB / RB       : onglet précédent / suivant (le menu d'OpenMap)
---   Y             : ouvrir / fermer le menu d'OpenMap
+--   LB / RB       : onglet précédent / suivant (la fenêtre de l'addon, les lieux, la carte d'un donjon...)
+--   Y             : ouvrir / fermer les réglages de la carte (ns.Map.Menu)
 -- L'élément choisi a un cadre doré et son info-bulle. Le curseur de la
 -- manette (stick gauche) reste utilisable : l'élément qu'il survole devient
 -- l'élément choisi.
@@ -214,7 +214,7 @@ F.SetCurrent = SetCurrent
 
 function F.Current() return current end
 
--- L'élément est dans une zone qui défile (le menu d'OpenMap) : elle défile
+-- L'élément est dans une zone qui défile (UI.Scroll) : elle défile
 -- jusqu'à lui
 local function ScrollParent(f)
     local p = f:GetParent()
@@ -257,7 +257,7 @@ local function ScrollList(f, dy)
         p:SetOffset(p.offset - dy)
         return p.offset ~= before
     end
-    -- (une liste d'OpenMap : la molette de son cadre)
+    -- (une autre liste : la molette de son cadre)
     p = f:GetParent()
     while p and p ~= scope do
         if p:IsMouseWheelEnabled() and p:GetScript("OnMouseWheel") then
@@ -350,7 +350,7 @@ function F.Activate(mouse)
 end
 
 -- La croix de fermeture d'une fenêtre : un petit bouton dans son coin en haut
--- à droite (UIPanelCloseButton chez OpenMap, UI.CloseButton chez nous)
+-- à droite (UI.CloseButton ; le CloseButton d'un cadre du jeu)
 local function FindClose(f)
     for _, key in ipairs({ "close", "CloseButton", "Close" }) do
         local b = f[key]

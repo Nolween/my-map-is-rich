@@ -93,7 +93,7 @@ MyMapIsRich/                le dossier de l'addon
     Init.lua Core.lua Diag.lua Locales/ Map/ Layers/ Pad/ Travel/ UI/ Data/
   Data/Map/                 les données de la carte (tirées du jeu par les outils d'OpenMap)
   Media/                    l'icône, la flèche ; Media/Map/ : les textures de la carte
-  LICENSE  LICENSES/ (OpenMap.txt, Ace3.txt, README.txt)
+  LICENSE  LICENSES/ (OpenMap.txt, QuestieDB.txt, README.txt)
 tools/                      roads/ et nav/ : les données de marche (voir plus bas) ;
                             hazards/ : les villes de l'autre faction (voir plus bas) ;
                             quests/ : la base des quêtes (voir plus bas) ;

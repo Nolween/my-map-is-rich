@@ -15,8 +15,6 @@ ns.AddLocale("enUS", {
     DISABLED_WHY = "on standby: %s.",
     RESET_DONE = "Settings reset.",
     HELP = "/mmir: settings · /mmir carte: map settings · /mmir etat: status · /mmir sonde: probe the controller's buttons (map open) · /mmir test: which buttons make the map lose its cursor · /mmir focus · /mmir on / off · /mmir lieux: place browser · /mmir news: what's new · /mmir trajet: the route in progress (trajet stop: cancel it) · /mmir file: the queue · /mmir panneau: put the route panel back · /mmir pourquoi <quest>: why a quest has no \"!\" · /mmir quetes export: the quests learned while playing · /mmir reset",
-    PADVIEW_OFF_NOTE = "My Map Is Rich's controller view stays on until a /reload.",
-    OPTIONS_COMBAT = "The settings can't be opened in combat.",
 
     -- Hint bar
     HINT_MOVE = "Move",
@@ -54,11 +52,11 @@ ns.AddLocale("enUS", {
     HINT_FOLLOW = "Follow me",
     HINT_FOLLOW_STOP = "Stop following me",
     HINT_ICON_CYCLE = "Next icon (LT: previous)",
-    HINT_ACTIONS = "My Map Is Rich actions",
+    HINT_ACTIONS = "Map actions",
     HINT_EDGE_PAN = "Cursor at the edge: move",
 
     -- Action bar (View)
-    ACTIONS_TITLE = "My Map Is Rich",
+    ACTIONS_TITLE = "Map",
     ACT_MENU = "Map settings",
     ACT_PIN = "Drop a pin",
     ACT_PINS = "Pins",
@@ -88,11 +86,11 @@ ns.AddLocale("enUS", {
     PLACE_FLIGHT = "Flight master",
 
     -- Settings
-    SETTINGS_DESC = "Makes My Map Is Rich fully usable with a controller, with WoW Forever's Gamepad UI on: My Map Is Rich's controller view, D-pad navigation in its windows, icon jumping, an on-screen keyboard and a place browser.",
+    SETTINGS_DESC = "One seamless world map, fully playable with a controller through WoW Forever's Gamepad UI: the D-pad in its windows, icon jumping, routes, the on-screen keyboard and the place browser.",
     SETTINGS_HELP = "On the map: RB follow me (RB again: stop) · LB places (search, queue) · LT/RT previous / next icon · View the wheel (queue, send to group, pins, quill, menu) · R3 route to the spot under the cursor. In a window: D-pad move · A select · View right-click · B back · LB/RB tabs. A on a text field opens the keyboard.\nThe game keeps the left stick (cursor), A, B, Y, the D-pad and the right stick (zoom) on the map. X: full screen or small map. Nothing is taken in combat.",
-    OPT_ENABLED = "Use the controller on My Map Is Rich",
+    OPT_ENABLED = "Use the controller on the map",
     OPT_ENABLED_TIP = "With the map open and out of combat, the addon takes the D-pad and a few buttons (see the hint bar). Off: My Map Is Rich's controller view works on its own.",
-    OPT_PADVIEW = "Turn on My Map Is Rich's controller view",
+    OPT_PADVIEW = "Turn on the map's controller view",
     OPT_PADVIEW_TIP = "My Map Is Rich's \"padView\" option: its map drawn over the game's map with the Gamepad UI on. Without it, My Map Is Rich leaves the map to Blizzard when the Gamepad UI is on.",
     OPT_JUMP = "D-pad jumps from icon to icon",
     OPT_JUMP_TIP = "On the map, the D-pad brings the nearest icon in that direction under the cursor (the map glides). Off: the D-pad moves the map.",
@@ -119,7 +117,7 @@ ns.AddLocale("enUS", {
     THEME_PINK = "Pink",
 
     -- Diagnostics
-    STATUS_HEAD = "version %s (My Map Is Rich %s)",
+    STATUS_HEAD = "version %s (the map comes from OpenMap %s)",
     STATUS_OPENMAP = "My Map Is Rich compatible: %s %s",
     STATUS_PADUI = "Gamepad UI on: %s",
     STATUS_PADVIEW = "controller view asked: %s · ready: %s · showing: %s",
@@ -280,11 +278,6 @@ ns.AddLocale("enUS", {
     WHATSNEW_BUTTON_TIP = "What changed in the last versions (also: /mmir news).",
     OPT_WHATSNEW = "What's new after an update",
     OPT_WHATSNEW_TIP = "A window shows what changed, once, at the login after an update (/mmir news).",
-    WHATSNEW_0_5_1 = "• |cffffd100The Support tab becomes Discover|r, with a treasure chest icon: my other addons are at the top, the donation below.",
-    WHATSNEW_0_5_0 = "• |cffffd100R3 on a quest|r in the quest list (small map): the route to it, as R3 on the map does. R3 on the route's quest cancels it.\n• |cffffd100Routes in cities follow the streets|r, bridges and floors (Stormwind, Orgrimmar, Darnassus...), and take the |cffffd100lifts|r (Undercity, Thunder Bluff, the Great Lift, Freewind Post).\n• |cffffd100The Darnassus portal|r and |cffffd100the Deeprun Tram|r are steps of a route (Alliance).\n• |cffffd100Learned flight masters are recognized|r with My Map Is Rich's controller view: open any flight master's map once and all yours are remembered.",
-    WHATSNEW_0_4_0 = "• |cffffd100RB follows you|r: one press centers the map on you and keeps you there as you move, and after a zoom. RB again stops it; LT / RT and choosing a place stop it too. The icon magnet pauses meanwhile.\n• |cffffd100The map opens centered on you|r, at least at the zoom where your zone fits (setting: \"Center on me when the map opens\").\n• |cffffd100This window|r: what changed in the last updates, once after each update (/mmir news, or the What's new button of the Help tab).\n• |cffffd100The camera on the right stick with the small map|r: when the cursor is on the list on the right, not on the map, the right stick turns the camera (/mmir camera turns it off, /mmir camera inverse flips the vertical axis).",
-    WHATSNEW_0_3_0 = "• |cffffd100Routes with R3|r: on the map, R3 plans the quickest way to the spot under the cursor, on foot, by your flight paths (even from a new flight master you just talk to), by boat and by zeppelin. R3 on the destination cancels it.\n• Walks |cffffd100follow the roads and go around obstacles|r (cliffs, mountains, water), worked out in the background.\n• The route follows your character on the map, the game's arrow follows the bends of the road, and the route is planned again if you leave it. The rest of the route also shows on the |cffffd100minimap|r.\n• Road network and walking grid from Shortest Path Forever by cjber: the addon is now under the GPL-3.0-or-later license.",
-    WHATSNEW_0_2_0 = "• |cffffd100The addon's window|r (/mmir): Settings, Help (every button, map by map) and Support tabs.\n• |cffffd100Minimap button|r: click for the window, right-click to turn the controller on the map on or off, drag to move it.\n• A new icon for the addon.",
 })
 
 -- La caméra au stick droit, carte réduite (Pad/Camera.lua)
@@ -457,22 +450,14 @@ ns.AddLocale("enUS", {
     STATUS_RUMBLE = "Vibrations: the game allows them %s · setting %s",
 
     -- Les nouveautés
-    WHATSNEW_0_6_0 = "• |cffffd100The route panel|r: step, time left, arrival time and a bar split by step. In flight it becomes a |cffffd100flight bar|r, with a warning before landing. Under it, a |cffffd100GPS arrow|r shows where to go (green when you head the right way).\n• |cffffd100Vibrations and sounds|r at each step, on arrival and when you leave the route.\n• |cffffd100Multi-stop routes|r: add destinations to the queue (the wheel, X on a place); they are put in the quickest order and follow one another.\n• |cffffd100Back to your corpse|r: as a ghost, a route on foot to your corpse, then your route resumes.\n• |cffffd100The wheel|r (View): add to queue, send to group, pins, quill, map settings, picked with the right stick.\n• |cffffd100Places|r in one list with tabs (LB / RB): browse, |cffffd100search|r with the keyboard (places, NPCs and objects from Questie), recent, the queue.\n• |cffffd100Send a destination to the group|r: those with the addon get a window to go there, everyone's time shows in the panel (rally).\n• A new |cffffd100Routes|r tab in /mmir, and a simpler hint bar on the map.",
 })
 
 -- My Map Is Rich: what differs from OpenMap On Gamepad
 ns.AddLocale("enUS", {
-    SETTINGS_DESC = "One seamless world map, fully playable with a controller through WoW Forever's Gamepad UI: the D-pad in its windows, icon jumping, routes, the on-screen keyboard and the place browser.",
-    OPT_ENABLED = "Use the controller on the map",
-    OPT_PADVIEW = "Turn on the map's controller view",
-    HINT_ACTIONS = "Map actions",
-    ACTIONS_TITLE = "Map",
-    ACT_MENU = "Map settings",
     DORMANT = "dormant: %s is also enabled. Turn it off in the AddOns list, then /reload.",
     PROJECT_MMIR = "One seamless world map, with the mouse or a controller: routes, places, your group.",
     MAP_SETTINGS = "Map settings…",
     MAP_SETTINGS_TIP = "How the map looks, up close, pins and dungeons: the Map tab of the addon's window (also /mmir carte).",
-    STATUS_HEAD = "version %s (the map comes from OpenMap %s)",
     WHATSNEW_MMIR_0_1_0 = "• |cffffd100My Map Is Rich|r: OpenMap's seamless world map and all of OpenMap On Gamepad, in one addon.\n• With a controller: the wheel (View), places and search (LB), follow me (RB), routes (R3) with the route panel, the GPS arrow, the queue and sharing with your group.\n• |cffffd100/mmir|r opens the addon's window; |cffffd100/mmir carte|r runs the map's commands.\n• With OpenMap or OpenMap On Gamepad enabled too, My Map Is Rich stays dormant: turn them off.",
 })
 

@@ -6,7 +6,7 @@
 -- d'aide). Toutes les 0,1 s, carte ouverte, le contexte le plus prioritaire
 -- qui s'applique est choisi ; s'il change, ses boutons sont posés.
 --   keyboard (100) : le clavier virtuel ouvert (UI/Keyboard.lua)
---   window    (50) : une fenêtre d'OpenMap ou de l'addon (Pad/Focus.lua)
+--   window    (50) : une fenêtre de l'addon (Pad/Focus.lua)
 --   sketch    (45) : la plume sortie (Pad/MapNav.lua)
 --   dungeon   (40) : la carte d'un donjon (Pad/Dungeon.lua)
 --   questlog  (20) : une quête de la liste de droite a le focus (Travel/Quests.lua)
@@ -19,11 +19,11 @@
 -- prenant toute la manette (EnableGamePadButton, SetPropagateGamePadInput) :
 -- le jeu exécute alors les actions des autres boutons depuis le code de
 -- l'addon et les bloque. Seuls les boutons du contexte sont pris : les autres
--- restent à la carte du jeu et à la vue manette d'OpenMap (sur la carte
+-- restent à la carte du jeu et à notre vue (Map/View.lua ; sur la carte
 -- seule : A, X, B, le stick gauche et son clic, le stick droit).
 -- L'interface manette refait les raccourcis de la carte à chaque changement
 -- de carte (son pied de page, worldMapFooter) : les nôtres sont reposés
--- après, comme OpenMap le fait pour les siens (Map/Gamepad.lua).
+-- après (Setup, en bas de ce fichier).
 local _, root = ...
 local ns = root.Plus
 local L = ns.L
@@ -78,8 +78,8 @@ function P.SetAction(name, key, fn, label)
     c.actions[key] = { fn = fn, label = label }
 end
 
--- Une aide pour un bouton que l'addon ne prend pas (celui du jeu ou
--- d'OpenMap, dans la barre d'aide)
+-- Une aide pour un bouton que l'addon ne prend pas (celui du jeu, ou lu
+-- par notre vue, dans la barre d'aide)
 function P.SetPassive(name, key, label)
     local c = contexts[name] or P.DefineContext(name, 0, function() return false end)
     c.passive[#c.passive + 1] = { key = key, label = label }
@@ -191,7 +191,7 @@ end
 -- brièvement : tant que l'addon le prend, l'imitation est coupée, et remise
 -- dès qu'il le rend (à la fermeture de la carte, avant un combat, à la
 -- déconnexion ; et à la connexion si le jeu s'est arrêté carte ouverte).
--- Les réglages d'origine sont gardés dans OpenMapOnGamepadDB.padEmulation.
+-- Les réglages d'origine sont gardés dans MyMapIsRichPlusDB.padEmulation.
 ---------------------------------------------------------------------------
 local EMULATE_CVARS = { "GamePadEmulateShift", "GamePadEmulateCtrl", "GamePadEmulateAlt" }
 

@@ -1,7 +1,7 @@
--- La carte seule, à la manette (vue manette d'OpenMap, aucune fenêtre
+-- La carte seule, à la manette (notre vue : Map/View.lua, aucune fenêtre
 -- ouverte). L'interface manette lie tous les boutons principaux sur la carte,
 -- et y poser nos raccourcis lui fait perdre le focus (plus de curseur) : le
--- jeu et OpenMap gardent donc le stick gauche (le curseur), A (appuyer sur
+-- jeu et notre vue gardent donc le stick gauche (le curseur), A (appuyer sur
 -- l'icône ou zoomer dans la zone), X (dézoomer), B (fermer la carte), Y
 -- (Plus), la croix (Carte standard), L3 (marqueur), le stick droit (zoom).
 -- L'addon lit sur la manette ceux dont elle ne se sert pas :
@@ -10,12 +10,12 @@
 --   LB      : le navigateur de lieux (UI/Places.lua)
 --   LT / RT : l'icône précédente / suivante autour du curseur
 --   View    : la roue des actions (UI/ActionBar.lua : la file, envoyer au
---             groupe, épingles, plume, menu d'OpenMap)
+--             groupe, épingles, plume, réglages de la carte)
 --   R3      : un itinéraire jusqu'au point sous le curseur, ou l'annuler sur
 --             sa destination (Travel/Guide.lua)
 -- Le curseur de la manette est celui du jeu : l'addon ne le déplace jamais
 -- (ce serait du code d'addon dans la carte de Blizzard). Pour amener une
--- icône sous le curseur, c'est la vue d'OpenMap qui glisse.
+-- icône sous le curseur, c'est la vue qui glisse.
 -- L'aimant : le curseur au repos tout près d'une icône, la vue se recale
 -- pour la mettre dessous (son info-bulle s'ouvre, A l'appuie).
 --
@@ -76,7 +76,7 @@ local function Visible(f)
 end
 
 -- Les icônes de HereBeDragons (Questie, TomTom, les récolteurs...) que la
--- vue manette d'OpenMap pose sur sa carte
+-- vue pose sur la carte (Map/Hbd.lua)
 local function LibIcons(out, seen)
     if not (LibStub and LibStub.IterateLibraries) then return end
     for name, lib in LibStub:IterateLibraries() do
@@ -196,14 +196,14 @@ M.FindMe = FindMe
 ---------------------------------------------------------------------------
 local following = false
 local FOLLOW_EVERY = 0.05    -- s
-local OPEN_DELAYS = { 0.05, 0.25 }   -- s : après qu'OpenMap a remis sa vue à l'ouverture
+local OPEN_DELAYS = { 0.05, 0.25 }   -- s : après que la vue a remis celle qu'elle avait à l'ouverture
 
 local function Plain(v)
     if issecretvalue and issecretvalue(v) then return nil end
     return v
 end
 
--- Où est le personnage sur le monde d'OpenMap (u, v), et la carte où il est
+-- Où est le personnage sur le monde de la carte (u, v), et la carte où il est
 local function PlayerWorld()
     if not (C_Map and C_Map.GetBestMapForUnit) then return end
     local ok, best = pcall(C_Map.GetBestMapForUnit, "player")
@@ -271,7 +271,7 @@ end)
 ns.On("MAP_SHOW", function()
     follow:Show()
     if not (ns.db and ns.db.options.centerOnOpen) then return end
-    -- (après qu'OpenMap a remis la vue qu'il avait gardée, à l'image suivante)
+    -- (après que la vue a remis celle qu'elle avait gardée, à l'image suivante : Layers/Locate.lua)
     for _, delay in ipairs(OPEN_DELAYS) do
         C_Timer.After(delay, function()
             if ns.MapShown() and ns.ViewOn() then CenterNow(true) end
@@ -301,7 +301,7 @@ end
 M.CanvasFocus = CanvasFocus
 
 -- Le curseur de la manette est-il vraiment sur la carte ? La règle du zoom
--- d'OpenMap (PadView.lua : Cursor) : le curseur du jeu affiché ET la carte
+-- de la vue (Map/View.lua : Cursor) : le curseur du jeu affiché ET la carte
 -- qui a le focus. Le curseur seul ne suffit pas : passé sur la carte puis
 -- revenu sur la liste de droite, il reste affiché. (La caméra au stick et
 -- R3 sur une quête de la liste s'en servent.)
@@ -367,7 +367,7 @@ end
 -- La carte seule : aucun raccourci posé (l'interface manette perdrait le
 -- focus de la carte) ; les boutons dont elle ne se sert pas y sont lus
 -- (Pad/Bindings.lua, mode « read »). La croix, A, X, B et les sticks
--- restent les siens et ceux d'OpenMap.
+-- restent les siens et ceux de la vue.
 -- La barre d'aide, comme la maquette de la carte plein écran : A Choisir,
 -- R3, LB, RB, Y (les calques : UI/Layers.lua), View, LT (l'icône
 -- suivante), RT (les quêtes : UI/QuestPanel.lua), X (la taille de la carte),
