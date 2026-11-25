@@ -39,6 +39,8 @@ local ART_RANGE = 80            -- les niveaux de cadre que prend le dessin
 local GLIDE_TIME = 0.4          -- la glissade de A et X, comme celle d'un clic
 local PAD_ZOOM_RATE = 1.8       -- le stick droit à fond, par seconde (en zoom logarithmique)
 local CITY_ZOOM = 1.5           -- plus près au-dessus d'une ville
+local CAVE_FILL = 0.9           -- ... et sur une grotte, jusqu'à ce que sa carte remplisse tant de la vue
+local CAVE_DEEPER = 6           -- ... mais pas plus de tant de fois le zoom le plus profond réglé
 local PLAYER_EVERY = 0.1        -- secondes entre deux places de ta flèche
 local REACH = 12                -- px du curseur où une icône compte comme dessous
 local HOVER_EVERY = 0.05        -- secondes entre deux regards sous le curseur
@@ -119,8 +121,24 @@ local function FitZoom(mapID)
     return math.min(view:GetWidth() / ((r - l) * W), view:GetHeight() / ((b - t) * H)) / FitPx()
 end
 
+-- Le zoom le plus profond en (cu, cv) : le réglage, plus loin sur une ville, dont la carte est petite. Et sur une
+-- grotte ou les abords d'un donjon (Map/Close.lua, A.CaveRectAt) jusqu'à ce que sa carte remplisse la vue : au-delà
+-- du réglage, qui laisse la plupart des grottes grandes comme un point (leur carte est plus fine que celle de la
+-- terre), mais à son pas (un réglage bas reste plus bas) et jamais plus loin qu'une ville au réglage le plus fort.
+-- (Le MaxZoomAt de la vue d'OpenMap ; perdu avec elle en 0.12.0)
 local function MostAt(cu, cv)
-    return (LK.MaxZoom() or 64) * ((cu and A.InCity and A.InCity(cu, cv)) and CITY_ZOOM or 1)
+    local base = LK.MaxZoom() or 64
+    local most = base * ((cu and A.InCity and A.InCity(cu, cv)) and CITY_ZOOM or 1)
+    if cu and A.CaveRectAt then
+        local u0, v0, u1, v1 = A.CaveRectAt(cu, cv)
+        local W, H = A.Size()
+        if u0 and W and u1 > u0 and v1 > v0 then
+            local fit = math.min(view:GetWidth() / ((u1 - u0) * W), view:GetHeight() / ((v1 - v0) * H)) / FitPx()
+            local _, top = LK.Range("maxZoom")
+            most = math.max(most, math.min((top or base) * CITY_ZOOM, base * CAVE_DEEPER, fit * CAVE_FILL))
+        end
+    end
+    return most
 end
 
 -- Un point de l'écran (px, comme GetCursorPosition) -> son écart au centre de la vue (px de vue, y vers le bas)
@@ -220,7 +238,7 @@ local function Apply()
     local W, H = A.Size()
     local px = FitPx() * zoom
     if not W or px <= 0 then return end
-    zoom = Clamp(zoom, 1, math.max(1, MostAt(u, v), zoom))
+    zoom = math.max(1, zoom)        -- (pas de plafond ici : MostAt borne les gestes, la vue posée reste où elle est)
     u, v = Clamp(u, 0, 1), Clamp(v, 0, 1)
     canvas:SetScale(px)
     canvas:ClearAllPoints()
@@ -831,6 +849,9 @@ local function Show()
         Recover()
     end
     Target()
+    -- (la prochaine vue trie tout de nouveau et remontre les villes, leurs cadres, textures et fondus : une
+    -- ville restée cachée montrait la peinture de sa zone jusqu'à un /reload, #30 d'OpenMap)
+    if A.Recull then pcall(A.Recull) end
     HB.Show()
     glide = nil
     sc.Child:SetAlpha(0)      -- (la carte du jeu dessous : là, invisible ; rien d'elle n'est écrit)

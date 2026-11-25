@@ -2,9 +2,9 @@
 
 My Map Is Rich est né d'un fork d'OpenMap 0.8.11. Le but : retirer tout le code d'OpenMap et refaire les mêmes fonctions avec le nôtre, aux couleurs de la [CHARTE](CHARTE.md).
 
-On avance **une version par étape**, et l'addon reste jouable entre deux. Les règles du chantier sont dans [CLAUDE.md](CLAUDE.md), à la section « Se passer d'OpenMap », et le détail pour le joueur dans le [CHANGELOG](CHANGELOG.md).
+On avance **une version par étape**, et l'addon reste jouable entre deux. Les règles du chantier sont dans [CLAUDE.md](CLAUDE.md), à la section « D'où vient le code », et le détail pour le joueur dans le [CHANGELOG](CHANGELOG.md).
 
-État au 23 novembre 2026 : **1.0.0, le chantier est fini.** Les douze étapes sont faites (la 0.13.0 prévue, le dessin et les icônes, a été coupée en deux : les icônes, puis le dessin). Il ne reste plus une ligne de code d'OpenMap qui tourne à part : tout est dans `Plus/`. Restent ses données (`Data/Map/`, `Media/Map/`) et le code de son dessin, porté (`Plus/Map/Art.lua`, `Close.lua`).
+État au 25 novembre 2026 : **1.2.0. Le chantier est fini depuis la 1.0.0.** Les douze étapes sont faites (la 0.13.0 prévue, le dessin et les icônes, a été coupée en deux : les icônes, puis le dessin). Il ne reste plus une ligne de code d'OpenMap qui tourne à part : tout est dans `Plus/`. Restent ses données (`Data/Map/`, `Media/Map/`) et le code de son dessin, porté (`Plus/Map/Art.lua`, `Close.lua`).
 
 ## Comment on avance
 
@@ -40,10 +40,13 @@ Ce que le joueur a perdu, par choix :
 
 ## Après la 1.0.0
 
-Plus d'étape prévue : la feuille de route est finie. Pistes pour la suite, sans ordre :
-- **Simplifier le dessin** : `Plus/Map/Art.lua` (près de 3 000 lignes) et `Close.lua` sont portés tels quels ; une réécriture plus simple, à faire une fois tout testé en jeu, en comparant à l'écran.
+Plus d'étape prévue : la feuille de route est finie. Depuis, la 1.1.0 a repris les vingt idées ci-dessous, et la 1.2.0 a ajouté un suivi des quêtes à nous (`UI/Tracker.lua`, à la place de celui du jeu), le progrès du groupe (`Quests/Party.lua`, préfixe `MMIRQuest`) et l'onglet Quêtes de `/mmir`.
+
+Pistes pour la suite, sans ordre :
+- **Simplifier le dessin** : un premier ménage est fait après la 1.2.0. `Plus/Map/Art.lua` passe de 2 973 à 2 376 lignes, `Close.lua` de 891 à 858. Sont partis : les branches des autres clients d'OpenMap (`ClientMaps`, `MapWorld`, `MapTerritories`, `MapBackLands`, `MapBlank`, `MapOff`, `MapUnder`, `MapPaperOut`), l'art des zones cuit en cases (`MapZoneArt`), la carte marine (`MapChart`), les trous peints à la main (`MapGapFills`) et les lieux peints dans les trous (`MapGapPlaces`), qui n'existent pas dans `Data/Map/` ; et les mesures de l'ancien `/mmir carte status` d'OpenMap, que plus rien ne lit. Rien ne devrait changer à l'écran : **à vérifier en jeu**. Une réécriture plus profonde reste possible, en comparant à l'écran.
+- **Des fonctions du dessin perdues avec la vue d'OpenMap en 0.12.0** : `S.Recull` (revoir les villes à chaque ouverture de la carte, contre une ville restée cachée jusqu'à un `/reload`, #30 d'OpenMap) et `S.CaveRectAt` (zoomer plus loin sur une grotte, jusqu'à ce que sa carte remplisse la vue) sont rebranchées dans `View.lua` après la 1.2.0 (`Show`, `MostAt`) : **à vérifier en jeu**. `S.ResetShown` et `S.CaveAt` (la grotte d'une entrée) ne sont toujours appelées de nulle part : à rebrancher ou à retirer.
 - **Nos propres outils de données** : refaire `Data/Map/` et `Media/Map/` sans les outils d'OpenMap. Aucune table n'est devenue inutile : le dessin les lit toutes (`Grade`, `Tones`, `ArtEdits` compris).
-- **Des commentaires** de `Plus/Pad/` (`Focus.lua`, `MapNav.lua`, `Bindings.lua`, `Camera.lua`) parlent encore du menu et des fichiers d'OpenMap, partis depuis : à relire quand on y touche.
+- **Des commentaires** de `Plus/Pad/` (`Focus.lua`, `MapNav.lua`, `Bindings.lua`, `Camera.lua`) parlent encore du menu et des fichiers d'OpenMap, partis depuis : à relire quand on y touche (toujours là en 1.2.0).
 
 ## Idées venues des autres addons Forever
 
@@ -72,7 +75,7 @@ En novembre 2026, on a lu sur CurseForge une vingtaine d'addons Forever qui touc
 | 19 | **Abandonner les quêtes grises** en lot, après confirmation | Simple Quests, Forever Quest Routes | l'abandon du menu d'une quête, en lot | ★ |
 | 20 | Les **quêtes de donjon sans Questie** : à prendre (et le donneur), en cours, faites | Dungeon Quests Forever, BuddiesQuest, 4Ever Leveling | `DN.QuestSource` de `Layers/Dungeons.lua` lit encore Questie : passer à `Quests/Db.lua` | ★★★ |
 
-Plus tard : le taux d'exploration des zones, les sous-zones non découvertes et les défis Legacy (Legacy Forever, QuestSpot) ; les livres de bibliothèque et secrets de Forever (ForeverSecrets) ; les quêtes du groupe sur la carte (un préfixe de message **neuf**, sans toucher à `OpenMap` ni `OMGPRoute`) ; « 12 / 40 quêtes faites » sous le nom de la zone.
+Plus tard : le taux d'exploration des zones, les sous-zones non découvertes et les défis Legacy (Legacy Forever, QuestSpot) ; les livres de bibliothèque et secrets de Forever (ForeverSecrets) ; les quêtes du groupe sur la carte (le progrès du groupe est fait en 1.2.0, dans le suivi, par le préfixe neuf `MMIRQuest` ; reste à le montrer sur la carte) ; « 12 / 40 quêtes faites » sous le nom de la zone.
 Écarté : accepter et rendre tout seul, vendre les gris, les guides de montée en niveau complets, le meilleur équipement, l'heure des bateaux (pas de donnée sûre), le mode sans spoilers.
 
 Par lots :
@@ -81,7 +84,7 @@ Par lots :
 3. **Le trajet** : 13, 14, 12, 15.
 4. **Le reste** : 7, 9, 11, 16, 17, 18, 19, 5.
 
-**Les 20 sont écrites (novembre 2026), rien n'est encore testé en jeu.** Ce qui diffère de l'idée de départ :
+**Les 20 sont écrites (1.1.0, novembre 2026), rien n'est encore testé en jeu.** Ce qui diffère de l'idée de départ :
 - 12 : la file se rangeait déjà au plus court à chaque ajout ; il reste « Tout mon journal dans la file », en bas de l'onglet File.
 - 14 : les PNJ de service viennent désormais de la base des quêtes (`services`, tiré des drapeaux de Questie) ; la boîte aux lettres n'y est pas (Questie la tient dans son code). Les citadins du rail lisent encore Questie : ils pourraient passer à cette base.
 - 7 : ni l'expérience ni « Élite » (la base ne les a pas).
@@ -95,13 +98,13 @@ Par lots :
 
 ## Dettes et décisions en attente
 
-- **Rien n'est encore testé en jeu, de la 0.5.0 à la 1.0.0.** Chaque version a sa liste « En jeu » dans le plan. Les vérifications de base :
+- **Rien n'est encore testé en jeu, de la 0.5.0 à la 1.2.0.** Chaque version a sa liste « En jeu » dans le plan. Les vérifications de base :
   - `/mmir etat`, `/mmir sonde carte`, `/mmir test`, `/mmir focus` ;
   - tout à la souris **et** à la manette ;
   - un client anglais ;
   - les sauvegardes avant et après migration (`WTF\…\SavedVariables`).
-- **Des portages, pas des réécritures** : `Plus/Map/Art.lua` (le dessin) et `Close.lua` (le zoom rapproché) sont le code d'OpenMap porté tel quel, et `View.lua`, `Hbd.lua`, `Cursor.lua`, `PinSets.lua` en reprennent de près la logique. Ils sont désormais à nous (Plus, commentaires en français, sous la licence MIT d'OpenMap qui reste créditée), mais une vraie réécriture du dessin, plus simple, reste possible une fois tout testé en jeu.
-- **Les traductions** : il manque **63 clés** dans les 8 langues hors `enUS` et `frFR` (895 clés, 1.1.0). Elles sont dans les rubriques `STATUS_`, `SHARE_`, `TEST_`, `CAMERA_`, `WHATSNEW_`, `HUD_`, `TIME_` et `SEARCH_`. On complète une rubrique quand on la touche.
+- **Des portages, pas des réécritures** : `Plus/Map/Art.lua` (le dessin) et `Close.lua` (le zoom rapproché) sont le code d'OpenMap porté, débarrassé après la 1.2.0 de ce qui ne servait qu'aux autres clients, et `View.lua`, `Hbd.lua`, `Cursor.lua`, `PinSets.lua` en reprennent de près la logique. Ils sont désormais à nous (Plus, commentaires en français, sous la licence MIT d'OpenMap qui reste créditée), mais une vraie réécriture du dessin, plus simple, reste possible une fois tout testé en jeu.
+- **Les traductions** : il manque **55 clés** dans les 8 langues hors `enUS` et `frFR` (918 clés contre 973, 1.2.0). Elles sont dans les rubriques `STATUS_`, `SHARE_`, `TEST_`, `CAMERA_`, `WHATSNEW_` et `SEARCH_` (`HUD_` et `TIME_` sont complètes depuis la 1.2.0). On complète une rubrique quand on la touche.
 - **`LICENSES/Ace3.txt`** : Ace3 n'est plus livré depuis la 0.6.0. Garder ou retirer ce fichier reste à décider.
 - **luacheck** : `.luacheckrc` existe (il laisse de côté `Data/` et `Plus/Data/`, générés), mais le workflow `.github/workflows/luacheck.yml` est encore dans My Guild Is Rich. Il est à reprendre.
-- **Les archives** : `build.ps1` n'a pas été lancé pour les versions 0.5.0 à 1.0.0.
+- **Les archives** : seules la 0.1.0, la 1.0.0 et la 1.1.0 ont la leur dans `..\Releases\MyMapIsRich\` ; `build.ps1` reste à lancer pour la 1.2.0.

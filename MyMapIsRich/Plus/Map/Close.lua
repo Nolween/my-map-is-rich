@@ -18,14 +18,15 @@
 -- Tout suit la vue : le S.SetView du dessin (Map/Art.lua), appelé à chaque déplacement ou zoom.
 --
 -- En code de My Map Is Rich depuis la 0.15.0 : c'est le zoom rapproché d'OpenMap (Map/Close.lua, licence
--- MIT, LICENSES/OpenMap.txt), porté dans Plus tel quel, ses commentaires traduits ; ses réglages
+-- MIT, LICENSES/OpenMap.txt), porté dans Plus, ses commentaires traduits ; ses réglages
 -- (minimap, minimapMix...) sont à My Map Is Rich, copiés une fois de ceux d'OpenMap (plus bas).
+-- Simplifié après la 1.2.0 : seuls restent les continents de WoW Forever (OpenMap en lisait d'autres d'un client,
+-- ns.MapWorld), et les mesures de temps de l'ancien /mmir carte status d'OpenMap sont parties.
 --------------------------------------------------------------------------------
 
 local _, root = ...
 local ns = root.Plus
--- (les tables de données et les outils d'OpenMap : par l'adaptateur, jusqu'en 1.0.0)
-local D = ns.Map.Data.All()
+local D = ns.Map.Data.All()     -- (les tables de Data/Map/, sous leurs noms : D.MapMinimap...)
 local S = ns.Map.ArtTable()           -- (le dessin : Map/Art.lua)
 local Settings = ns.Map.Settings
 -- (les réglages, lus comme une table : ceux du zoom rapproché sont à My Map Is Rich, plus bas)
@@ -84,17 +85,8 @@ end
 local GRAIN = D.Media.tex .. "MapGrain"
 local TOOTH = D.Media.tex .. "MapTooth"
 -- les cartes du jeu de chaque continent (ses cases de minicarte et ses grottes) et le continent de chaque carte
--- du jeu (par la terre duquel sa minicarte est dessinée) : les deux de WoW Forever, ou ceux d'un client (ns.MapWorld.minimap, world.py)
+-- du jeu (par la terre duquel sa minicarte est dessinée) : les Royaumes de l'Est (0) et Kalimdor (1)
 local CONT_OF, CONT_MAP = { [1415] = { 0 }, [1414] = { 1 } }, { [0] = 1415, [1] = 1414 }
-if D.MapWorld and D.MapWorld.minimap then
-    CONT_OF, CONT_MAP = D.MapWorld.minimap, {}
-    local ids = {}
-    for c in pairs(CONT_OF) do ids[#ids + 1] = c end
-    table.sort(ids)                 -- (une carte du jeu que deux continents partagent : la terre du premier, les Royaumes de l'Est)
-    for _, c in ipairs(ids) do
-        for _, g in ipairs(CONT_OF[c]) do CONT_MAP[g] = CONT_MAP[g] or c end
-    end
-end
 
 local function Smooth(x, r)
     local t = math.max(0, math.min(1, (x - r[1]) / (r[2] - r[1])))
@@ -133,31 +125,55 @@ end
 -- Les cases de la minicarte
 --------------------------------------------------------------------------------
 
-local tiles, pool = {}, {}      -- cont * 4096 + index -> { texture }
+local tiles, pool = {}, {}      -- cont * 4096 + index -> texture ; les textures libres
 local TileKey = function(cont, tx, ty) return cont * 4096 + tx * 64 + ty end   -- (un nombre : pas une chaîne par case et par image)
 local wantedTiles, wantedGap = {}, {}   -- (réutilisée à chaque mise à jour)
 
--- une case, par la terre de son continent (S.LandMask) : la mer de la minicarte est laissée de côté
+-- les cases de la minicarte d'un continent sous la vue (centre u, v, demi-taille hu, hv) : tx0, tx1, ty0, ty1,
+-- ou rien quand la vue n'est pas sur lui
+local function TileRange(cont, u, v, hu, hv)
+    local xa, ya = S.ToYards(cont, u - hu, v - hv)
+    local xb, yb = S.ToYards(cont, u + hu, v + hv)
+    if not (xa and xb) then return end
+    return math.floor(32 - math.max(ya, yb) / TILE), math.floor(32 - math.min(ya, yb) / TILE),
+        math.floor(32 - math.max(xa, xb) / TILE), math.floor(32 - math.min(xa, xb) / TILE)
+end
+
+-- le rectangle d'une case sur le monde (0..1) : u0, v0, u1, v1, ou rien pour une case hors du monde assemblé
+local function TileRect(cont, tx, ty)
+    local u0, v0 = S.FromYards(cont, (32 - ty) * TILE, (32 - tx) * TILE)
+    local u1, v1 = S.FromYards(cont, (31 - ty) * TILE, (31 - tx) * TILE)
+    if not (u0 and u1) then return end
+    return math.min(u0, u1), math.min(v0, v1), math.max(u0, u1), math.max(v0, v1)
+end
+
+-- une texture de la minicarte masquée par la terre de son continent (S.LandMask) : la mer de la minicarte
+-- est laissée de côté
+local function SetLand(tex, layer, cont)
+    local mask = CONT_MAP[cont] and S.LandMask and S.LandMask(layer, CONT_MAP[cont])
+    if tex.omMask ~= mask then
+        if tex.omMask then tex:RemoveMaskTexture(tex.omMask) end
+        if mask then tex:AddMaskTexture(mask) end
+        tex.omMask = mask
+    end
+end
+
 local function Tile(layer, fid, cont)
     local t = tremove(pool)
     if not t then
-        t = { layer:CreateTexture(nil, "ARTWORK") }
-        t[1]:SetDesaturation(MINI_DESAT)
+        t = layer:CreateTexture(nil, "ARTWORK")
+        t:SetDesaturation(MINI_DESAT)
     end
-    local mask = CONT_MAP[cont] and S.LandMask and S.LandMask(layer, CONT_MAP[cont])
-    if t.mask ~= mask then
-        if t.mask then t[1]:RemoveMaskTexture(t.mask) end
-        if mask then t[1]:AddMaskTexture(mask) end
-        t.mask = mask
-    end
-    t[1]:SetTexture(fid, nil, nil, "LINEAR")
+    SetLand(t, layer, cont)
+    t:SetTexture(fid, nil, nil, "LINEAR")
     t.omA = nil                 -- (son alpha reposé : UpdateMinimap saute une case inchangée)
     return t
 end
 
 local function DropTile(key)
     local t = tiles[key]
-    for _, tex in ipairs(t) do tex:Hide(); S.UnplaceWorld(tex) end
+    t:Hide()
+    S.UnplaceWorld(t)
     tiles[key] = nil
     pool[#pool + 1] = t
 end
@@ -188,12 +204,7 @@ local function LODPiece(layer, cont, sub)
     t:SetDrawLayer("ARTWORK", sub)
     t:SetDesaturation(MINI_DESAT)
     t.omA = nil                 -- (voir Tile)
-    local mask = CONT_MAP[cont] and S.LandMask and S.LandMask(layer, CONT_MAP[cont])
-    if t.omMask ~= mask then
-        if t.omMask then t:RemoveMaskTexture(t.omMask) end
-        if mask then t:AddMaskTexture(mask) end
-        t.omMask = mask
-    end
+    SetLand(t, layer, cont)
     return t
 end
 
@@ -229,14 +240,9 @@ local function UpdateMinimap(layer, conts, u, v, hu, hv, mix)
     wipe(wantedLOD)
     for _, cont in ipairs(conts) do
         local list = D.MapMinimap and D.MapMinimap[cont]
-        local xa, ya, xb, yb
-        if list and mix > 0.01 then
-            xa, ya = S.ToYards(cont, u - hu, v - hv)
-            xb, yb = S.ToYards(cont, u + hu, v + hv)
-        end
-        if xa and xb then
-            local tx0, tx1 = math.floor(32 - math.max(ya, yb) / TILE), math.floor(32 - math.min(ya, yb) / TILE)
-            local ty0, ty1 = math.floor(32 - math.max(xa, xb) / TILE), math.floor(32 - math.min(xa, xb) / TILE)
+        local tx0, tx1, ty0, ty1
+        if list and mix > 0.01 then tx0, tx1, ty0, ty1 = TileRange(cont, u, v, hu, hv) end
+        if tx0 then
             local count, across = (tx1 - tx0 + 1) * (ty1 - ty0 + 1), math.max(tx1 - tx0 + 1, ty1 - ty0 + 1)
             -- combien chacune se montre : les cases du jeu, la copie plus fine, la plus grossière
             local lods = D.MapMinimapLOD and D.MapMinimapLOD[cont]
@@ -255,26 +261,21 @@ local function UpdateMinimap(layer, conts, u, v, hu, hv, mix)
                 for tx = tx0, tx1 do
                     for ty = ty0, ty1 do
                         local fid = list[tx * 64 + ty]
-                        local u0, v0, u1, v1
-                        if fid and not tiles[TileKey(cont, tx, ty)] then
-                            u0, v0 = S.FromYards(cont, (32 - ty) * TILE, (32 - tx) * TILE)
-                            u1, v1 = S.FromYards(cont, (31 - ty) * TILE, (31 - tx) * TILE)
-                            if not (u0 and u1) then fid = nil end     -- (une case hors du monde assemblé)
-                        end
-                        if fid then
-                            local key = TileKey(cont, tx, ty)
-                            wanted[key] = true
-                            local t = tiles[key]
-                            if not t then
+                        local key = TileKey(cont, tx, ty)
+                        local t = tiles[key]
+                        if fid and not t then
+                            local u0, v0, u1, v1 = TileRect(cont, tx, ty)
+                            if u0 then
                                 t = Tile(layer, fid, cont)
                                 tiles[key] = t
-                                t[1]:SetVertexColor(TileTone((u0 + u1) / 2, (v0 + v1) / 2))
-                                for _, tex in ipairs(t) do
-                                    S.PlaceWorld(tex, math.min(u0, u1), math.min(v0, v1), math.max(u0, u1), math.max(v0, v1))
-                                    tex:Show()
-                                end
+                                t:SetVertexColor(TileTone((u0 + u1) / 2, (v0 + v1) / 2))
+                                S.PlaceWorld(t, u0, v0, u1, v1)
+                                t:Show()
                             end
-                            if t.omA ~= a3 then t.omA = a3 t[1]:SetAlpha(a3) end
+                        end
+                        if fid and t then
+                            wanted[key] = true
+                            if t.omA ~= a3 then t.omA = a3 t:SetAlpha(a3) end
                         end
                     end
                 end
@@ -335,31 +336,22 @@ local function UpdateGapMinimap(conts, u, v, hu, hv, alpha)
     for _, cont in ipairs(conts) do
         local list = D.MapMinimap and D.MapMinimap[cont]
         local mapID = CONT_MAP[cont]
-        local landMask = mapID and D.MapGaps and S.GapMask and S.GapMask(mapID)   -- (un client avec seulement des trous)
-        local xa, ya, xb, yb
-        if list and alpha > 0.01 and layer and landMask and D.MapGaps then
-            xa, ya = S.ToYards(cont, u - hu, v - hv)
-            xb, yb = S.ToYards(cont, u + hu, v + hv)
-        end
-        if xa and xb then
+        local landMask = mapID and D.MapGaps and S.GapMask and S.GapMask(mapID)
+        local tx0, tx1, ty0, ty1
+        if list and alpha > 0.01 and layer and landMask then tx0, tx1, ty0, ty1 = TileRange(cont, u, v, hu, hv) end
+        if tx0 then
             local set = GapSet(mapID)
             local pool = gapPools[cont] or {}
             gapPools[cont] = pool
-            local tx0, tx1 = math.floor(32 - math.max(ya, yb) / TILE), math.floor(32 - math.min(ya, yb) / TILE)
-            local ty0, ty1 = math.floor(32 - math.max(xa, xb) / TILE), math.floor(32 - math.min(xa, xb) / TILE)
             for tx = tx0, tx1 do
                 for ty = ty0, ty1 do
                     local fid = list[tx * 64 + ty]
                     if fid and n < GAP_MAX and set[tx * 64 + ty] then
-                        local u0, v0 = S.FromYards(cont, (32 - ty) * TILE, (32 - tx) * TILE)
-                        local u1, v1 = S.FromYards(cont, (31 - ty) * TILE, (31 - tx) * TILE)
-                        local cu, cv = (u0 + u1) / 2, (v0 + v1) / 2
-                        do
-                            n = n + 1
-                            local key = TileKey(cont, tx, ty)
-                            wanted[key] = true
-                            local tex = gapTiles[key]
-                            if not tex then
+                        local key = TileKey(cont, tx, ty)
+                        local tex = gapTiles[key]
+                        if not tex then
+                            local u0, v0, u1, v1 = TileRect(cont, tx, ty)
+                            if u0 then
                                 tex = tremove(pool)
                                 if not tex then
                                     tex = layer:CreateTexture(nil, "ARTWORK", nil, 5)
@@ -368,11 +360,15 @@ local function UpdateGapMinimap(conts, u, v, hu, hv, alpha)
                                     tex.cont = cont
                                 end
                                 tex:SetTexture(fid, nil, nil, "LINEAR")
-                                tex:SetVertexColor(Tint(GapTone(cu, cv)))
-                                S.PlaceWorld(tex, math.min(u0, u1), math.min(v0, v1), math.max(u0, u1), math.max(v0, v1))
+                                tex:SetVertexColor(Tint(GapTone((u0 + u1) / 2, (v0 + v1) / 2)))
+                                S.PlaceWorld(tex, u0, v0, u1, v1)
                                 tex:Show()
                                 gapTiles[key] = tex
                             end
+                        end
+                        if tex then
+                            n = n + 1
+                            wanted[key] = true
                             tex:SetAlpha(alpha)
                         end
                     end
@@ -390,7 +386,6 @@ local function UpdateGapMinimap(conts, u, v, hu, hv, alpha)
             pool[#pool + 1] = tex
         end
     end
-    return n
 end
 
 --------------------------------------------------------------------------------
@@ -452,21 +447,20 @@ local rects = {}                -- clé -> { u0, v0, u1, v1 } (0..1)
 local EMPTY = {}
 local dim
 
-local function CaveRect(c)
-    -- l'art couvre sa boîte du monde (UiMin / UiMax sont presque toujours 0..1)
-    local u0, v0 = S.FromYards(c[2], c[5], c[6])       -- nord-ouest : X maxi, Y maxi
-    local u1, v1 = S.FromYards(c[2], c[3], c[4])
+-- la boîte sur le monde (0..1) entre deux coins d'un continent (yards) : u0, v0, u1, v1, ou rien hors du monde assemblé
+local function Box(cont, x0, y0, x1, y1)
+    local u0, v0 = S.FromYards(cont, x1, y1)
+    local u1, v1 = S.FromYards(cont, x0, y0)
     if not u0 or not u1 then return end
     return math.min(u0, u1), math.min(v0, v1), math.max(u0, u1), math.max(v0, v1)
 end
 
+-- la boîte d'une grotte de Blizzard : { id, continent, minX, minY, maxX, maxY (yards)... } ; son art la couvre
+-- (UiMin / UiMax sont presque toujours 0..1)
+local function CaveRect(c) return Box(c[2], c[3], c[4], c[5], c[6]) end
+
 -- la boîte d'une grotte de la minicarte : { continent, minX, minY, maxX, maxY (yards), images }
-local function MiniRect(c)
-    local u0, v0 = S.FromYards(c[1], c[4], c[5])
-    local u1, v1 = S.FromYards(c[1], c[2], c[3])
-    if not u0 or not u1 then return end
-    return math.min(u0, u1), math.min(v0, v1), math.max(u0, u1), math.max(v0, v1)
-end
+local function MiniRect(c) return Box(c[1], c[2], c[3], c[4], c[5]) end
 
 -- la boîte de n'importe quelle grotte sur le monde, calculée une fois
 local function RectOf(key)
@@ -761,24 +755,13 @@ end
 
 --------------------------------------------------------------------------------
 
--- chaque part tourne seule : une qui échoue (une différence de client) ne doit pas emporter les autres.
--- Son erreur est signalée une fois, et /mmir carte status la liste.
+-- chaque part tourne seule : une qui échoue ne doit pas emporter les autres. Son erreur est signalée une fois
 local failed = {}
-S.closeFailed = failed
-local stepMs = {}               -- le temps de chaque étape (ms, lissé) et le pire, pour /mmir carte status
-S.closeSteps = stepMs
 local function Try(name, fn, ...)
-    local start = debugprofilestop and debugprofilestop()
     local ok, a, b = pcall(fn, ...)
-    if start then
-        local ms = debugprofilestop() - start
-        local s = stepMs[name] or { ms = ms, worst = 0 }
-        s.ms, s.worst = s.ms * 0.9 + ms * 0.1, math.max(s.worst, ms)
-        stepMs[name] = s
-    end
     if ok then return a, b end
     if not failed[name] then
-        failed[name] = tostring(a)
+        failed[name] = true
         geterrorhandler()(("My Map Is Rich %s: %s"):format(name, tostring(a)))
     end
 end
@@ -804,21 +787,17 @@ BlurRest.frame:SetScript("OnUpdate", function(self)
     if done ~= false then self:Hide() end
 end)
 
-S.closeView = {}
+local hookNames = {}            -- (les noms des accroches faits une fois, pas une chaîne neuve à chaque image)
 function S.SetView(u, v, hu, hv, zoom, steps)
     steps = steps or zoom
     local L = S.closeLayers
     if not L then return end
     if not D.Safe.Finite(u, v, hu, hv, zoom) then return end   -- (pas une vue : le NaN de #261)
-    local cv = S.closeView
-    local start = debugprofilestop and debugprofilestop()
-    cv.zoom, cv.time, cv.updates = zoom, GetTime(), (cv.updates or 0) + 1
     if S.Moved then S.Moved() end
     local cont = Try("continent", ContinentAt, u, v)
     Try("sea", S.SetSea, u, v, hu, hv)
     Try("culling", S.Cull, u - hu, v - hv, u + hu, v + hv)
     local soft = DB.soften and Smooth(zoom, SOFT_FADE) or 0
-    cv.soft = soft
     local now = GetTime()
     local moving = (ns.Map.View.Zooming and ns.Map.View.Zooming()) or now - BlurRest.at < BlurRest.gap
     BlurRest.at = now
@@ -848,33 +827,21 @@ function S.SetView(u, v, hu, hv, zoom, steps)
     mix = mix * (1 - (Try("cities", S.CityCover, u, v) or 0))
     -- et sur les villes à la surface pas plus que CITY_MINI (rien avec cityMinimap éteint) : leur propre plan mène
     local city = Try("surface cities", S.SurfaceCityCover, u, v)
-    local most = CityMost()
-    if mix > most then mix = mix + (most - mix) * (city or 0) end
-    cv.mix = mix
+    local cityMost = CityMost()
+    if mix > cityMost then mix = mix + (cityMost - mix) * (city or 0) end
     if S.MinimapShown then S.MinimapShown(mix > 0.004) end   -- (la terre inexplorée cachée par-dessus : Map/Art.lua)
     local conts = Try("continents", ContinentsInView, u, v, hu, hv) or {}
     Try("minimap", UpdateMinimap, L.minimap, conts, u, v, hu, hv, mix)
     Try("underground cities' minimap", UpdateCityMinimap, u, v, hu, hv, inside)
-    cv.gapTiles = Try("minimap in the gaps", UpdateGapMinimap, conts, u, v, hu, hv,
+    Try("minimap in the gaps", UpdateGapMinimap, conts, u, v, hu, hv,
         DB.minimap and DB.gapMinimap and GAP_MIX * Smooth(steps, GAP_FADE) or 0)
     local under = Try("underground", UpdateUnderground, L.under, cont, u, v, hu, hv, steps) or 0
     -- le monde flou au-dessus d'une grotte reçoit un grain plus fort
     Try("grain", UpdateGrain, L.grain, u, v, hu, hv, math.max(soft, math.min(1.4, under * 1.4)))
-    -- les noms des accroches faits une fois, pas une chaîne neuve à chaque image
-    S.viewHookNames = S.viewHookNames or {}
-    local names = S.viewHookNames
     for i, fn in ipairs(S.viewHooks) do
-        local step = names[i]
-        if not step then step = "view hook " .. i names[i] = step end
-        Try(step, fn, u, v, hu, hv, zoom)
-    end
-    local n = 0
-    for _ in pairs(tiles) do n = n + 1 end
-    cv.tiles = n
-    if start then
-        local ms = debugprofilestop() - start
-        cv.ms = (cv.ms or ms) * 0.9 + ms * 0.1
-        cv.worst = math.max(cv.worst or 0, ms)
+        local name = hookNames[i]
+        if not name then name = "view hook " .. i hookNames[i] = name end
+        Try(name, fn, u, v, hu, hv, zoom)
     end
 end
 

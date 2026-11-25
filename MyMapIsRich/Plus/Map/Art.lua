@@ -10,7 +10,7 @@
 -- Les couches, du bas vers le haut, et le zoom où chacune apparaît (zoom 1 : le monde entier
 -- tient dans la vue) :
 --   art du monde       toujours
---   art des continents CONT_FADE     (de larges bords adoucis cachent son cadre)
+--   art des continents CONT_IN       (de larges bords adoucis cachent son cadre)
 --   art de base des zones DETAIL_FADE (surtout du parchemin vide dans ce client ; il
 --                                     se montre sur son territoire, MapTerritory : sa
 --                                     terre et un peu au-delà, et toute terre de son
@@ -45,15 +45,17 @@
 -- les couleurs propres de la zone restent en elle.
 --
 -- En code de My Map Is Rich depuis la 0.14.0 : c'est le dessin d'OpenMap (Map/Stitch.lua, licence MIT,
--- LICENSES/OpenMap.txt), porté dans Plus tel quel, ses commentaires traduits. Il se fait connaître par
+-- LICENSES/OpenMap.txt), porté dans Plus, ses commentaires traduits. Il se fait connaître par
 -- ns.Map.SetArt ; le zoom rapproché (Map/Close.lua) s'y ajoute.
 -- Le reste de Plus l'atteint par ns.Map.Art ; les icônes sont dans Map/PinSets.lua.
+-- Simplifié après la 1.2.0 : OpenMap servait plusieurs clients (ns.ClientMaps, ns.MapWorld, l'art des zones cuit
+-- en cases, MapZoneArt...) ; seul reste ce que lisent les données de WoW Forever (Data/Map/), et les
+-- mesures de l'ancien /mmir carte status d'OpenMap, que plus rien ne lit, sont parties.
 --------------------------------------------------------------------------------
 
 local _, root = ...
 local ns = root.Plus
--- (les tables de données et les outils du dessin d'OpenMap : par l'adaptateur, jusqu'en 1.0.0)
-local D = ns.Map.Data.All()
+local D = ns.Map.Data.All()     -- (les tables de Data/Map/, sous leurs noms : D.MapGaps...)
 
 local S = {}
 ns.Map.SetArt(S)
@@ -61,27 +63,25 @@ ns.Map.SetArt(S)
 local WORLD = 947
 S.WORLD = WORLD
 
-local CONT_FADE = { 1.3, 2.2 }  -- le zoom où chaque couche commence / finit d'apparaître
+-- le zoom où chaque couche commence / finit d'apparaître
 local CONT_IN, WORLD_OUT = { 1.3, 1.7 }, { 1.7, 2.2 }   -- (les continents arrivent en entier, puis la terre de l'art du monde sous eux s'en va)
 local LABELS_OUT = { 3, 4 }     -- les noms des continents partent quand les zones (et leurs noms) arrivent
 local SEA_LABELS_OUT = { 3.5, 5 } -- ... et ceux des mers un peu après (rien ne vient par-dessus)
 local WORLD_SEA_OUT = { 4, 7 }  -- la mer de l'art du monde (le tourbillon, le navire...) reste l'océan jusqu'assez près (ses
                                 --  lettres sont nettoyées à la main : tools/map-art) ; la texture de la mer prend le relais ensuite
 local WORLD_COAST_OUT = { 3, 5 } -- ... mais au large des côtes, où ses hachures deviendraient énormes, bien plus tôt
-local DETAIL_FADE = D.ClientMaps and D.ClientMaps.detailFade or { 3, 4.5 } -- (tard : l'art du continent, d'un
-                                --  seul tenant, porte les zooms moyens ; celui d'un client : Data\<client>\Client.lua)
-local DETAIL_HINT = { 1.8, 3, D.ClientMaps and D.ClientMaps.detailHint == false and 0 or 0.3 }   -- ... après un soupçon
-                                --  de plus loin : où, et de quelle force
+local DETAIL_FADE = { 3, 4.5 }  -- (tard : l'art du continent, d'un seul tenant, porte les zooms moyens)
+local DETAIL_HINT = { 1.8, 3, 0.3 }   -- ... après un soupçon de plus loin : où, et de quelle force
 local CITY_FADE = { 0.2, 0.4 }  -- (les villes : la part du zoom où elles remplissent la vue : leur propre carte prend le relais
                                 --  de la peinture qu'en fait la zone dès qu'elles en remplissent un cinquième à deux cinquièmes,
                                 --  assez grand pour que leurs noms se lisent)
-local CITY_FADE_OF = D.ClientMaps and D.ClientMaps.cityFadeOf or {   -- ... plus tôt là où la zone ne la peint
+local CITY_FADE_OF = {          -- ... plus tôt là où la zone ne la peint
     [1454] = { 0.08, 0.25 },    --  que floue (Orgrimmar, sur celle de Durotar : un long fondu, sur la peinture de sa zone)
     [1456] = { 0.08, 0.25 },    --  (Les Pitons-du-Tonnerre, sur celle de Mulgore : avant que la bannière de sa zone parte)
-}                               -- (les cartes de WoW Forever ; celles d'un autre client : Data\<client>\Client.lua)
+}
 local BANNER_OUT = { 0.25, 0.4 } -- ... et où la bannière de la zone pour une ville qui garde la sienne (ns.MapCityTitles)
                                 --  lui cède la place : dès que celle-ci se lit (tools/map-preview/render.py fait pareil)
-local UNDERGROUND_CITIES = D.ClientMaps and D.ClientMaps.underground or { [1458] = true, [1455] = true }   -- Fossoyeuse, Forgefer : la minicarte y
+local UNDERGROUND_CITIES = { [1458] = true, [1455] = true }   -- Fossoyeuse, Forgefer : la minicarte y
                                 -- montre la surface, alors leur propre carte est dessinée par-dessus (et elle est tenue hors d'elles ;
                                 -- la minicarte du jeu de l'intérieur de la ville passe sur leur carte : Close.lua ; de même dans
                                 -- tools/map-preview/render.py et tools/map-caves/minimap.py)
@@ -89,7 +89,6 @@ local MUTE_FADE = { 4, 7 }      -- ... et où l'art du monde et des continents s
 local SEA_FADE = { 1.2, 1.9 }   -- ... et où il quitte la mer (ses grandes lettres de mer), la texture de la mer prenant le relais
 local UNDISCOVERED = { 0.05, 0.06, 0.08, 0.62 }   -- la terre inexplorée, ombrée (« dim ») : plus sombre et plus grise, sur
                                 --  l'art des zones et la minicarte de près (un simple mélange : la carte reste opaque)
-local SEA = { 0.50, 0.49, 0.41 } -- la couleur de la mer là où aucune carte n'en peint (MapSeaField couvre le reste)
 local LAND_TINT, LAND_DESAT = { 0.96, 0.92, 0.84 }, 0.25   -- la terre sans carte, vers le parchemin de l'art des zones
 local GRAIN_TILE = 14           -- unités du monde par case du grain du parchemin
 local GRAIN_OCTAVES = { { 1, 0, 0.55 }, { 2.618, 0.37, 0.5 } }   -- { taille x, décalage (cases), force }
@@ -148,44 +147,22 @@ local underNow = 0              -- jusqu'où une grotte a fait surface (Close.lu
 -- (seulement quand ça change : ces couches tiennent des milliers de textures, et S.SetZoom tourne
 -- plusieurs fois à l'ouverture de la carte)
 local function Fade(region, a)
-    if S.chartHide and S.chartHide[region] then a = 0 end   -- (rangée sous la carte marine : S.SetChart)
     if region.omFade == a then return end
     region.omFade = a
     region:SetAlpha(a)
     region:SetShown(a > 0.003)
 end
 
--- L'art des zones cuit en cases du monde (ns.MapZoneArt, render.py --bake-zones) : aux réglages où il
--- a été cuit, dessiné à la place des couches vivantes des zones (tilesRoot, overlayRoot, coreRoot : des
--- centaines de textures masquées en vue) tant que la vue n'a pas dépassé les propres pixels des cases,
--- puis leur passant la main (FADE : px d'écran par px de case). `live` : la part des couches vivantes (0 : les cases seules, 1 : le vivant seul).
--- (Une seule table : le fichier est près de la limite de 200 variables locales de Lua)
--- Le passage de main est le même art sur le même art : les couches vivantes s'allument (à fond) sous les cases
--- un peu avant (WARM, du début de FADE : leurs fichiers se chargent pendant ce temps) et les cases s'effacent ;
--- et tant que leurs fichiers arrivent encore (busy) les cases restent (holding), sinon le parchemin nu des zones,
--- le premier de leurs fichiers à arriver, se montrait un instant entre les deux
--- desat : la désaturation propre aux cases, le reste du chemin de celle où elles sont cuites au réglage
--- (désaturer deux fois, c'est désaturer une fois de 1 - (1 - a)(1 - b)) : elles servent tout réglage de couleur
--- english : les cases sont cuites des fichiers du client anglais, noms lettrés sur l'art compris
--- lettered : des cases dans la langue du client : l'anglais, ou le jeu propre d'une autre langue s'il est
--- cuit (MapZones\<locale>\, de l'art de ce client : ns.MapZoneArt.locales) ; toute autre langue dessine
--- les zones en vivant, de l'art du client dans sa langue
--- (FADE s'arrête à 1,2, pas 1,6 : les cases font 16 px par unité du monde, moins de la moitié de l'art de la
--- plupart des zones ; au-delà d'un px d'écran par px de case, elles étaient grossies, molles, sur un art vivant
--- plus net, et les zooms moyens devenaient flous. Plus tôt dépassait le budget de perf.py pour un dézoom)
-local Baked = { FADE = { 0.95, 1.2 }, WARM = 0.85, tiles = {}, use = false, live = 1, warm = false, busy = false, holding = false,
-    path = TEX .. "MapZones\\", desat = 0, english = not GetLocale or GetLocale():sub(1, 2) == "en" }
-Baked.lettered = Baked.english
-if not Baked.english and D.MapZoneArt and D.MapZoneArt.locales and D.MapZoneArt.locales[GetLocale()] then
-    Baked.path, Baked.lettered = TEX .. "MapZones\\" .. GetLocale() .. "\\", true
-end
+-- les bannières des villes et leurs trous dans l'art des zones sont coupés de l'art du client anglais, lettrés en
+-- anglais : une autre langue garde la bannière de la zone, dans sa langue (BannerHole, plus bas)
+local ENGLISH = not GetLocale or GetLocale():sub(1, 2) == "en"
 
 -- Les régions des couches vivantes des zones (tilesRoot, overlayRoot, coreRoot : des milliers de textures et
 -- leurs masques) ne sont ancrées que tant qu'elles peuvent se montrer. Chaque région est posée sur root, et à
 -- chaque image d'un déplacement ou d'un zoom le jeu remet en page tout ce qui y est ancré, caché ou non : des
 -- milliers de textures cachées coûtent autant que l'art à l'écran. masks : mapID -> les fiches de ses masques ;
--- placed : mapID -> si elles sont ancrées ; seen : si le détail des zones se montre du tout
-local Live = { masks = {}, placed = {}, seen = false }
+-- placed : mapID -> si elles sont ancrées
+local Live = { masks = {}, placed = {} }
 function Live.Under(f)
     while f do
         if f == tilesRoot or f == overlayRoot or f == coreRoot then return true end
@@ -198,76 +175,30 @@ end
 local appliedDetail, appliedSoft
 local function ApplyDetail()
     local d = detailNow * (1 - 0.75 * underNow)
-    -- (un client dont les zones arrivent continent par continent, ns.ClientMaps.detailDensity : le cadre de chaque
-    -- zone au fondu de son continent, Live.contFade ; une pas encore arrivée est cachée, ses fichiers pas demandés : ShowZone)
-    if Live.zones then
-        for mapID, z in pairs(Live.zones) do
-            local a = (Live.contFade[z.cont] or detailNow) * (1 - 0.75 * underNow)
-            Fade(z.frame, a)
-            if z.pieces then Fade(z.pieces, a) end
-            local on = a > 0.003
-            if z.on ~= on then
-                z.on = on
-                if inView[mapID] == true then ShowZone(mapID) end
-            end
-        end
-    end
     if blurRoot and softNow ~= appliedSoft then
         appliedSoft = softNow
         Fade(blurRoot, d * softNow)
     end
-    local live = Baked.use and Baked.live or 1
-    local warm = Baked.use and Baked.warm or false
-    -- (les cases tenues tant que les fichiers des zones arrivent, quelle que soit la raison : un zoom rapide
-    -- amène plus de zones en vue après que les couches vivantes se sont allumées, et elles se montreraient en parchemin)
-    Baked.holding = d > 0.001 and (live > 0 or warm) and Baked.use and Baked.busy or false
-    local key = live + (warm and 2 or 0) + (Baked.holding and 4 or 0)
-    if d == appliedDetail and key == Baked.applied then return end
-    appliedDetail, Baked.applied = d, key
-    -- (les couches vivantes à fond sous les cases, dès juste avant le passage de main : Baked, plus haut)
-    local on, seen = d > 0.001 and (live > 0 or warm), d > 0.001
-    local dl = on and d or 0
-    if on ~= detailLive or seen ~= Live.seen then   -- (les fichiers des zones se chargent la première fois que leur détail se montre ; les
-        detailLive, Live.seen = on, seen             --  régions des couches vivantes sont ancrées tant qu'elles se montrent, ShowZone)
+    if d == appliedDetail then return end
+    appliedDetail = d
+    local on = d > 0.001
+    if on ~= detailLive then        -- (les fichiers des zones se chargent la première fois que leur détail se montre ; les
+        detailLive = on             --  régions des couches vivantes sont ancrées tant qu'elles se montrent, ShowZone)
         for mapID in pairs(zoneTex) do
             if inView[mapID] == true then ShowZone(mapID) end
         end
     end
+    local dl = on and d or 0
     tilesRoot:SetShown(on)
     overlayRoot:SetShown(on)
-    tilesRoot:SetAlpha(Live.zones and (on and 1 or 0) or dl)   -- (celui de chaque zone, plus haut, là où elles arrivent par continent)
+    tilesRoot:SetAlpha(dl)
     for _, tex in ipairs(gapFill) do tex:SetAlpha(d) end
-    overlayRoot:SetAlpha(Live.zones and (on and 1 or 0) or dl)
+    overlayRoot:SetAlpha(dl)
     -- les intérieurs (une deuxième copie des morceaux de chaque zone) seulement avec les zones elles-mêmes :
     -- sous le léger soupçon de plus loin, ils se verraient à peine, sur les deux continents à la fois
     Fade(coreRoot, on and math.max(0, (d - DETAIL_HINT[3]) / (1 - DETAIL_HINT[3])) or 0)
     if blurRoot then Fade(blurRoot, d * softNow) end
-    if Baked.frame then
-        -- (les couches vivantes s'empilent : l'art de base d'une zone et ses morceaux, chacun à d, couvrent 1 - (1 - d)^2
-        -- de ce qui est dessous ; les cases sont tout cela en un, alors elles sont dessinées aussi fort)
-        -- (la tenue adoucie, pas d'un coup : elle va et vient bien des fois pendant un déplacement ou un zoom, et les cases,
-        -- une zone pas trouvée non grisée dedans, sautaient par-dessus l'art vivant grisé : la terre inexplorée clignotait.
-        -- Baked.easer, plus bas)
-        Baked.want = Baked.holding and 1 or 0
-        if Baked.hold == nil then Baked.hold = Baked.want end
-        if Baked.hold ~= Baked.want and Baked.easer then Baked.easer:Show() end
-        local gone = live * (1 - Baked.hold)
-        Fade(Baked.frame, math.floor((1 - (1 - d) ^ 2) * (1 - gone) * 100 + 0.5) / 100)
-        Baked.Cull()
-    end
 end
--- la tenue des cases cuites vers Baked.want : vite à l'arrivée (le parchemin se verrait), lentement au départ (taux par seconde)
-Baked.easer = CreateFrame("Frame")
-Baked.easer:Hide()
-Baked.easer:SetScript("OnUpdate", function(self, elapsed)
-    local want, h = Baked.want or 0, Baked.hold or 0
-    h = h + (want - h) * math.min(1, elapsed * (want > h and 12 or 3))
-    if math.abs(want - h) < 0.02 then h = want self:Hide() end
-    Baked.hold = h
-    appliedDetail = nil                     -- (ApplyDetail de nouveau, pour l'alpha des cases)
-    ApplyDetail()
-end)
-S.stats = { zones = 0, tiles = 0, overlays = 0, pins = 0, cities = {} }
 S.viewHooks = {}                -- fn(u, v, hu, hv, zoom) à chaque déplacement ou zoom (le S.SetView de Close.lua les appelle)
 
 --------------------------------------------------------------------------------
@@ -281,26 +212,8 @@ function S.Rect(mapID)
         if mapID == WORLD then
             r = { 0, 1, 0, 1 }
         else
-            -- (une ville, dans un client qui a un monde à lui : d'après la place de ses coins dans le monde,
-            -- comme le joueur, son maître de vol et la minicarte sont placés. Le rectangle de retail sur la carte
-            -- d'Azeroth, atteint par sa zone et son continent, se trompe de dizaines de mètres pour Hurlevent : ta
-            -- flèche et les icônes de Blizzard dessus étaient à côté de leur place, le rapport d'un joueur)
-            local w = D.MapWorld
-            if w and w.zones and w.zones[mapID] == 2 and S.FromYards then
-                local ok0, c0, p0 = pcall(C_Map.GetWorldPosFromMapPos, mapID, CreateVector2D(0, 0))
-                local ok1, c1, p1 = pcall(C_Map.GetWorldPosFromMapPos, mapID, CreateVector2D(1, 1))
-                if ok0 and ok1 and p0 and p1 and c0 == c1 then
-                    local u0, v0 = S.FromYards(c0, D.Safe.XY(p0))
-                    local u1, v1 = S.FromYards(c1, D.Safe.XY(p1))
-                    if u0 and u1 and math.abs(u1 - u0) > 1e-6 and math.abs(v1 - v0) > 1e-6 then
-                        r = { math.min(u0, u1), math.max(u0, u1), math.min(v0, v1), math.max(v0, v1) }
-                    end
-                end
-            end
-            if not r then
-                local ok, l, rr, t, b = pcall(C_Map.GetMapRectOnMap, mapID, WORLD)
-                r = (ok and l and rr > l and b > t) and { l, rr, t, b } or false
-            end
+            local ok, l, rr, t, b = pcall(C_Map.GetMapRectOnMap, mapID, WORLD)
+            r = (ok and l and rr > l and b > t) and { l, rr, t, b } or false
         end
         rects[mapID] = r
     end
@@ -309,21 +222,10 @@ end
 
 function S.Size() return W, H end
 
--- si une carte est assemblée dans le monde, et comme quoi (1 : une zone, 2 : une ville, 3 : un continent) :
--- un client qui a un monde à lui en donne la liste (ns.MapWorld, tools/map-data/world.py) ; sinon chaque
--- continent et zone de la carte d'Azeroth l'est (nil : comme son art le fait). `host` : comme la carte
--- du jeu la montre, qui peut être une autre version d'une carte assemblée (ns.MapWorld.alias : Uldum assiégé)
-function S.Stitched(mapID, host)
-    local world = D.MapWorld
-    if not world then return true end
-    if not world.kind then
-        world.kind = {}
-        for _, id in ipairs(world.continents or {}) do world.kind[id] = 3 end
-        for id, k in pairs(world.zones or {}) do world.kind[id] = k end
-    end
-    if host and world.alias and world.alias[mapID] then mapID = world.alias[mapID] end
-    return world.kind[mapID] ~= nil or mapID == WORLD, world.kind[mapID]
-end
+-- si une carte est assemblée dans le monde : sur WoW Forever, chaque continent et zone de la carte d'Azeroth
+-- l'est (OpenMap en tenait une liste pour les clients qui ont un monde à eux, ns.MapWorld). Gardée pour
+-- l'adaptateur (ns.Map.Stitched) et la vue
+function S.Stitched() return true end
 
 -- la taille de l'art d'une carte (unités de son canevas)
 local function ArtSize(mapID)
@@ -430,7 +332,7 @@ end
 -- langue (celle des Pitons-du-Tonnerre en esMX, de Darnassus en zhCN : #47)
 local holeMasks = {}
 local function BannerHole(parent, p)
-    if not Baked.english then return end
+    if not ENGLISH then return end
     if not (p.mapID and D.MapBannerHoles and D.MapBannerHoles[p.mapID]) then return end
     local key = tostring(parent) .. p.mapID
     holeMasks[key] = holeMasks[key] or Feather(parent, p, TEX .. "MapBannerHole\\" .. p.mapID)
@@ -450,14 +352,11 @@ local function PlaceTiles(parent, p, files, x, y, w, h, drawLayer, sub, overlay,
             local file = tonumber(f) or f              -- (un identifiant de fichier, ou le chemin d'une case retouchée)
             local pw = (k < cols) and tw or (w - (cols - 1) * tw)
             local fw = (k < cols or not overlay) and tw or Pow2(pw)
-            -- (une case dont son masque ne laisse rien, ou vide : aucune, ns.MapBlank et ns.MapOff)
-            if file and pw > 0 and ph > 0 and not (overlay and D.MapBlank and D.MapBlank[file])
-                and not (p.off and not overlay and p.off[(j - 1) * cols + k]) then
+            if file and pw > 0 and ph > 0 then
                 local tx, ty = p.left + (x + (k - 1) * tw) * p.sx, p.top + (y + (j - 1) * th) * p.sy
-                -- les textures d'une zone reçoivent leur fichier une fois la zone en vue (ShowZone) : ouvrir la
-                -- carte charge ce qui y est, pas le monde entier
-                local lazy = band or list == graded              -- (ShowZone les met en file ; celles d'un fond trié, S.Cull)
-                    or list == backdrop and D.ClientMaps and D.ClientMaps.cullBackdrop
+                -- les textures d'une zone reçoivent leur fichier une fois la zone en vue (ShowZone les met en file) :
+                -- ouvrir la carte charge ce qui y est, pas le monde entier
+                local lazy = band or list == graded
                 for copy = 1, band and 2 or 1 do
                     local tex = parent:CreateTexture(nil, drawLayer, nil, sub + (copy - 1) * 2)
                     if lazy then tex.omFile = file else tex:SetTexture(file, nil, nil, "TRILINEAR") end
@@ -480,7 +379,6 @@ local function PlaceTiles(parent, p, files, x, y, w, h, drawLayer, sub, overlay,
                         if mask2 then tex:AddMaskTexture(mask2) end
                         if list == graded then
                             local e = { tex, p.mapID, piece, layer = layer, u0 = u0, v0 = v0, u1 = u1, v1 = v1,
-                                under = not overlay and p.under and p.under[(j - 1) * cols + k],
                                 blur = parent.omShift or nil }   -- (celle d'une copie du flou : ShowZone)
                             graded[#graded + 1] = e
                             local list = zoneTex[p.mapID] or {}
@@ -498,11 +396,10 @@ local function PlaceTiles(parent, p, files, x, y, w, h, drawLayer, sub, overlay,
     return n
 end
 
--- les masques générés de la zone (MapBand, MapTerritory, MapCore) sur `parent` ; seules les zones
--- harmonisées en ont (et les territoires d'un client sans le reste : ns.MapTerritories)
+-- les masques générés de la zone (MapBand, MapTerritory, MapCore...) sur `parent` ; seules les zones
+-- harmonisées (ns.MapGrade) en ont
 local function ZoneMask(parent, p, folder)
     if D.MapGrade and D.MapGrade[p.mapID] then return Feather(parent, p, folder .. p.mapID) end
-    if folder == TERRITORY and D.MapTerritories and D.MapTerritories[p.mapID] then return Feather(parent, p, folder .. p.mapID) end
 end
 
 -- L'art de base d'une carte (toute sa couche), bords adoucis par `feather` s'il est donné ;
@@ -517,8 +414,6 @@ local function PlaceBase(parent, mapID, drawLayer, list, feather)
     local territory = list == graded and ZoneMask(parent, p, TERRITORY)
     local mask = territory or (feather and Feather(parent, p, feather))
     local band = list == graded and ZoneMask(parent, p, BAND)
-    p.under = D.MapUnder and D.MapUnder[mapID]   -- (ses cases entièrement sous la peinture de ses morceaux : ShowZone)
-    p.off = territory and D.MapOff and D.MapOff[mapID]   -- (... et entièrement hors de son territoire : aucune)
     return PlaceTiles(parent, p, files, 0, 0, p.layer.layerWidth, p.layer.layerHeight, drawLayer, 0, false, mask, list, false, band)
 end
 
@@ -531,21 +426,6 @@ local function PlaceBackdrop(parent, mapID, drawLayer, feather)
     local files = ArtFiles(mapID)
     if not files or #files == 0 then return end
     local mask = feather and Feather(parent, p, feather)
-    if D.ClientMaps and D.ClientMaps.sea == false then
-        -- (un client dont l'art peint sa propre mer : l'art tel quel, une fois ; celui d'un continent sur sa terre et
-        -- les hauts-fonds autour, ns.MapBackLands (territory.py), l'art du monde se montrant au-delà ; près de la vue
-        -- seulement, ses fichiers chargés à son approche : S.Cull)
-        local n = #backdrop
-        local land = D.MapBackLands and D.MapBackLands[mapID] and Feather(parent, p, TEX .. "MapBackLand\\" .. mapID)
-        PlaceTiles(parent, p, files, 0, 0, p.layer.layerWidth, p.layer.layerHeight, drawLayer, 0, false, mask, backdrop, false, nil, land)
-        for i = n + 1, #backdrop do
-            local tex, rec = backdrop[i], backdrop[i].omRec
-            if D.ClientMaps.cullBackdrop then
-                culled[#culled + 1] = { tex, rec[2] / W, rec[3] / H, (rec[2] + rec[4]) / W, (rec[3] + rec[5]) / H, layer = parent }
-            end
-        end
-        return
-    end
     local sea = Feather(parent, p, mapID == WORLD and SEA_OPEN or SEA_MASK .. mapID)
     local land = Feather(parent, p, TEX .. "MapBackLand\\" .. mapID)   -- (sa terre et sa bande côtière : elles restent)
     PlaceTiles(parent, p, files, 0, 0, p.layer.layerWidth, p.layer.layerHeight, drawLayer, 0, false, mask, backdrop, false, nil, land)
@@ -554,7 +434,6 @@ local function PlaceBackdrop(parent, mapID, drawLayer, feather)
         PlaceTiles(parent, p, files, 0, 0, p.layer.layerWidth, p.layer.layerHeight, drawLayer, 0, false, mask, worldCoast, false, nil,
             Feather(parent, p, SEA_COAST))
     end
-    return mask
 end
 
 -- La terre d'un continent gardée comme terre une fois le fond estompé en mer (les régions sans
@@ -673,16 +552,7 @@ local function PlaceOverlays(mapID)
     local explored = C_MapExplorationInfo.GetExploredMapTextures(mapID) or {}
     local reveal = D.MapReveal and D.MapReveal[C_Map.GetMapArtID(mapID) or 0]
     if #explored == 0 and not reveal then return 0 end
-    -- (un client dont les zones arrivent continent par continent : celle de chaque zone sur un cadre à elle,
-    -- en fondu avec son art de base, S.ZoneByContinent)
     local parent = overlayRoot
-    if D.ClientMaps and D.ClientMaps.detailDensity then
-        parent = CreateFrame("Frame", nil, overlayRoot)
-        parent:SetAllPoints(root)
-        parent:SetFrameLevel(overlayRoot:GetFrameLevel())
-        Live.overlayOf = Live.overlayOf or {}
-        Live.overlayOf[mapID] = parent
-    end
     -- à l'intérieur du cadre propre de la zone (mesuré par zone : la terre qu'elle peint jusqu'au bord se montre ;
     -- la mer s'y estompe)
     local mask = ZoneMask(parent, p, EDGE) or Feather(parent, p, FEATHER_THIN)
@@ -723,13 +593,6 @@ end
 local cullBox                   -- la dernière vue que S.Cull a vue, avec sa marge : { u0, v0, u1, v1 }
 local NONE = {}                 -- (une liste vide à parcourir, gardée : pas une neuve à chaque image)
 
--- les trous peints à la main, allumés ou éteints (éteints : le papier des trous, comme avant). Les
--- cases cuites les ont, alors éteints, les couches vivantes dessinent (S.ApplyGrade : à appeler après)
-function S.SetGapFillsShown(shown)
-    Baked.noFills = not shown
-    if S.fillRoot then S.fillRoot:SetShown(shown and true or false) end
-end
-
 --------------------------------------------------------------------------------
 -- Les yards du monde -> la carte du monde (0..1), par les coins de chaque continent
 --------------------------------------------------------------------------------
@@ -769,22 +632,8 @@ local function Project(c, wx, wy, swap)
 end
 
 local swap
--- une position du monde (yards sur le continent 0 / 1) sur la carte d'Azeroth (0..1). Un client qui a un monde
--- à lui y a les régions de chaque carte du jeu (ns.MapWorld.yards, tools/map-data/world.py : dans la boîte
--- d'une région, u = au + bu * y, v = av + bv * x) ; une position dans aucune (celles de l'Outreterre, sur la
--- carte du jeu des îles draeneï) n'est pas sur le monde assemblé. (Un peu au-delà de la boîte d'une région,
--- elle l'est encore : la terre de sa carte peut dépasser la boîte que la carte d'Azeroth lui donne, comme Quel'Thalas)
+-- une position du monde (yards sur le continent 0 / 1) sur la carte d'Azeroth (0..1)
 function S.FromYards(cont, wx, wy)
-    local yards = D.MapWorld and D.MapWorld.yards
-    if yards then
-        for _, r in ipairs(yards[cont] or NONE) do
-            local mx, my = (r[2] - r[1]) * 0.2, (r[4] - r[3]) * 0.2
-            if wx >= r[1] - mx and wx <= r[2] + mx and wy >= r[3] - my and wy <= r[4] + my then
-                return r[5] + r[6] * wy, r[7] + r[8] * wx
-            end
-        end
-        return
-    end
     local c = Corners(cont)
     if not c then return end
     if swap == nil then
@@ -807,24 +656,6 @@ end
 --------------------------------------------------------------------------------
 -- Construire, mettre en page, zoomer
 --------------------------------------------------------------------------------
-
--- (ns.ClientMaps.detailDensity) le cadre d'une zone, en fondu avec les zones de son continent (ApplyDetail) :
--- Live.zones, et les px d'art par unité du monde de chaque continent sur cette densité (Live.contK : S.SetZoom en règle DETAIL_FADE)
-function S.ZoneByContinent(mapID, frame)
-    local cont = mapID
-    for _ = 1, 8 do
-        local info = C_Map.GetMapInfo(cont)
-        if not info or info.mapType == Enum.UIMapType.Continent or not info.parentMapID then break end
-        cont = info.parentMapID
-    end
-    Live.zones, Live.contK, Live.contFade = Live.zones or {}, Live.contK or {}, Live.contFade or {}
-    Live.zones[mapID] = { frame = frame, cont = cont, pieces = Live.overlayOf and Live.overlayOf[mapID] }
-    if Live.contK[cont] == nil then
-        local aw = ArtSize(cont)
-        local l, r = S.Rect(cont)
-        Live.contK[cont] = aw and l and r > l and aw / ((r - l) * W) / D.ClientMaps.detailDensity or 1
-    end
-end
 
 -- Bâtit tout sur `parent` (le canevas de la vue) : les cadres de l'art depuis `artLevel`
 -- (il lui faut `range` niveaux), les icônes à `iconLevel`.
@@ -893,7 +724,6 @@ function S.BuildNow(parent, artLevel, range, iconLevel)
     root:SetPoint("TOPLEFT", parent, "TOPLEFT")
     root:SetSize(1, 1)
     root:SetFrameLevel(artLevel)
-    S.chartHost = { parent, artLevel - 1 }   -- (le cadre de la carte marine : sous tout l'art)
     contRoot = Layer(artLevel + 1)
     tilesRoot = Layer(artLevel + 2)
     overlayRoot = Layer(artLevel + range - 16)
@@ -913,51 +743,30 @@ function S.BuildNow(parent, artLevel, range, iconLevel)
     -- pas le bord du papier : sa couleur (celles de la mer du monde portées vers l'extérieur, gardant
     -- les teintes de la mer près de ses bords), et son marbré à l'échelle des continents (l'art du
     -- monde et la couleur de sa mer s'y fondent à leurs bords)
-    -- (un client dont l'art peint sa propre mer, ns.ClientMaps.sea false : rien de la nôtre, seulement la
-    -- couleur de la mer de son art du monde au-delà de ses bords)
-    local seaOn = not (D.ClientMaps and D.ClientMaps.sea == false)
     local sea = root:CreateTexture(nil, "BACKGROUND", nil, -8)
-    if seaOn then
-        sea:SetTexture(SEA_FIELD_OUT, nil, nil, "LINEAR")
-    else
-        local c = D.ClientMaps.seaColor or SEA
-        sea:SetColorTexture(c[1], c[2], c[3], 1)
-    end
+    sea:SetTexture(SEA_FIELD_OUT, nil, nil, "LINEAR")
     Record(sea, -SEA_REACH * W, -SEA_REACH * H, (1 + 2 * SEA_REACH) * W, (1 + 2 * SEA_REACH) * H)
-    -- (et le parchemin de l'art du monde qui continue au-delà de son bord déchiré, MapPaper teinté à sa marge :
-    -- ns.MapPaperOut, territory.py)
-    local paperOut = not seaOn and D.MapPaperOut
-    if paperOut then
-        local tex, k = root:CreateTexture(nil, "BACKGROUND", nil, -7), paperOut[1]
-        tex:SetTexture(PAPER, "REPEAT", "REPEAT")
-        tex:SetVertexColor(paperOut[2], paperOut[3], paperOut[4], 1)
-        Record(tex, -SEA_REACH * W, -SEA_REACH * H, (1 + 2 * SEA_REACH) * W, (1 + 2 * SEA_REACH) * H)
-        tex:SetTexCoord(-SEA_REACH * W / k, (1 + SEA_REACH) * W / k, -SEA_REACH * H / k, (1 + SEA_REACH) * H / k)
-    end
     local outer = {}
-    for i, file in ipairs(seaOn and { SEA_DARK, SEA_LIGHT } or NONE) do
+    for i, file in ipairs({ SEA_DARK, SEA_LIGHT }) do
         local tex = root:CreateTexture(nil, "BACKGROUND", nil, -7)
         tex:SetTexture(file, "REPEAT", "REPEAT")
         Record(tex, -SEA_REACH * W, -SEA_REACH * H, (1 + 2 * SEA_REACH) * W, (1 + 2 * SEA_REACH) * H)
         outer[i] = tex
     end
-    S.chartOff = { sea, outer[1], outer[2] }   -- (la mer de la carte marine prend leur place : S.SetChart)
     -- la couleur de la mer telle que les cartes du monde et des continents la peignent (MapSeaField) : en
     -- zoomant, la carte garde la couleur qu'elle avait de loin ; celle des continents se fond dans celle du monde
-    for _, mapID in ipairs(seaOn and (D.ClientMaps and D.ClientMaps.seaFields or { WORLD, 1414, 1415 }) or NONE) do
+    for _, mapID in ipairs({ WORLD, 1414, 1415 }) do
         local p = Place(mapID)
         if p then
             local w, h = p.layer.layerWidth * p.sx, p.layer.layerHeight * p.sy
             local field = root:CreateTexture(nil, "BACKGROUND", nil, mapID == WORLD and -6 or -5)
             field:SetTexture(SEA_FIELD .. mapID, nil, nil, "LINEAR")
             Record(field, p.left, p.top, w, h)
-            local fade = Feather(root, p, FEATHER_WIDE)
-            field:AddMaskTexture(fade)
-            if mapID == WORLD then S.chartMasks = { fade } else tinsert(S.chartOff, field) end
+            field:AddMaskTexture(Feather(root, p, FEATHER_WIDE))
         end
     end
     -- et son marbré par-dessus, sombre et clair, en deux octaves
-    for i = 1, seaOn and 4 or 0 do
+    for i = 1, 4 do
         local tex = root:CreateTexture(nil, "BACKGROUND", nil, -5 + i)
         tex:SetTexture(i % 2 == 1 and SEA_DARK or SEA_LIGHT, "REPEAT", "REPEAT")
         tex:Hide()
@@ -965,36 +774,29 @@ function S.BuildNow(parent, artLevel, range, iconLevel)
     end
     local nb, ns_ = #backdrop, #backdropSea
     S.Pace()
-    -- (jusqu'à son propre bord déchiré là où un client a son contour, MapBackLand : territory.py)
-    local worldMask = PlaceBackdrop(root, WORLD, "BACKGROUND", not (D.MapBackLands and D.MapBackLands[WORLD]) and FEATHER_WIDE or nil)
-    if S.chartMasks and worldMask then S.chartMasks[#S.chartMasks + 1] = worldMask end
+    PlaceBackdrop(root, WORLD, "BACKGROUND", FEATHER_WIDE)
     -- au-delà de ses bords, la mer propre des continents (leurs roses des vents, navire et serpent de mer)
-    -- la prolonge, comme une part de la mer du monde (pas sous la carte marine : sa mer le fait)
-    local outFrom = #backdropSea
+    -- la prolonge, comme une part de la mer du monde
     for _, info in ipairs(C_Map.GetMapChildrenInfo(WORLD, Enum.UIMapType.Continent, true) or {}) do
         S.Pace()
         local p, files = Place(info.mapID), ArtFiles(info.mapID)
-        if p and files and #files > 0 and S.Stitched(info.mapID) and seaOn then
+        if p and files and #files > 0 then
             PlaceTiles(root, p, files, 0, 0, p.layer.layerWidth, p.layer.layerHeight, "BACKGROUND", 0, false,
                 Feather(root, p, SEA_OUT .. info.mapID), backdropSea, false)
         end
     end
-    S.chartSeaOut = {}
-    for i = outFrom + 1, #backdropSea do S.chartSeaOut[backdropSea[i]] = true end
     for i = nb + 1, #backdrop do worldArt[backdrop[i]] = true end
     for i = ns_ + 1, #backdropSea do worldArt[backdropSea[i]] = true end
     for _, info in ipairs(C_Map.GetMapChildrenInfo(WORLD, Enum.UIMapType.Continent, true) or {}) do
         S.Pace()
-        if S.Stitched(info.mapID) then
-            PlaceBackdrop(contRoot, info.mapID, "ARTWORK", FEATHER_WIDE)
-            S.Pace()
-            if seaOn then PlaceLand(info.mapID) end   -- (sa terre gardée comme terre sur notre mer)
-        end
+        PlaceBackdrop(contRoot, info.mapID, "ARTWORK", FEATHER_WIDE)
+        S.Pace()
+        PlaceLand(info.mapID)           -- (sa terre gardée comme terre sur notre mer)
     end
     -- le marbré de la mer extérieure, à l'échelle de la première octave du papier de la mer (celle des Royaumes de l'Est)
     local size = SEA_TILE * 0.4
     for _, h in ipairs(hatches) do
-        if h.mapID == (D.ClientMaps and D.ClientMaps.seaScale or 1415) then size = SEA_TILE * h.k end
+        if h.mapID == 1415 then size = SEA_TILE * h.k end
     end
     for _, tex in ipairs(outer) do
         local x0, y0 = -SEA_REACH * W, -SEA_REACH * H
@@ -1061,37 +863,28 @@ function S.BuildNow(parent, artLevel, range, iconLevel)
     local level = artLevel + 2
     for _, info in ipairs(zones) do
         S.Pace()
-        -- (une zone, ou une ville : comme la liste de son client le dit, sinon une zone sans morceaux explorables est une ville)
-        local stitched, kind = S.Stitched(info.mapID)
-        if area[info.mapID] > 0 and stitched then
-            local n = kind ~= 2 and PlaceOverlays(info.mapID) or 0
-            if kind == 1 or (not kind and n > 0) then
+        -- (une zone, ou une ville : une zone sans morceaux explorables est une ville)
+        if area[info.mapID] > 0 then
+            if PlaceOverlays(info.mapID) > 0 then
                 level = math.min(level + 1, artLevel + range - 17)
                 local zf = CreateFrame("Frame", nil, tilesRoot)
                 zf:SetAllPoints(root)
                 zf:SetFrameLevel(level)
-                if D.ClientMaps and D.ClientMaps.detailDensity then S.ZoneByContinent(info.mapID, zf) end
-                -- (une zone sans morceaux ni territoire à elle, une île : un bord rond adouci, hors de son cadre)
-                local plain = n == 0 and not (D.MapTerritories and D.MapTerritories[info.mapID])
-                S.stats.tiles = S.stats.tiles + PlaceBase(zf, info.mapID, "ARTWORK", graded, plain and FEATHER_ROUND or FEATHER)
-                S.stats.overlays = S.stats.overlays + n
+                PlaceBase(zf, info.mapID, "ARTWORK", graded, FEATHER)
             else
-                tinsert(S.stats.cities, info.mapID)
                 local cf = CreateFrame("Frame", nil, citiesRoot)
                 cf:SetAllPoints(root)
                 -- (une ville souterraine au-dessus de la couche de la minicarte, qui montre la surface par-dessus)
                 cf:SetFrameLevel(UNDERGROUND_CITIES[info.mapID] and artLevel + range - 5 or citiesRoot:GetFrameLevel())
                 local l, r, t, b = S.Rect(info.mapID)
                 local cull = { cf, l, t, r, b, city = true }
-                -- (le zoom où elle remplit la vue, dans le zoom dont les couches s'estompent : sur un monde de zones plus
-                -- petites, ns.ClientMaps.zoom, c'en est moins)
-                cities[#cities + 1] = { cf, 1 / (r - l) / (D.ClientMaps and D.ClientMaps.zoom or 1), mapID = info.mapID, cull = cull }
+                -- (le zoom où elle remplit la vue, dans le zoom dont les couches s'estompent)
+                cities[#cities + 1] = { cf, 1 / (r - l), mapID = info.mapID, cull = cull }
                 culled[#culled + 1] = cull
                 -- (une ville réduite à la ville, son plan : ns.MapCityCuts, banners.py)
                 local cut = D.MapCityCuts and D.MapCityCuts[info.mapID] and TEX .. "MapCityMask\\" .. info.mapID
                 PlaceBase(cf, info.mapID, "ARTWORK", graded, cut or FEATHER_ROUND)
             end
-            S.stats.zones = S.stats.zones + 1
         end
     end
 
@@ -1112,44 +905,11 @@ function S.BuildNow(parent, artLevel, range, iconLevel)
         culled[#culled + 1] = { f, r[1], r[3], r[2], r[4] }
     end
 
-    -- les trous peints à la main (ns.MapGapFills : la terre qu'aucune carte de zone ne couvre, peinte dans le
-    -- style des cartes de zone d'après l'art de Blizzard), sur le papier des trous et les cartes plus fines de
-    -- Blizzard, sous chaque zone. Chacun ne se montre que près de la vue (S.Cull), ses fichiers chargés la première
-    -- fois ; S.SetGapFillsShown les éteint tous (les cases cuites les ont : Baked.noFills)
-    S.fillRoot = CreateFrame("Frame", nil, tilesRoot)
-    S.fillRoot:SetAllPoints(root)
-    S.fillRoot:SetFrameLevel(tilesRoot:GetFrameLevel())
-    for _, x in ipairs(D.MapGapFills or {}) do
-        S.Pace()
-        local num, r, fw, fh, cols, list = unpack(x)
-        local sx, sy = (r[3] - r[1]) * W / fw, (r[4] - r[2]) * H / fh
-        local f = CreateFrame("Frame", nil, S.fillRoot)
-        f:SetAllPoints(root)
-        f:SetFrameLevel(tilesRoot:GetFrameLevel())
-        f:Hide()
-        local texs = {}
-        for _, i in ipairs(list) do
-            local col, row = (i - 1) % cols, math.floor((i - 1) / cols)
-            local pw, ph = math.min(256, fw - col * 256), math.min(256, fh - row * 256)
-            local tex = f:CreateTexture(nil, "ARTWORK", nil, 1)
-            tex.omFile = TEX .. "MapGapFill\\" .. num .. "_" .. i
-            tex:SetTexCoord(0, pw / 256, 0, ph / 256)
-            Record(tex, r[1] * W + col * 256 * sx, r[2] * H + row * 256 * sy, pw * sx, ph * sy)
-            texs[#texs + 1] = tex
-        end
-        f:SetScript("OnShow", function(self)
-            if self.omLoaded then return end
-            self.omLoaded = true
-            for _, tex in ipairs(texs) do S.QueueLoad(tex) end   -- (le chargeur : en fondu, les cases cuites tenues jusque-là)
-        end)
-        culled[#culled + 1] = { f, r[1], r[2], r[3], r[4] }
-    end
-
     -- la bannière du nom d'une zone pour une ville (ns.MapBanners, tools/map-preview/banners.py), coupée de
     -- l'art de la zone : le titre de la ville à tous les zooms (sa propre carte est réduite à son plan, sans
     -- sa bannière), sur la ville et les couches de près (la minicarte, les grottes), avec les noms
     for _, c in ipairs(cities) do
-        local b = Baked.english and D.MapBanners and D.MapBanners[c.mapID]
+        local b = ENGLISH and D.MapBanners and D.MapBanners[c.mapID]
         local p = b and Place(b[1])
         if p then
             local f = CreateFrame("Frame", nil, citiesRoot)
@@ -1165,7 +925,6 @@ function S.BuildNow(parent, artLevel, range, iconLevel)
 
     S.Pace()
     cities.Build()
-    Baked.Build()
     S.Pace()
     S.built = true
     return true
@@ -1234,22 +993,6 @@ function S.LandMask(layer, mapID)
     return minimapMasks[mapID] or nil
 end
 
--- pour /mmir carte status : les régions posées (art, masques) et posées depuis (icônes, couches de près)
-function S.RegionCount()
-    local n = 0
-    for _ in pairs(dynamic) do n = n + 1 end
-    return #placed, n
-end
-
--- pour /mmir carte status : combien des régions de l'art sont dessinées maintenant
-function S.DrawnCount()
-    local n = 0
-    for _, rec in ipairs(placed) do
-        if rec[1]:IsVisible() and rec[1]:GetObjectType() == "Texture" then n = n + 1 end
-    end
-    return n
-end
-
 -- la vue a bougé (un déplacement ou un zoom : le S.SetView de Close.lua) : une troisième image de suite, c'est
 -- la carte qui bouge, et les halos des noms se reposent jusqu'à l'arrêt (l'ouverture, un réglage changé : une ou deux)
 function S.Moved()
@@ -1263,61 +1006,6 @@ end
 
 function S.SetShown(shown)
     if root and root:IsShown() ~= (shown and true or false) then root:SetShown(shown) end
-    local chart = S.Chart and S.Chart.Frame()
-    if chart and chart:IsShown() ~= (shown and S.Chart.on or false) then chart:SetShown(shown and S.Chart.on or false) end
-end
-
-function S.IsShownNow() return root and root:IsShown() or false end
-
--- la carte marine allumée ou éteinte : notre propre mer au-delà de la carte du monde rangée (sa couleur portée
--- au-delà, MapSeaFieldOut ; son marbré ; la couleur de la mer des continents et leur mer au-delà des bords de la
--- carte du monde), et la carte du monde se fondant dans la carte marine par MapChart\Middle (ses continents, îles et
--- côtes entiers) au lieu de son large fondu de bord, sa haute mer amenée vers celle de la carte marine
--- (ns.MapChart.seaTint) ; la texture propre de la mer, en approchant, tenue de même à la mer de la carte du monde
-function S.SetChart(on)
-    if not root or not S.chartOff or not S.chartMasks then return end   -- (un client sans mer à lui n'a pas de carte marine)
-    on = on and true or false
-    if S.chartNow == on then return end
-    S.chartNow = on
-    for _, r in ipairs(S.chartOff) do r:SetShown(not on) end
-    local file = on and TEX .. "MapChart\\Middle" or FEATHER_WIDE
-    for _, m in ipairs(S.chartMasks) do m:SetTexture(file, "CLAMPTOBLACKADDITIVE", "CLAMPTOBLACKADDITIVE") end
-    for _, tex in ipairs(seaPaper) do
-        if on then tex:AddMaskTexture(S.chartMasks[1]) else tex:RemoveMaskTexture(S.chartMasks[1]) end
-    end
-    S.chartHide = on and S.chartSeaOut or nil
-    S.chartTint = on and D.MapChart and D.MapChart.seaTint or nil
-    muted = -1                                     -- (S.SetZoom repose les fondus de l'art du monde et des continents)
-    if scaleNow and scaleNow > 0 then S.SetZoom(zoomNow, scaleNow) end
-end
-
--- les parties de l'art, chacune { nom, régions }, à cacher un instant pour voir
--- ce qu'elle coûte. (Les textures posées directement sur root : la mer et l'art de la carte du monde)
-function S.Parts()
-    if not root then return {} end
-    local own, copies = {}, {}
-    for _, r in ipairs({ root:GetRegions() }) do
-        if r:GetObjectType() == "Texture" then own[#own + 1] = r end
-    end
-    for _, e in ipairs(twins) do copies[#copies + 1] = e[1] end
-    local L = S.closeLayers or {}
-    return {
-        { "all My Map Is Rich art and icons", { root } },
-        { "sea and world art", own },
-        { "continents, land, gap paper", { contRoot } },
-        { "zone base art", { tilesRoot } },
-        { "zone overlays", { overlayRoot } },
-        { "zone interiors", { coreRoot } },
-        { "baked zone art", { Baked.frame } },
-        { "colour-match copies", copies },
-        { "blur", { blurRoot } },
-        { "cities", { citiesRoot } },
-        { "unexplored shade", { shadeRoot } },
-        { "minimap detail", { L.minimap } },
-        { "grain", { L.grain } },
-        { "caves", { L.under } },
-        { "names", { labelsRoot } },
-    }
 end
 
 -- la prochaine S.Cull montre ou cache chaque texture des zones et chaque région triée
@@ -1474,8 +1162,6 @@ function S.Layout(mapID)
     if host.mapID == mapID and host.k == k then return true end
     host.l, host.t, host.k, host.mapID = l * W, t * H, k, mapID
     root:SetScale(k)
-    S.chartScale = k                                -- (le cadre de la carte marine garde l'échelle de root : ses régions sont posées sur root)
-    if S.Chart and S.Chart.Frame() then S.Chart.Frame():SetScale(k) end
     root:ClearAllPoints()
     root:SetPoint("TOPLEFT", root:GetParent(), "TOPLEFT", -host.l, host.t)
     namesFrame:SetScale(1 / NAME_UNITS)
@@ -1512,23 +1198,6 @@ function S.BuildNames()
     end
 end
 
--- zoom : 1 = le monde tient dans la vue ; scale : l'échelle du canevas hôte (unités de l'hôte -> px de la vue)
--- pour /mmir carte status : chaque part du temps de S.SetZoom (ms, lissé) et la pire
-local zoomSteps = {}
-S.zoomSteps = zoomSteps
-local stepAt
-local function Step(name)
-    if not debugprofilestop then return end
-    local now = debugprofilestop()
-    if name and stepAt then
-        local ms = now - stepAt
-        local st = zoomSteps[name] or { ms = ms, worst = 0 }
-        st.ms, st.worst = st.ms * 0.9 + ms * 0.1, math.max(st.worst, ms)
-        zoomSteps[name] = st
-    end
-    stepAt = now
-end
-
 -- les fondus de SetZoom : 0..1 sur `range` ({ from, to }, ou from, to) du zoom actuel. (Ici,
 -- et les fondus des noms dans une table gardée : un pas de zoom ne fait pas de déchets, il tourne à chaque image)
 local function Smooth(range, to)
@@ -1539,15 +1208,11 @@ local function Smooth(range, to)
 end
 local fades = {}
 
+-- zoom : 1 = le monde tient dans la vue ; scale : l'échelle du canevas hôte (unités de l'hôte -> px de la vue)
 function S.SetZoom(zoom, scale)
     if not root then return end
-    Step()
     zoomNow = zoom
     Fade(contRoot, Smooth(CONT_IN))
-    if Live.contShown ~= contRoot:IsShown() then      -- (l'art des continents en vue reçoit ses fichiers à son arrivée : S.Cull)
-        Live.contShown = contRoot:IsShown()
-        if Live.contShown then S.LoadCulled() end
-    end
     fades.land = 1 - Smooth(LABELS_OUT)          -- les noms (un de chaque, fixés sur le monde)
     fades.sea = 1 - Smooth(SEA_LABELS_OUT)
     for _, n in ipairs(names) do
@@ -1556,28 +1221,10 @@ function S.SetZoom(zoom, scale)
         if n.near == false and n[1]:IsShown() then n[1]:Hide() end   -- (hors de la vue : S.Cull)
     end
     S.BuildNames()
-    Step("names")
     detailNow = DETAIL_HINT[3] * Smooth(DETAIL_HINT) + (1 - DETAIL_HINT[3]) * Smooth(DETAIL_FADE)
-    if Live.contK then                          -- (les zones de chaque continent selon la résolution de son propre art : ApplyDetail)
-        local most = 0
-        for c, k in pairs(Live.contK) do
-            local f = Smooth(DETAIL_FADE[1] * k, DETAIL_FADE[2] * k)
-            Live.contFade[c] = f
-            if f > most then most = f end
-        end
-        detailNow = most
-    end
     -- (les copies grisées du continent sous les zones pas trouvées : seulement jusqu'à ce que le détail des zones soit dessus)
     if S.greyRoot and S.greyRoot:IsShown() ~= (detailNow < 0.98) then S.greyRoot:SetShown(detailNow < 0.98) end
-    if Baked.frame then                         -- (px d'écran par px cuit : les couches vivantes prennent le relais au-delà)
-        local _, ph = GetPhysicalScreenSize()
-        local r = root:GetEffectiveScale() * (ph or 768) / 768 / D.MapZoneArt.px
-        local t = math.max(0, math.min(1, (r - Baked.FADE[1]) / (Baked.FADE[2] - Baked.FADE[1])))
-        Baked.live = math.floor(t * t * (3 - 2 * t) * 50 + 0.5) / 50
-        Baked.warm = r >= Baked.FADE[1] * Baked.WARM
-    end
     ApplyDetail()
-    Step("zone detail")
     for _, c in ipairs(cities) do
         local fade = CITY_FADE_OF[c.mapID] or CITY_FADE
         local a = Smooth(fade[1] * c[2], fade[2] * c[2])
@@ -1593,7 +1240,6 @@ function S.SetZoom(zoom, scale)
     -- (la bannière de la zone pour chaque ville : l'art de la zone est dessiné sans elle, c'est donc la bannière,
     -- avec le détail de la zone ; le titre de la ville une fois dedans, sauf si sa propre carte garde le sien)
     cities.Banners()
-    Step("cities")
     local m = math.floor(Smooth(MUTE_FADE) * 20) / 20
     local sm = math.floor(Smooth(SEA_FADE) * 20) / 20
     -- la carte du monde cède la place à celles des continents à leur arrivée (sinon chaque nom et chaque
@@ -1601,9 +1247,6 @@ function S.SetZoom(zoom, scale)
     local wo = math.floor(Smooth(WORLD_OUT) * 20) / 20
     local ws = math.floor(Smooth(WORLD_SEA_OUT) * 20) / 20
     local wc = math.floor(Smooth(WORLD_COAST_OUT) * 20) / 20
-    -- (un client dont l'art peint sa propre mer : elle reste comme Blizzard l'a peinte, jamais estompée vers notre mer,
-    -- et l'art du monde reste sous celui des continents : il n'y a pas de mer à nous dessous)
-    if D.ClientMaps and D.ClientMaps.sea == false then m, sm, wo, ws, wc = muted, seaNow, worldOut, worldSea, worldCoastOut end
     if m ~= muted or sm ~= seaNow or wo ~= worldOut or ws ~= worldSea or wc ~= worldCoastOut then
         muted, seaNow, worldOut, worldSea, worldCoastOut = m, sm, wo, ws, wc
         for _, tex in ipairs(worldCoast) do Fade(tex, 1 - wc) end
@@ -1614,11 +1257,10 @@ function S.SetZoom(zoom, scale)
             Fade(tex, (1 - BACK_MUTE * m) * (worldArt[tex] and (1 - wo) or 1))
         end
         S.GreyMute()                                   -- (les copies grisées par Shade.Grey : estompées de même)
-        local tint = S.chartTint                       -- (la carte marine : la haute mer du monde amenée vers sa mer)
         for _, tex in ipairs(backdropSea) do
             if worldArt[tex] then                      -- la mer du monde : l'océan, comme Blizzard l'a peint
-                tex:SetDesaturation(tint and tint[4] or 0)
-                tex:SetVertexColor(tint and tint[1] or 1, tint and tint[2] or 1, tint and tint[3] or 1)
+                tex:SetDesaturation(0)
+                tex:SetVertexColor(1, 1, 1)
                 Fade(tex, 1 - ws)
             else                                       -- la haute mer d'un continent : celle du monde est dessous
                 tex:SetDesaturation(0.8 * m)
@@ -1626,16 +1268,13 @@ function S.SetZoom(zoom, scale)
                 Fade(tex, (1 - BACK_MUTE * m) * (1 - sm))
             end
         end
-        if S.SetSea then S.SetSea() end
+        S.SetSea()
     end
-    Step("world / continent art")
     for _, tex in ipairs(landFill) do Fade(tex, math.max(m, underNow)) end
-    Step("land")
 
     scaleNow = scale
     -- (les icônes, et lesquels de leurs jeux se montrent à ce zoom : Map/PinSets.lua)
     if S.OnZoomIcons then S.OnZoomIcons(zoomNow) end
-    Step("icon sets")
 end
 
 --------------------------------------------------------------------------------
@@ -1734,7 +1373,7 @@ local function Tile(tex, u0, v0, u1, v1, sx, sy, alpha, shift)
 end
 
 function S.SetSea(u, v, hu, hv)
-    if not root or not seaPaper[1] then return end   -- (aucune : un client dont l'art peint sa propre mer)
+    if not root or not seaPaper[1] then return end
     if u then seaView[1], seaView[2], seaView[3], seaView[4] = u, v, hu, hv end
     u, v, hu, hv = seaView[1], seaView[2], seaView[3], seaView[4]
     if not u then return end
@@ -1746,7 +1385,7 @@ function S.SetSea(u, v, hu, hv)
     sb[1], sb[2], sb[3], sb[4], sb.zoom, sb.m = u0, v0, u1, v1, zoomNow, m
     local ek = hatches[1] and hatches[1].k or 0.4
     for _, h in ipairs(hatches) do
-        if h.mapID == (D.ClientMaps and D.ClientMaps.seaScale or 1415) then ek = h.k end
+        if h.mapID == 1415 then ek = h.k end        -- (l'échelle des Royaumes de l'Est)
     end
     local div, f = Octaves(SEA_OCTAVE)
     local size = SEA_TILE * ek
@@ -1782,14 +1421,6 @@ end
 
 -- un point du monde (0..1) en yards sur le continent 0 / 1 (l'inverse de FromYards)
 function S.ToYards(cont, u, v)
-    -- (les yards propres d'un client : la carte linéaire de sa région, inversée ; l'échantillonner à l'origine,
-    -- plus bas, ne trouve rien là où une région d'une carte du jeu n'arrive pas : les îles draeneï, l'île du Tonnerre)
-    local yards = D.MapWorld and D.MapWorld.yards
-    if yards then
-        local r = (yards[cont] or NONE)[1]
-        if not r or r[6] == 0 or r[8] == 0 then return end
-        return (v - r[7]) / r[8], (u - r[5]) / r[6]
-    end
     local x0, y0 = S.FromYards(cont, 0, 0)
     local x1, y1 = S.FromYards(cont, 1000, 0)
     local x2, y2 = S.FromYards(cont, 0, 1000)
@@ -1824,8 +1455,6 @@ local fading, fadingN = {}, 0   -- texture -> quand elle a reçu son fichier
 local loader = CreateFrame("Frame")
 loader:Hide()
 loader:SetScript("OnUpdate", function(self)
-    -- (les fichiers demandés depuis le dernier changement de zoom, par un déplacement ou un tri : les cases cuites tenues dessus aussi)
-    if Baked.busy and Baked.use and not Baked.holding then ApplyDetail() end
     local n, now = 0, GetTime()
     local L_ = LOAD_PER_FRAME
     local most = math.min(L_.most, math.max(L_[1], math.ceil((#loadQueue - loadAt + 1) / L_.frames)))
@@ -1859,31 +1488,14 @@ loader:SetScript("OnUpdate", function(self)
             end
         end
     end
-    if loadAt == 1 and #loadQueue == 0 and fadingN == 0 then
-        self:Hide()
-        Baked.busy = false
-        if Baked.holding then                   -- (tout est arrivé : les cases cuites peuvent partir)
-            Baked.holding = false
-            ApplyDetail()
-        end
-    end
+    if loadAt == 1 and #loadQueue == 0 and fadingN == 0 then self:Hide() end
 end)
-
--- une texture d'une couche qui n'est pas celle d'une zone (les trous peints à la main) par le même chargeur : les
--- cases cuites restent dessus jusqu'à l'arrivée de son fichier (Baked.holding)
-function S.QueueLoad(tex)
-    if not tex.omFile or tex.omQueued then return end
-    tex.omQueued = true
-    loadQueue[#loadQueue + 1] = tex
-    loader:Show()
-    Baked.busy = true
-end
 
 --------------------------------------------------------------------------------
 -- La terre inexplorée, assombrie (« dim »). Une zone dont tu n'as rien trouvé : une ombre sur son art et la
 -- minicarte de près, par sa terre sans la mer que peint son art (MapZoneLand : la mer reste
 -- telle quelle), de tout zoom. Une zone où tu es allé : l'art de chaque morceau de nouveau sur celui de la zone
--- (des cases cuites ou des couches vivantes), les morceaux inexplorés assombris et ceux explorés par-dessus, tels quels.
+-- (les couches vivantes), les morceaux inexplorés assombris et ceux explorés par-dessus, tels quels.
 -- (Les morceaux de Blizzard sont des rectangles opaques, plus de la moitié de l'art d'une zone sous deux ou plus :
 -- une ombre par morceau s'empilait plus sombre où ils se chevauchent et montrait les cases de chaque morceau en
 -- lignes ; des copies de l'art sur le même art ne s'empilent pas, et leurs bords sont ceux des morceaux.) Bâtie la
@@ -2072,7 +1684,7 @@ end
 
 -- une zone où tu es allé : l'art de chaque morceau de nouveau, comme les morceaux sont dessinés (le cadre de
 -- la zone, le trou de sa bannière, sa copie harmonisée par la bande de bord), sur une couche au-dessus de l'art
--- des zones et des cases cuites et sous les copies du flou, les villes et la minicarte. Shade.Colour les assombrit
+-- des zones et sous les copies du flou, les villes et la minicarte. Shade.Colour les assombrit
 function Shade.Pieces(mapID, z)
     z.pieces = {}
     local p = z.p
@@ -2426,7 +2038,6 @@ end
 -- un point du monde (0..1) caché comme terre inexplorée (Close.lua : une grotte là ne fait pas surface)
 function S.HiddenAt(u, v)
     if Shade.Hide.mode ~= "hide" then return false end
-    if Shade.Places.At(u, v) then return true end   -- (un lieu qu'un trou peint montre, pas encore trouvé)
     local chain = S.ChainAt(u, v)
     local mapID = chain[#chain]
     local p = mapID and Place(mapID)
@@ -2448,24 +2059,19 @@ ShowZone = function(mapID)
     local inside = inView[mapID] == true          -- (en vue et dessinée : ses fichiers sont voulus)
     local hide, strength = gradeNow[3] == "hide", gradeNow[1]
     local box = cullBox
-    local z = Live.zones and Live.zones[mapID]       -- (une zone arrivée par son continent, ApplyDetail : pas encore, pas dessinée)
-    local zoneOn = not z or z.on
     for _, e in ipairs(zoneTex[mapID] or NONE) do
         local tex = e[1]
         local near = here and (not box or not e.u0 or (e.u1 > box[1] and e.u0 < box[3] and e.v1 > box[2] and e.v0 < box[4]))
-        local drawn = (not e.layer or detailLive) and zoneOn   -- (les couches vivantes : seulement tant qu'elles se montrent ; les villes : toujours)
         local un = e[3] and e[3].unexplored
-        -- (une case de base sous les morceaux de sa zone seulement quand les inexplorés sont cachés : ns.MapUnder)
-        drawn = drawn and not (e.under and not hide)
-            -- (et pas la copie de flou d'un morceau inexploré tant que la terre inexplorée est assombrie : les quatre copies
-            -- du flou sont sur les assombries (Shade.Pieces) et en couvrent les quatre cinquièmes : du zoom de l'adoucissement
-            -- à celui de la minicarte, l'assombrissement disparaissait presque, et revenait chaque fois que la carte bougeait)
-            and not (e.blur and un and Shade.on)
-        if near and drawn and inside and (detailLive or Live.seen) and tex.omFile and not tex.omQueued then
+        -- (les couches vivantes : seulement tant qu'elles se montrent ; les villes : toujours. Et pas la copie de flou
+        -- d'un morceau inexploré tant que la terre inexplorée est assombrie : les quatre copies du flou sont sur les
+        -- assombries (Shade.Pieces) et en couvrent les quatre cinquièmes : du zoom de l'adoucissement à celui de la
+        -- minicarte, l'assombrissement disparaissait presque, et revenait chaque fois que la carte bougeait)
+        local drawn = (not e.layer or detailLive) and not (e.blur and un and Shade.on)
+        if near and drawn and inside and detailLive and tex.omFile and not tex.omQueued then
             tex.omQueued = true
             loadQueue[#loadQueue + 1] = tex
             loader:Show()
-            Baked.busy = true
         end
         local show = near and drawn and not (un and hide) and (not e.twin or strength > 0)
         if e.shown ~= show then
@@ -2479,7 +2085,7 @@ ShowZone = function(mapID)
             end
         end
     end
-    local want = (here and detailLive and zoneOn) and true or false
+    local want = (here and detailLive) and true or false
     if Live.placed[mapID] ~= want then
         Live.placed[mapID] = want
         for _, rec in ipairs(Live.masks[mapID] or NONE) do
@@ -2488,21 +2094,6 @@ ShowZone = function(mapID)
     end
     Shade.Show(mapID)
     Shade.Hide.Show(mapID)
-end
-
--- combien de l'art des zones a ses fichiers chargés, sur tout ;
--- les régions posées depuis la construction (ancres des icônes, couches de près) ; la file de chargement
-function S.ArtStats()
-    local loaded, total = 0, 0
-    for _, list in pairs(zoneTex) do
-        for _, e in ipairs(list) do
-            total = total + 1
-            if not e[1].omFile then loaded = loaded + 1 end
-        end
-    end
-    local live = 0
-    for _ in pairs(dynamic) do live = live + 1 end
-    return loaded, total, live, #loadQueue - loadAt + 1
 end
 
 -- la couleur d'une texture de zone : un peu de couleur retirée. (L'alpha propre de la texture est son fondu
@@ -2526,9 +2117,8 @@ function S.ApplyGrade(strength, desat, unexplored)
         tex:SetDesaturation(desat)
     end
     -- une zone pas trouvée du tout : son art vivant grisé (la désaturation de DIMK) sous son ombre, pour que les
-    -- bandes et traits plus clairs que peint son art ne se voient pas clairs à travers de près. (Les cases cuites,
-    -- dessinées de plus loin, restent telles quelles : les couches vivantes à tous les zooms coûtent trop d'images par
-    -- seconde, et de là-bas c'est surtout la peinture du continent, grisée par Shade.Grey, qui se voit)
+    -- bandes et traits plus clairs que peint son art ne se voient pas clairs à travers de près. (De loin, c'est
+    -- surtout la peinture du continent, grisée par Shade.Grey, qui se voit)
     for mapID, list in pairs(zoneTex) do
         local grey = Shade.on and Shade.Unexplored(mapID) == "all"
         if grey or list.greyed then
@@ -2538,23 +2128,10 @@ function S.ApplyGrade(strength, desat, unexplored)
         end
     end
     for mapID in pairs(zoneTex) do ShowZone(mapID) end
-    Shade.Places.Show()
     if root then
         for _, c in ipairs(cities) do c.dark = nil end   -- (le réglage plus haut a reposé leurs couleurs)
         cities.Dim()
         cities.Banners()
-    end
-    -- l'art cuit seulement aux réglages où il a été cuit (lieux inexplorés cachés : en vivant, morceau par morceau),
-    -- et avec des cases dans la langue du client (Baked.lettered)
-    local art = D.MapZoneArt
-    Baked.use = (art and Baked.frame and strength == art.colorMatch and desat >= art.desaturate - 0.001
-        and unexplored ~= "hide" and not Baked.noFills and Baked.lettered and (Baked.missing or 0) < 3) and true or false
-    local bd = art and math.max(0, (desat - art.desaturate) / (1 - art.desaturate)) or 0
-    if Baked.use and math.abs(bd - Baked.desat) > 0.001 then
-        Baked.desat = bd
-        for _, t in ipairs(Baked.tiles) do if t.tex then t.tex:SetDesaturation(bd) end end
-    end
-    if root then
         appliedDetail = nil
         ApplyDetail()
     end
@@ -2566,7 +2143,7 @@ end
 -- margin : de la taille de la vue, de chaque côté ; refaite quand la vue arrive à `keep` de son bord (de
 -- la taille de la vue), ou a zoomé `zoom` fois depuis (la boîte serait bien trop grande).
 -- (Une seule table : le fichier est près de la limite de 200 variables locales de Lua)
-local CULL = { margin = D.ClientMaps and D.ClientMaps.cullMargin or 0.35, keep = 0.1, zoom = 1.6 }
+local CULL = { margin = 0.35, keep = 0.1, zoom = 1.6 }
 function S.Cull(u0, v0, u1, v1)
     if not root then return end
     local w, h = u1 - u0, v1 - v0
@@ -2601,11 +2178,8 @@ function S.Cull(u0, v0, u1, v1)
                 end
             end
             r:SetShown(here and (not c.city or (r:GetAlpha() or 1) > 0.003))   -- (une ville : tant qu'elle est en fondu, SetZoom)
-            -- (une case de fond triée : son fichier une fois près de la vue et sa couche montrée)
-            if here and r.omFile and (not c.layer or c.layer:IsShown()) then S.QueueLoad(r) end
         end
     end
-    Baked.Cull()
     -- les noms : chaque lettre fait de nombreuses chaînes de police (son halo), toutes déplacées à chaque image d'un déplacement
     for _, n in ipairs(names) do
         local near = not n.l or (n.r > u0 and n.l < u1 and n.b > v0 and n.t < v1)
@@ -2619,17 +2193,9 @@ function S.Cull(u0, v0, u1, v1)
             if z and z.near ~= Shade.Near(mapID) then Shade.Show(mapID) end
         end
     end
-    if Shade.Hide.mode then Shade.Places.Show() end   -- (les lieux qu'un trou peint montre, près de la boîte)
     -- les cases des icônes (Map/PinSets.lua)
     if S.OnCullIcons then S.OnCullIcons(u0, v0, u1, v1) end
     cullBox.done = true
-end
-
--- les cases de fond triées près de la vue, une fois leur couche montrée (l'art des continents à son arrivée)
-function S.LoadCulled()
-    for _, c in ipairs(culled) do
-        if c.here and c.layer and c[1].omFile and c.layer:IsShown() then S.QueueLoad(c[1]) end
-    end
 end
 
 -- la carte montrée de nouveau : la prochaine S.Cull tourne en entier, et les villes sont remontrées, leurs cadres,
@@ -2646,62 +2212,10 @@ function S.Recull()
     end
 end
 
--- les cases cuites (Baked, plus haut) : chacune posée la première fois qu'elle est près de la vue (son fichier posé alors),
--- et montrée près de la vue (la boîte de S.Cull) tant que l'art cuit se montre
-function Baked.Build()
-    local art = D.MapZoneArt
-    if not art or not root then return end
-    local f = CreateFrame("Frame", nil, root)
-    f:SetAllPoints(root)
-    f:SetFrameLevel(coreRoot:GetFrameLevel())   -- (à la place des couches vivantes, sous le flou et les villes)
-    f:Hide()
-    Baked.frame = f
-    local size = art.step / art.px            -- unités du monde qu'une case couvre
-    Baked.inset = (art.size - art.step) / 2 / art.size
-    for _, key in ipairs(art.tiles) do
-        local i, j = math.floor(key / 256), key % 256
-        local x, y = i * size, j * size
-        Baked.tiles[#Baked.tiles + 1] = { name = i .. "_" .. j, x = x, y = y, size = size,
-            u0 = x / W, v0 = y / H, u1 = (x + size) / W, v1 = (y + size) / H }
-    end
-end
-
--- /mmir carte status : les cases cuites que le jeu n'a pas trouvées (#349, #353), et où il a cherché
-function S.BakedMissing() return Baked.missing or 0, Baked.path end
-
-function Baked.Cull()
-    local f, box = Baked.frame, cullBox
-    if not f or not f:IsShown() then return end
-    for _, t in ipairs(Baked.tiles) do
-        local near = not box or (t.u1 > box[1] and t.u0 < box[3] and t.v1 > box[2] and t.v0 < box[4])
-        if near and not t.tex then
-            t.tex = f:CreateTexture(nil, "ARTWORK")
-            local ok = t.tex:SetTexture(Baked.path .. t.name, nil, nil, "TRILINEAR")
-            t.tex:SetTexCoord(Baked.inset, 1 - Baked.inset, Baked.inset, 1 - Baked.inset)
-            t.tex:SetDesaturation(Baked.desat)
-            Record(t.tex, t.x, t.y, t.size, t.size)
-            t.shown = true
-            -- (une case que le jeu ne trouve pas se dessine comme un carré vert plein, de la taille d'une zone ou plus : #349,
-            -- #353, une installation qui ne les a pas, ou un jeu pas relancé depuis. Celle-là est laissée de côté ; s'il en
-            -- manque quelques-unes, les zones sont dessinées en vivant, comme dans un client sans cases dans sa langue)
-            if ok == false then
-                t.missing, t.shown = true, false
-                t.tex:Hide()
-                Baked.missing = (Baked.missing or 0) + 1
-                if Baked.missing == 3 and lastGrade then C_Timer.After(0, function() S.ApplyGrade(unpack(lastGrade)) end) end
-            end
-        end
-        if t.tex and not t.missing and t.shown ~= near then
-            t.shown = near
-            t.tex:SetShown(near)
-        end
-    end
-end
-
--- les morceaux des cartes de zone dont le rectangle contient le point du monde (x, y) (unités du monde), et leurs zones
--- (un ensemble) : ce qui dit si un lieu sans morceaux à lui a été trouvé (une ville, Shade.Places)
+-- les morceaux des cartes de zone dont le rectangle contient le point du monde (x, y) (unités du monde) : ce qui
+-- dit si un lieu sans morceaux à lui a été trouvé (une ville)
 function Shade.Under(x, y)
-    local covers, zones = {}, {}
+    local covers = {}
     for zoneID, list in pairs(pieces) do
         local p = Place(zoneID)
         if p then
@@ -2711,12 +2225,11 @@ function Shade.Under(x, y)
                 w, h, kx, ky = tonumber(w), tonumber(h), tonumber(kx), tonumber(ky)
                 if w and px_ >= kx and px_ <= kx + w and py_ >= ky and py_ <= ky + h then
                     covers[#covers + 1] = piece
-                    zones[zoneID] = true
                 end
             end
         end
     end
-    return covers, zones
+    return covers
 end
 
 -- trouvé : un de ces morceaux exploré (la carte de Blizzard dessine le rectangle entier de chacun), ou aucun là
@@ -2811,108 +2324,9 @@ function S.UndergroundCity(mapID)
     end
 end
 
---------------------------------------------------------------------------------
--- Des lieux qu'un trou peint montre et qu'aucune carte de zone ne dessine (ns.MapGapPlaces, tools/map-preview/gapplaces.py) :
--- ceux de WoW Forever, peints d'après la minicarte du jeu (le site de fouilles des Paluns, une vallée verte
--- au sud de Whelgar). Le jeu ne marque personne comme les ayant explorés et les cartes de Blizzard ne les dessinent
--- jamais, alors chacun se trouve comme une ville, par les morceaux des cartes de zone sous son milieu. Tant que les lieux
--- inexplorés sont cachés, un pas trouvé est le papier vide des trous (MapPaper, posé comme PlaceLand le pose, pour qu'il
--- rejoigne le leur) sur la peinture et la minicarte de près ; sur la couche des zones, il apparaît avec leur
--- détail. Assombri : l'ombre de la terre inexplorée, sur les deux, de tout zoom, sauf si sa zone n'est pas
--- trouvée du tout (l'ombre de cette zone a sa part de la terre autour, celui-ci avec).
---------------------------------------------------------------------------------
-
--- (dans la table de Shade : le fichier est à la limite de 200 variables locales de Lua)
--- list : { area, box (l, t, r, b, 0..1), cells, covers, zones, found, hide = cadre, dim = cadre },
--- faite la première fois qu'on la veut (les morceaux des zones sont connus alors)
-Shade.Places = { list = false }
-
-function Shade.Places.Build()
-    local list = {}
-    for _, x in ipairs(D.MapGapPlaces or NONE) do
-        local e = { area = x[1], box = x[3], cells = x[5] }
-        e.covers, e.zones = Shade.Under(x[4][1] * W, x[4][2] * H)
-        list[#list + 1] = e
-    end
-    Shade.Places.list = list
-    Shade.Places.Refresh()
-end
-
-function Shade.Places.Refresh()
-    for _, e in ipairs(Shade.Places.list or NONE) do e.found = Shade.Found(e.covers) end
-end
-
--- la couverture d'un lieu : "hide", le papier (sur la minicarte : le niveau de Shade.Hide) ; "dim", l'ombre (celui de shadeRoot)
-function Shade.Places.Frame(e, how)
-    local b = e.box
-    local x, y, w, h = b[1] * W, b[2] * H, (b[3] - b[1]) * W, (b[4] - b[2]) * H
-    local f = CreateFrame("Frame", nil, how == "hide" and tilesRoot or shadeRoot)
-    f:SetAllPoints(root)
-    f:SetFrameLevel(how == "hide" and S.artTop - 6 or shadeRoot:GetFrameLevel())
-    local mask = f:CreateMaskTexture()
-    mask:SetTexture(TEX .. "MapGapPlace\\" .. e.area, "CLAMPTOBLACKADDITIVE", "CLAMPTOBLACKADDITIVE")
-    Record(mask, x, y, w, h)
-    local paper = D.MapGaps and D.MapGaps.paper
-    if how == "hide" and paper then
-        for n, o in ipairs(PAPER_LAYERS) do
-            local tex = f:CreateTexture(nil, "ARTWORK", nil, n)
-            local s_ = paper * o[1]
-            tex:SetTexture(PAPER, "REPEAT", "REPEAT")
-            tex:SetTexCoord(x / s_ + o[2], (x + w) / s_ + o[2], y / s_ + o[2] * 1.7, (y + h) / s_ + o[2] * 1.7)
-            tex:SetVertexColor(1, 1, 1, o[3])
-            Record(tex, x, y, w, h)
-            tex:AddMaskTexture(mask)
-        end
-    elseif how == "dim" then
-        local tex = f:CreateTexture(nil, "ARTWORK")
-        Shade.Tint(tex)
-        Record(tex, x, y, w, h)
-        tex:AddMaskTexture(mask)
-    end
-    f:Hide()
-    return f
-end
-
--- la couverture de chaque lieu pour le mode actuel des lieux inexplorés, près de la vue (la boîte de S.Cull) seulement
-function Shade.Places.Show()
-    if not root then return end
-    local P = Shade.Places
-    if not P.list then P.Build() end
-    local mode, box = Shade.Hide.mode, cullBox
-    for _, e in ipairs(P.list) do
-        local b = e.box
-        local lost = not e.found and (not box or (b[3] > box[1] and b[1] < box[3] and b[4] > box[2] and b[2] < box[4]))
-        local whole = false
-        for zoneID in pairs(e.zones) do
-            if Shade.Unexplored(zoneID) == "all" then whole = true end
-        end
-        local hide, dim = lost and mode == "hide", lost and mode == "dim" and not whole
-        if hide and not e.hide then e.hide = P.Frame(e, "hide") end
-        if dim and not e.dim then e.dim = P.Frame(e, "dim") end
-        if e.hide and e.hide:IsShown() ~= hide then e.hide:SetShown(hide) end
-        if e.dim and e.dim:IsShown() ~= dim then e.dim:SetShown(dim) end
-    end
-end
-
--- si un lieu pas trouvé couvre le point du monde (u, v) (0..1), par ses cellules (16 de côté :
--- CELLS de gapplaces.py) couvertes à moitié ou plus (S.HiddenAt)
-function Shade.Places.At(u, v)
-    for _, e in ipairs(Shade.Places.list or NONE) do
-        local b = e.box
-        if not e.found and u >= b[1] and u < b[3] and v >= b[2] and v < b[4] then
-            local k = math.floor((v - b[2]) / (b[4] - b[2]) * 16) * 16 + math.floor((u - b[1]) / (b[3] - b[1]) * 16) + 1
-            if (tonumber(e.cells:sub(k, k), 16) or 0) >= 8 then return true end
-        end
-    end
-    return false
-end
-
 -- le joueur est allé quelque part de nouveau : une ville trouvée en y entrant (ZONE_CHANGED_NEW_AREA)
 function S.RefreshCities()
-    if cities.Refresh() then
-        Shade.Places.Refresh()
-        if lastGrade then S.ApplyGrade(unpack(lastGrade)) end
-    end
+    if cities.Refresh() and lastGrade then S.ApplyGrade(unpack(lastGrade)) end
 end
 
 -- le joueur a exploré quelque part : ses morceaux cessent d'être inexplorés (MAP_EXPLORATION_UPDATED)
@@ -2930,20 +2344,9 @@ function S.RefreshExplored()
     end
     -- (une ville trouvée en y entrant, les morceaux de la zone dessus inchangés : Forgefer par le tram)
     if cities.Refresh() then changed = true end
-    if changed then Shade.Places.Refresh() end
-    if changed and lastGrade then S.ApplyGrade(unpack(lastGrade)) end
-    if changed and S.RefreshFound then S.RefreshFound() end   -- (les icônes : Map/PinSets.lua)
-end
-
--- /mmir carte status : les morceaux explorables d'une zone, explorés et tous, et ce que le jeu lui-même compte
--- comme exploré là (un écart : des morceaux assombris que le jeu dit trouvés, #357 #360)
-function S.ExploredCount(mapID)
-    local list = pieces[mapID]
-    if not list then return end
-    local all, found = 0, 0
-    for _, piece in pairs(list) do all = all + 1 if not piece.unexplored then found = found + 1 end end
-    local ok, game = pcall(C_MapExplorationInfo.GetExploredMapTextures, mapID)
-    return found, all, ok and type(game) == "table" and #game or 0
+    if not changed then return end
+    if lastGrade then S.ApplyGrade(unpack(lastGrade)) end
+    if S.RefreshFound then S.RefreshFound() end   -- (les icônes : Map/PinSets.lua)
 end
 
 -- Seulement les lieux trouvés (le réglage de la carte, Map/PinSets.lua) : une entrée de donjon, un quai ou une

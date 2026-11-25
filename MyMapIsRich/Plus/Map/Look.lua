@@ -109,7 +109,6 @@ local function Apply()
     P.SetPlacesFrom(Get("iconsFrom"))
     P.SetFoundOnly(Get("foundOnly"))
     P.SetIconScale(Get("iconScale") or 1)
-    if A.SetGapFillsShown then A.SetGapFillsShown(false) end   -- (les dessins de Santiago Reyes sont partis)
     if A.SetDarkening then A.SetDarkening(Get("darkening") or 1, Get("darkenColor") or nil) end
     A.ApplyGrade(Get("colorMatch"), Get("desaturate"), LK.Unexplored())
     P.SetWorldPinsHidden(InstanceHidden())

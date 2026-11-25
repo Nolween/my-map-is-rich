@@ -31,7 +31,7 @@ Le [README.md](README.md) décrit les fonctions et la structure, la [CHARTE.md](
 Le code d'OpenMap a été remplacé par le nôtre, une version par étape (le détail : [FEUILLE_DE_ROUTE.md](FEUILLE_DE_ROUTE.md)). Ce qu'il en reste à savoir :
 - **Les anciennes sauvegardes** (`MyMapIsRichDB`, `MyMapIsRichCharDB`, celles de la carte d'OpenMap) restent déclarées dans le `.toc` et **ne s'effacent jamais** : chaque module en copie une fois ce que le joueur avait par `ns.Map.Migrate` ([Plus/Map/Settings.lua](MyMapIsRich/Plus/Map/Settings.lua) ; épingles, dessins, vols appris…). Un personnage secondaire migre à sa connexion : ces migrations restent.
 - Un réglage de la carte se déclare avec sa valeur d'origine par `ns.Map.Settings.Own(clé, défaut)` dans le module qui s'en sert.
-- `Plus/Map/Art.lua` (le dessin) et `Close.lua` (le zoom rapproché) sont le code d'OpenMap porté tel quel (MIT) : on peut les simplifier, en vérifiant en jeu.
+- `Plus/Map/Art.lua` (le dessin) et `Close.lua` (le zoom rapproché) sont le code d'OpenMap porté (MIT). Après la 1.2.0, ce qui ne servait qu'aux autres clients d'OpenMap en est parti : ils ne lisent que les tables de `Data/Map/`. On peut les simplifier encore, en vérifiant en jeu.
 - Les dessins de Santiago Reyes, faits pour OpenMap, ont été retirés : on ne les remet pas.
 
 ## Traduction : les 10 langues, toujours
