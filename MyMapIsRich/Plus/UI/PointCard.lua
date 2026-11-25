@@ -7,10 +7,12 @@
 -- zone, à droite du rail des calques ; le point est cerclé d'or.
 -- Elle dit ce qu'est le point (le titre et les lignes de son info-bulle, sa
 -- zone et ses coordonnées), le temps pour y aller depuis toi et par où, et
--- propose : Itinéraire (Y : l'aperçu), Ajouter à la file (X), l'action de
--- l'icône (la carte d'un donjon, les trajets d'un maître de vol, la fiche
--- d'une épingle), Poser une épingle ici, Envoyer au groupe ; sur un marqueur
--- de quête, Cacher ce marqueur (Layers/QuestMarks.lua). B la ferme.
+-- propose : Itinéraire (Y : l'aperçu), Ajouter à la file (X), sur un marqueur
+-- de quête Voir la quête (un bouton par quête s'il en porte plusieurs : une
+-- quête de ton journal, sa fiche dans le panneau des quêtes, UI/QuestPanel.lua ;
+-- celle d'un « ! », la fiche d'une quête à prendre, plus bas), l'action de l'icône (la carte d'un donjon, les trajets d'un maître de vol,
+-- la fiche d'une épingle), Poser une épingle ici, Envoyer au groupe ; sur un
+-- marqueur de quête, Cacher ce marqueur (Layers/QuestMarks.lua). B la ferme.
 -- À la souris, sur une icône : Maj+clic l'itinéraire tout de suite, Ctrl+clic
 -- une épingle, Alt+clic le menu des actions.
 --
@@ -18,6 +20,11 @@
 -- T.Preview) : le temps, l'heure d'arrivée, une barre par étape, la liste des
 -- étapes ; Partir (A), Ajouter à la file (X), Annuler (B : retour à la fiche).
 -- R3 et Maj+clic, eux, partent tout de suite.
+--
+-- La fiche d'une quête à prendre (un « ! ») : ce qu'en sait la base des quêtes
+-- (Quests/Db.lua), le jeu ne donnant son texte et ses récompenses qu'une fois
+-- la quête prise. Itinéraire (Y), Ajouter à la file (View), Retour (B : la
+-- fiche du point).
 --
 -- Les actions à la souris (Alt+clic sur la carte) : un menu là où l'on a
 -- cliqué (UI.ShowMenu), le même contenu que la roue de la manette (View).
@@ -38,11 +45,16 @@ local EDGE = 74              -- px : à droite du rail des calques (UI/Layers.lu
 local TOP = 66               -- px : sous le nom de la zone
 local RING = 44
 local INFO_MAX = 3           -- lignes de l'info-bulle reprises
+local QUESTS_MAX = 3         -- boutons Voir la quête au plus (un marqueur qui porte plusieurs quêtes)
+local CHAIN_AROUND = 3       -- la fiche d'une quête à prendre : les étapes de sa chaîne de chaque côté d'elle
+local OFFER_SOON = { 0.78, 0.55, 1 }   -- (le violet des « ! » bientôt prêts : Layers/QuestMarks.lua)
 
-local card, preview, ring
+local card, preview, offer, ring
 local current                -- { point, pin, pinU, pinV, title, lines, action, isPin, icon }
 local plan                   -- le plan de l'aperçu
-local fromCard = false       -- l'aperçu vient de la fiche (Annuler y revient)
+local backTo                 -- le panneau d'où vient l'aperçu (Annuler y revient) : la fiche, ou celle d'une quête à prendre
+local offerQuest             -- la quête à prendre montrée : { id, title, soon, giver } (Layers/QuestMarks.lua : QM.SeeQuests)
+local ShowOffer              -- (plus bas)
 
 local function T() return ns.Travel end
 local function Pl() return ns.TravelPlanner end
@@ -135,7 +147,7 @@ end
 ---------------------------------------------------------------------------
 local function PlaceRing()
     local chrome = ns.MapChrome and ns.MapChrome.Frame()
-    local shown = (card and card:IsShown()) or (preview and preview:IsShown())
+    local shown = (card and card:IsShown()) or (preview and preview:IsShown()) or (offer and offer:IsShown())
     if not (ring and chrome and shown and current) then
         if ring then ring:Hide() end
         return
@@ -229,6 +241,25 @@ local function BuildCard(chrome)
     card.route:SetScript("OnClick", function() Route() end)
     card.queue = Button(card, L.ACT_QUEUE, "grey", "PADBACK")
     card.queue:SetScript("OnClick", function() Queue() end)
+    -- (un marqueur de quête : une quête du journal, sa fiche dans le panneau des quêtes, la manette avec
+    -- elle ; une quête à prendre, sa fiche ici)
+    card.quests = {}
+    for i = 1, QUESTS_MAX do
+        local b = Button(card, L.HINT_QUESTS_OPEN, "grey")
+        b:SetScript("OnClick", function(self)
+            local q, QP = self.quest, ns.QuestPanel
+            if not q then return end
+            if not q.log then
+                ShowOffer(q)
+                return
+            end
+            if not (QP and QP.OpenID) then return end
+            Close()
+            QP.OpenID(q.id)
+            if ns.PadUI() and QP.Focus then QP.Focus() end
+        end)
+        card.quests[i] = b
+    end
     card.action = Button(card, "", "grey")
     card.action:SetScript("OnClick", function()
         local c = current
@@ -259,7 +290,9 @@ local function BuildCard(chrome)
         Close()
         QM.Hide(c.pin)
     end)
-    card.buttons = { card.route, card.queue, card.action, card.pinHere, card.share, card.hide }
+    card.buttons = { card.route, card.queue }
+    for _, b in ipairs(card.quests) do card.buttons[#card.buttons + 1] = b end
+    for _, b in ipairs({ card.action, card.pinHere, card.share, card.hide }) do card.buttons[#card.buttons + 1] = b end
     card:Hide()
     Roots(card)
     F.RegisterWindow(card, { onBack = function() Close() end, first = function() return card.route end })
@@ -317,8 +350,9 @@ end
 function PC.Close()
     if card then card:Hide() end
     if preview then preview:Hide() end
+    if offer then offer:Hide() end
     if ring then ring:Hide() end
-    current, plan = nil, nil
+    current, plan, offerQuest, backTo = nil, nil, nil, nil
     P.Dirty()
 end
 Close = PC.Close
@@ -337,6 +371,8 @@ function PC.Show(u, v, pin)
     current = { point = point, pin = pin, pinU = pin and pin.u, pinV = pin and pin.v, title = title,
         lines = lines, action = action, isPin = isPin }
     if preview then preview:Hide() end
+    if offer then offer:Hide() end
+    offerQuest = nil
     -- (l'icône de l'icône, sinon l'épingle dorée)
     local icon = pin and pin.Icon
     local atlas = icon and icon.GetAtlas and icon:GetAtlas()
@@ -357,6 +393,14 @@ function PC.Show(u, v, pin)
     card.pinHere:SetShown(not isPin)
     local QM = ns.Quests and ns.Quests.Marks
     card.hide:SetShown(pin and QM and QM.CanHide(pin) or false)
+    -- (ses quêtes : « Voir la quête », ou « Voir : <titre> » pour chacune s'il y en a plusieurs)
+    local quests = pin and QM and QM.SeeQuests and QM.SeeQuests(pin, QUESTS_MAX) or {}
+    for i, b in ipairs(card.quests) do
+        local q = quests[i]
+        b.quest = q
+        b:SetShown(q ~= nil)
+        if q then b:SetText(#quests == 1 and L.HINT_QUESTS_OPEN or L.FICHE_SEE_QUEST:format(q.title or "?")) end
+    end
     card.route:SetEnabled(ns.db.options.travel and true or false)
     card.queue:SetEnabled(ns.db.options.travel and true or false)
     FillFrom()
@@ -503,8 +547,9 @@ function Route()
         return
     end
     plan = p
-    fromCard = card:IsShown()
+    backTo = (card:IsShown() and card) or (offer and offer:IsShown() and offer) or nil
     card:Hide()
+    if offer then offer:Hide() end
     FillPreview()
     ShowGlyphs(preview)
     Place(preview)
@@ -529,7 +574,7 @@ function PC.Go()
     if T() then T().Go(point) end
 end
 
--- Annuler : retour à la fiche, ou fermé
+-- Annuler : retour à la fiche (celle du point, ou d'une quête à prendre), ou fermé
 function PC.Back()
     if not (preview and preview:IsShown()) then
         PC.Close()
@@ -537,13 +582,183 @@ function PC.Back()
     end
     preview:Hide()
     plan = nil
-    if fromCard and current then
-        Place(card)
-        card:Show()
+    if backTo and current then
+        Place(backTo)
+        backTo:Show()
         PlaceRing()
     else
         PC.Close()
     end
+    P.Dirty()
+end
+
+---------------------------------------------------------------------------
+-- La fiche d'une quête à prendre (un « ! » : Voir la quête dans la fiche du
+-- point), à sa place, d'après la base des quêtes
+---------------------------------------------------------------------------
+local function BuildOffer(chrome)
+    offer = UI.Overlay(chrome)
+    offer:SetWidth(WIDTH)
+    offer:EnableMouse(true)
+    offer:SetFrameLevel(chrome:GetFrameLevel() + 20)
+    offer.close = UI.CloseButton(offer, 20, function() Close() end)
+    offer.close:SetPoint("TOPRIGHT", -8, -8)
+    offer.close.noGamepad = true
+    offer.title = UI.Text(offer, "GameFontNormalLarge")
+    offer.title:SetPoint("TOPLEFT", 14, -12)
+    offer.title:SetPoint("RIGHT", offer, "RIGHT", -34, 0)
+    offer.title:SetJustifyH("LEFT")
+    offer.sub = UI.DimText(offer, nil, "GameFontHighlightSmall")
+    offer.why = UI.Text(offer, "GameFontHighlightSmall")
+    offer.why:SetTextColor(OFFER_SOON[1], OFFER_SOON[2], OFFER_SOON[3])
+    offer.body = UI.Text(offer, "GameFontHighlightSmall")
+    for _, fs in ipairs({ offer.sub, offer.why, offer.body }) do
+        fs:SetPoint("RIGHT", offer, "RIGHT", -14, 0)
+        fs:SetJustifyH("LEFT")
+    end
+    offer.route = Button(offer, L.FICHE_ROUTE, nil, "PAD4")
+    offer.route:SetScript("OnClick", function() Route() end)
+    offer.queue = Button(offer, L.ACT_QUEUE, "grey", "PADBACK")
+    offer.queue:SetScript("OnClick", function() Queue() end)
+    offer.back = Button(offer, L.HINT_BACK, "grey", "PAD2")
+    offer.back:SetHeight(26)
+    offer.back:SetScript("OnClick", function() PC.OfferBack() end)
+    offer.buttons = { offer.route, offer.queue, offer.back }
+    -- (le nom d'un objet que le jeu n'avait pas encore : la fiche refaite à son arrivée)
+    offer:SetScript("OnEvent", function(self)
+        if self:IsShown() and offerQuest then self.Fill() end
+    end)
+    offer:Hide()
+    Roots(offer)
+    F.RegisterWindow(offer, { onBack = function() PC.OfferBack() end, first = function() return offer.route end })
+end
+
+-- Un PNJ ou un objet de la base : son nom, et la zone de son premier point (« Nom · Zone »)
+local function NameAndZone(ref)
+    local Db = ns.Quests.Db
+    local name = ref and Db.Name(ref)
+    if not name then return nil end
+    local spot = Db.Places(ref)[1]
+    local zone = spot and ns.Map.Coords.ZoneAt(spot[1], spot[2])
+    local info = zone and C_Map.GetMapInfo and C_Map.GetMapInfo(zone)
+    return info and info.name and (name .. " · " .. info.name) or name
+end
+
+-- Le nom d'un objet, si le jeu l'a déjà (sinon demandé : GET_ITEM_INFO_RECEIVED)
+local function ItemName(itemID)
+    local name = GetItemInfo and GetItemInfo(itemID)
+    if not name and C_Item and C_Item.GetItemNameByID then name = C_Item.GetItemNameByID(itemID) end
+    if not name and C_Item and C_Item.RequestLoadItemDataByID then pcall(C_Item.RequestLoadItemDataByID, itemID) end
+    return name
+end
+
+-- Le corps de la fiche : qui la donne et qui la reprend, ses objectifs, sa chaîne, d'où vient tout cela.
+-- Et si un nom d'objet manque encore
+local function OfferBody(o, q)
+    local Db = ns.Quests.Db
+    local gold = "|cffffd100"
+    local parts, waiting = {}, false
+    local who = {}
+    local giver = (o.giver and NameAndZone(o.giver)) or (current and current.title)
+    if giver then who[#who + 1] = gold .. L.FICHE_GIVER .. "|r " .. giver end
+    local ender = q and q.ends[1] and NameAndZone(q.ends[1])
+    if ender then who[#who + 1] = gold .. L.FICHE_ENDER .. "|r " .. ender end
+    if #who > 0 then parts[#parts + 1] = table.concat(who, "\n") end
+    -- (les cibles, les objets à rapporter, les lieux à explorer : leurs noms seulement)
+    local goals = {}
+    for _, g in ipairs(q and q.goals or {}) do
+        local name = Db.Name(type(g) == "table" and g[1] or g)
+        if name then goals[#goals + 1] = "• " .. name end
+    end
+    for _, itemID in ipairs(q and q.items or {}) do
+        local name = ItemName(itemID)
+        if name then goals[#goals + 1] = "• " .. name else waiting = true end
+    end
+    if q and q.explore then goals[#goals + 1] = "• " .. L.QUESTMARK_EXPLORE end
+    if #goals > 0 then parts[#parts + 1] = gold .. L.QUESTS_OBJECTIVES_HEAD .. "|r\n" .. table.concat(goals, "\n") end
+    local QP = ns.QuestPanel
+    local chain = QP and QP.ChainText and QP.ChainText(o.id, CHAIN_AROUND)
+    if chain then parts[#parts + 1] = gold .. L.QUESTS_CHAIN .. "|r\n" .. chain end
+    parts[#parts + 1] = UI.Hex("textDim") .. L.FICHE_OFFER_NOTE .. "|r"
+    return table.concat(parts, "\n\n"), waiting
+end
+
+local function FillOffer()
+    local o = offerQuest
+    if not (offer and o) then return end
+    local Db, QM = ns.Quests.Db, ns.Quests.Marks
+    local q = Db.Quest(o.id)
+    offer.title:SetText(Db.Title(o.id))
+    if QM and QM.Colour and q and q.level and q.level > 0 then
+        offer.title:SetTextColor(QM.Colour(q.level))
+    else
+        offer.title:SetTextColor(1, 0.82, 0)
+    end
+    -- (son niveau, celui où elle se prend, ce qu'elle a de particulier : sa classe, un donjon, répétable, sa chaîne)
+    local bits = {}
+    if q and q.level > 0 then bits[#bits + 1] = L.QUESTS_LEVEL:format(q.level) end
+    if q and q.minLevel > 0 and q.minLevel ~= q.level then bits[#bits + 1] = L.FICHE_MIN_LEVEL:format(q.minLevel) end
+    local tags = QM and QM.Tags and QM.Tags(o.id)
+    if tags then bits[#bits + 1] = tags end
+    offer.sub:SetText(table.concat(bits, " · "))
+    -- (un « ! » bientôt prêt : ce qui manque encore)
+    local Offers = ns.Quests.Offers
+    offer.why:SetText(o.soon and Offers and Offers.Why and Offers.Why(o.id) or "")
+    local body, waiting = OfferBody(o, q)
+    offer.body:SetText(body)
+    if waiting then pcall(offer.RegisterEvent, offer, "GET_ITEM_INFO_RECEIVED") else offer:UnregisterAllEvents() end
+    local travel = ns.db.options.travel and true or false
+    offer.route:SetEnabled(travel)
+    offer.queue:SetEnabled(travel)
+    -- (la mise en page, de haut en bas)
+    local y = -12 - offer.title:GetStringHeight() - 4
+    for _, fs in ipairs({ offer.sub, offer.why, offer.body }) do
+        local text = fs:GetText()
+        fs:SetShown(text ~= nil and text ~= "")
+        if fs:IsShown() then
+            fs:ClearAllPoints()
+            fs:SetPoint("TOPLEFT", offer, "TOPLEFT", 14, y)
+            fs:SetPoint("RIGHT", offer, "RIGHT", -14, 0)
+            y = y - fs:GetStringHeight() - (fs == offer.body and 12 or 6)
+        end
+    end
+    for _, b in ipairs(offer.buttons) do
+        b:ClearAllPoints()
+        b:SetPoint("TOPLEFT", offer, "TOPLEFT", 14, y)
+        y = y - b:GetHeight() - 6
+    end
+    offer:SetHeight(-y + 4)
+end
+
+-- La fiche d'une quête à prendre, à la place de celle du point
+function ShowOffer(o)
+    if not (offer and current and o) then return end
+    offerQuest = o
+    card:Hide()
+    if preview then preview:Hide() end
+    offer.Fill = FillOffer
+    FillOffer()
+    ShowGlyphs(offer)
+    Place(offer)
+    offer:Show()
+    PlaceRing()
+    P.Dirty()
+end
+
+-- Retour : la fiche du point
+function PC.OfferBack()
+    if offer then
+        offer:Hide()
+        offer:UnregisterAllEvents()
+    end
+    offerQuest = nil
+    if not current then
+        PC.Close()
+        return
+    end
+    Place(card)
+    card:Show()
+    PlaceRing()
     P.Dirty()
 end
 
@@ -607,6 +822,7 @@ local function Build(chrome)
     if card then return end
     BuildCard(chrome)
     BuildPreview(chrome)
+    BuildOffer(chrome)
     ring = CreateFrame("Frame", nil, chrome)
     ring:SetSize(RING, RING)
     ring:SetFrameLevel(chrome:GetFrameLevel() + 5)
@@ -624,18 +840,15 @@ local function Build(chrome)
     -- (le cercle suit le point quand la vue bouge)
     local wait = 0
     ring:SetScript("OnUpdate", nil)
-    card:SetScript("OnUpdate", function(_, elapsed)
+    local function Follow(_, elapsed)
         wait = wait - elapsed
         if wait > 0 then return end
         wait = 0.03
         PlaceRing()
-    end)
-    preview:SetScript("OnUpdate", function(_, elapsed)
-        wait = wait - elapsed
-        if wait > 0 then return end
-        wait = 0.03
-        PlaceRing()
-    end)
+    end
+    card:SetScript("OnUpdate", Follow)
+    preview:SetScript("OnUpdate", Follow)
+    offer:SetScript("OnUpdate", Follow)
     ns.Map.View.SetPressHandler(OnPinPress)
 end
 
@@ -664,3 +877,11 @@ P.SetAction("preview", "PAD3", ns.PadMapSize, ns.PadMapSizeHint)
 P.SetAction("preview", "PAD2", function() PC.Back() end, "HINT_CANCEL")
 P.SetAction("preview", "PAD4", function() end)
 F.WINDOW_CONTEXTS.preview = true
+
+-- (la fiche d'une quête à prendre : Y l'itinéraire, View la file, B retour à la fiche du point)
+P.DefineContext("offer", 53.5, function() return offer and offer:IsShown() and F.Top() == offer end, "window")
+P.SetAction("offer", "PAD4", function() Route() end, "FICHE_ROUTE")
+P.SetAction("offer", "PADBACK", function() Queue() end, "ACT_QUEUE")
+P.SetAction("offer", "PAD3", ns.PadMapSize, ns.PadMapSizeHint)
+P.SetAction("offer", "PAD2", function() PC.OfferBack() end, "HINT_BACK")
+F.WINDOW_CONTEXTS.offer = true

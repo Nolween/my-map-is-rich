@@ -672,15 +672,20 @@ end
 
 -- La chaîne d'une quête, une ligne par étape : faite (cochée), celle-ci, dans
 -- ton journal, à venir ; sous l'étape qui suit celle-ci, qui la donne et où.
--- nil : la quête est seule, ou la base ne la connaît pas
-local function ChainText(questID)
+-- nil : la quête est seule, ou la base ne la connaît pas. `around` : seulement tant d'étapes de chaque côté
+-- de celle-ci, « ... » pour les autres (la fiche d'une quête à prendre, UI/PointCard.lua : QP.ChainText)
+local function ChainText(questID, around)
     local Db, Log = ns.Quests.Db, ns.Quests.Log
     if not (questID and Db.Has()) then return end
     local chain, at = Db.Chain(questID)
     if #chain < 2 then return end
+    local first, last = 1, #chain
+    if around then first, last = math.max(1, at - around), math.min(#chain, at + around) end
     local inLog = Log.Quests()
     local lines = {}
-    for i, id in ipairs(chain) do
+    if first > 1 then lines[#lines + 1] = UI.Hex("textDim") .. "...|r" end
+    for i = first, last do
+        local id = chain[i]
         local title = Db.Title(id)
         if id == questID then
             lines[#lines + 1] = ("|cffffd100» %d. %s|r"):format(i, title)
@@ -706,8 +711,10 @@ local function ChainText(questID)
             end
         end
     end
+    if last < #chain then lines[#lines + 1] = UI.Hex("textDim") .. "...|r" end
     return table.concat(lines, "\n")
 end
+QP.ChainText = ChainText
 
 function FillPage(fresh)
     local q = Selected()

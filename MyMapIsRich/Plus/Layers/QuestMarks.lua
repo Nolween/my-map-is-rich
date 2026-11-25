@@ -708,6 +708,31 @@ function QM.Hide(pin)
     ns.Print(L.QUESTMARK_HIDDEN:format(table.concat(titles, ", ")))
 end
 
+-- Les quêtes d'une icône qui ont une fiche (la fiche d'un point : Voir la quête), `most` au plus : celles de
+-- ton journal (un objectif, une quête à rendre : la fiche du panneau des quêtes), et celles à prendre d'un
+-- « ! » (la fiche d'une quête à prendre, UI/PointCard.lua) :
+-- { { id, title, log = dans le journal, soon = bientôt prête, giver = le PNJ ou l'objet qui la donne }, ... }
+function QM.SeeQuests(pin, most)
+    local e = pin and pin.data
+    local ids = QuestsOf(pin)
+    if not ids or type(e) ~= "table" then return {} end
+    local offer = e.what == "offer"
+    -- (le donneur : le PNJ (ou l'objet, < 0) de l'icône ; celui d'un « ! » bientôt prêt est dans e.name)
+    local giver = type(e.ref) == "number" and e.ref or (type(e.name) == "number" and e.name) or nil
+    local log = Log.Quests()
+    local out = {}
+    for _, id in ipairs(ids) do
+        if #out >= (most or 3) then break end
+        local q = log[id]
+        if q then
+            out[#out + 1] = { id = id, title = q.title or (Title(id)), log = true }
+        elseif offer then
+            out[#out + 1] = { id = id, title = (Title(id)), soon = e.soon and true or false, giver = giver }
+        end
+    end
+    return out
+end
+
 ---------------------------------------------------------------------------
 -- /mmir sonde quetes : tes quêtes du journal dans la base, et où tu es (en
 -- yards, pour tools/quests/forever_fixes.json)
