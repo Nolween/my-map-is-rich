@@ -1,4 +1,4 @@
--- Le navigateur de lieux (LB sur la carte) : une seule liste, quatre
+-- Le navigateur de lieux (LB sur la carte) : une seule liste, six
 -- onglets qu'on change à LB / RB.
 --   Lieux       le monde, puis un continent, puis une zone (la zone entière,
 --               ses donjons et raids, ses maîtres de vol) ; « Ma position »
@@ -7,8 +7,18 @@
 --               à jour à chaque lettre (accents et majuscules ignorés) : les
 --               lieux ci-dessus, et les PNJ et objets de Questie s'il est là.
 --   Récents     les derniers lieux choisis.
+--   Près de moi le plus proche de chaque service : aubergiste, réparateur,
+--               maître de vol, maître de ta classe, banquier, maître des
+--               écuries, commissaire-priseur (les PNJ de la base des quêtes,
+--               Quests/Db.lua ; les maîtres de vol du réseau des trajets), avec
+--               le temps pour y aller (calculé ligne par ligne).
+--   Où aller    les zones où tu as le plus de quêtes à prendre (les « ! » de
+--               la carte, Layers/QuestMarks.lua), avec leurs niveaux ;
+--               l'itinéraire mène au donneur qui en a le plus.
 --   File        les destinations du trajet en plusieurs étapes
---               (Travel/Guide.lua) : la destination en cours, puis la file.
+--               (Travel/Guide.lua) : la destination en cours, puis la file ;
+--               en bas, « Tout mon journal dans la file » (chaque quête :
+--               son objectif, ou son donneur si elle est finie).
 -- Sur un lieu : Y l'itinéraire jusqu'à lui, X l'ajouter à la file. Dans la
 -- recherche, A lance l'itinéraire, Y montre le lieu sur la carte. Dans la
 -- file : A y aller maintenant, X retirer, LT / RT monter / descendre, Y la
@@ -27,11 +37,11 @@ local F = ns.Focus
 local PL = {}
 ns.Places = PL
 
-local W = 560
+local W = 640
 local ROWS, ROW_H = 13, 26
 local RECENT_MAX = 10
 local RESULTS_MAX = 60
-local TAB_ORDER = { "places", "search", "recent", "queue" }
+local TAB_ORDER = { "places", "search", "recent", "near", "next", "queue" }
 
 local frame, list, tabs, crumb, box, foot
 local tab = "places"
@@ -507,7 +517,167 @@ local function FillQueue()
     end
     local count = #T().Queue()
     crumb:SetText(count == 0 and L.QUEUE_EMPTY or L.QUEUE_INTRO)
+    -- (en bas : tout le journal de quêtes dans la file)
+    items[#items + 1] = { label = "|cffffd100+|r  " .. L.QUEUE_ADD_LOG, text = L.QUEUE_ADD_LOG, right = "", addLog = true,
+        tip = L.QUEUE_ADD_LOG_TIP }
     list:SetItems(items)
+end
+
+---------------------------------------------------------------------------
+-- Près de moi : le plus proche de chaque service, à vol d'oiseau, puis le
+-- temps pour y aller (un calcul par ligne, l'un après l'autre)
+---------------------------------------------------------------------------
+local function GameText(name, key)
+    local s = _G[name]
+    if type(s) == "string" and s ~= "" then return s end
+    return L[key]
+end
+
+local SERVICES = {
+    { bit = "INN", game = "MINIMAP_TRACKING_INNKEEPER", key = "PLACES_NEAR_INN" },
+    { bit = "REPAIR", game = "MINIMAP_TRACKING_REPAIR", key = "PLACES_NEAR_REPAIR" },
+    { flight = true, game = "MINIMAP_TRACKING_FLIGHTMASTER", key = "PLACES_NEAR_FLIGHT" },
+    { bit = "CLASS_TRAINER", class = true, game = "MINIMAP_TRACKING_TRAINER_CLASS", key = "PLACES_NEAR_TRAINER" },
+    { bit = "BANKER", game = "MINIMAP_TRACKING_BANKER", key = "PLACES_NEAR_BANKER" },
+    { bit = "STABLE", game = "MINIMAP_TRACKING_STABLEMASTER", key = "PLACES_NEAR_STABLE" },
+    { bit = "AUCTION", game = "MINIMAP_TRACKING_AUCTIONEER", key = "PLACES_NEAR_AUCTION" },
+}
+local NEAR_MAX = 8000        -- yd : plus loin, ce n'est plus « près de toi »
+
+local function NearestNpc(s, here)
+    local Db, K = ns.Quests.Db, ns.Map.Coords
+    if not Db.Has() then return end
+    local side = UnitFactionGroup("player") == "Horde" and 2 or 1
+    local class = s.class and select(2, UnitClass("player")) or nil
+    local best, bestD, bestId
+    for _, id in ipairs(Db.Services(Db[s.bit], class)) do
+        if bit.band(Db.React(id), side) ~= 0 then
+            for _, p in ipairs(Db.Places(id)) do
+                if not p.inside then
+                    local x, y = K.ToYards(here.cont, p[1], p[2])
+                    if x then
+                        local d = (x - here.x) ^ 2 + (y - here.y) ^ 2
+                        if not bestD or d < bestD then
+                            best, bestD, bestId = { cont = here.cont, x = x, y = y, u = p[1], v = p[2] }, d, id
+                        end
+                    end
+                end
+            end
+        end
+    end
+    if best and bestD <= NEAR_MAX * NEAR_MAX then
+        best.name = Db.Name(bestId)
+        return best, math.sqrt(bestD)
+    end
+end
+
+local function NearestFlight(here)
+    local ok, g = pcall(ns.TravelGraph.Build)
+    local best, bestD
+    for _, n in pairs(ok and g and g.nodes or {}) do
+        if n.kind == "flight" and n.cont == here.cont then
+            local d = (n.x - here.x) ^ 2 + (n.y - here.y) ^ 2
+            if not bestD or d < bestD then best, bestD = n, d end
+        end
+    end
+    if best and bestD <= NEAR_MAX * NEAR_MAX then
+        return { cont = best.cont, x = best.x, y = best.y, name = best.name }, math.sqrt(bestD)
+    end
+end
+
+local nearToken = 0
+local function FillNear()
+    crumb:SetText(L.PLACES_NEAR_INTRO)
+    local here = Pl().PlayerPoint()
+    local items = {}
+    for _, s in ipairs(here and SERVICES or {}) do
+        local p, d
+        if s.flight then p, d = NearestFlight(here) else p, d = NearestNpc(s, here) end
+        if p then
+            local what = GameText(s.game, s.key)
+            items[#items + 1] = { text = p.name or what, label = ("%s  |cff999999%s|r"):format(what, p.name or ""),
+                kind = what, name = p.name, point = p, u = p.u, v = p.v, right = ns.RouteHud.Yards(d) }
+        end
+    end
+    if #items == 0 then items = { { text = here and L.PLACES_NEAR_NONE or L.TRAVEL_NO_HERE, note = true, right = "" } } end
+    list:SetItems(items)
+    -- (le temps pour y aller : un itinéraire calculé par ligne, une ligne à la fois)
+    nearToken = nearToken + 1
+    local token = nearToken
+    for i, item in ipairs(items) do
+        if item.point then
+            C_Timer.After(0.05 * i, function()
+                if token ~= nearToken or tab ~= "near" or not frame:IsShown() then return end
+                local plan = T().Preview(T().Copy(item.point))
+                if plan then
+                    local clock = ns.RouteHud.Duration or ns.TravelRoute.Clock
+                    item.right = clock(plan.secs)
+                    list:Refresh()
+                end
+            end)
+        end
+    end
+end
+
+---------------------------------------------------------------------------
+-- Où aller : les zones où tu as le plus de quêtes à prendre
+---------------------------------------------------------------------------
+local NEXT_MAX = 15
+
+local function FillNext()
+    crumb:SetText(L.PLACES_NEXT_INTRO)
+    local QM, K, ZI = ns.Quests and ns.Quests.Marks, ns.Map.Coords, ns.ZoneInfo
+    local zones, order = {}, {}
+    for _, e in ipairs(QM and QM.Entries().offer or {}) do
+        if not (e.trivial or e.soon) then
+            for _, p in ipairs((QM.Spots(e))) do
+                local mapID = not p.inside and K.ZoneAt(p[1], p[2])
+                if mapID then
+                    local z = zones[mapID]
+                    if not z then
+                        z = { mapID = mapID, quests = {}, n = 0, bestN = 0 }
+                        zones[mapID] = z
+                        order[#order + 1] = z
+                    end
+                    for _, line in ipairs(e.lines) do
+                        if not z.quests[line.quest] then
+                            z.quests[line.quest] = true
+                            z.n = z.n + 1
+                        end
+                    end
+                    if #e.lines > z.bestN then z.best, z.bestN, z.ref = p, #e.lines, e.ref end
+                end
+            end
+        end
+    end
+    table.sort(order, function(a, b) return a.n > b.n end)
+    local items = {}
+    for i, z in ipairs(order) do
+        if i > NEXT_MAX then break end
+        local info = C_Map.GetMapInfo and C_Map.GetMapInfo(z.mapID)
+        local name = info and info.name or ("#" .. z.mapID)
+        local label = name
+        local lo, hi
+        if ZI and ZI.Levels then lo, hi = ZI.Levels(z.mapID) end
+        if lo then
+            local code, range = ZI.LevelColor(lo, hi)
+            label = ("%s  %s(%s)|r"):format(name, code, range)
+        end
+        items[#items + 1] = { text = name, label = label, kind = name, name = ns.Quests.Db.Name(z.ref) or name,
+            u = z.best[1], v = z.best[2], right = L.PLACES_NEXT_N:format(z.n) }
+    end
+    if #items == 0 then items = { { text = L.PLACES_NEXT_NONE, note = true, right = "" } } end
+    list:SetItems(items)
+end
+
+-- Tout le journal dans la file : chaque quête, son objectif (son donneur si elle est finie)
+local function AddLog()
+    local goals = {}
+    for id in pairs(ns.Quests.Log.Quests()) do
+        local point = ns.TravelQuests and ns.TravelQuests.Point(id)
+        if point then goals[#goals + 1] = T().Copy(point) end
+    end
+    T().EnqueueMany(goals)
 end
 
 local function FillSearch()
@@ -561,9 +731,23 @@ local HANDLERS = {
         y = Route, x = Queue,
         hints = { { "PAD1", "PLACES_SHOW" }, { "PAD4", "PLACES_ROUTE" }, { "PADBACK", "PLACES_QUEUE" }, { "PAD2", "HINT_CLOSE" } },
     },
+    near = {
+        a = Route, x = Queue,
+        y = function(item) ShowOnMap(item) PL.Hide() end,
+        hints = { { "PAD1", "PLACES_ROUTE" }, { "PADBACK", "PLACES_QUEUE" }, { "PAD4", "PLACES_SHOW" }, { "PAD2", "HINT_CLOSE" } },
+    },
+    next = {
+        a = Route, x = Queue,
+        y = function(item) ShowOnMap(item) PL.Hide() end,
+        hints = { { "PAD1", "PLACES_ROUTE" }, { "PADBACK", "PLACES_QUEUE" }, { "PAD4", "PLACES_SHOW" }, { "PAD2", "HINT_CLOSE" } },
+    },
     queue = {
         a = function(item)
-            if item.queued then
+            if item.addLog then
+                AddLog()
+                FillQueue()
+                FocusRow(1)
+            elseif item.queued then
                 T().GoQueued(item.queued)
                 FillQueue()
                 FocusRow(1)
@@ -643,6 +827,8 @@ Refill = function()
     if tab == "places" then FillPlaces()
     elseif tab == "search" then FillSearch()
     elseif tab == "recent" then FillRecent()
+    elseif tab == "near" then FillNear()
+    elseif tab == "next" then FillNext()
     else FillQueue() end
     DrawFoot()
 end
@@ -714,7 +900,9 @@ local function Build()
     lb:SetKey("PADLSHOULDER")
     lb:SetPoint("LEFT", frame.title, "RIGHT", 16, 0)
     tabs = {}
-    local labels = { places = L.PLACES_TAB_PLACES, search = L.PLACES_TAB_SEARCH, recent = L.PLACES_TAB_RECENT, queue = L.PLACES_TAB_QUEUE }
+    local labels = { places = L.PLACES_TAB_PLACES, search = L.PLACES_TAB_SEARCH, recent = L.PLACES_TAB_RECENT,
+        near = L.PLACES_TAB_NEAR, next = L.PLACES_TAB_NEXT, queue = L.PLACES_TAB_QUEUE }
+
     local prev
     for _, key in ipairs(TAB_ORDER) do
         local t = Tab(frame, key, labels[key], prev)

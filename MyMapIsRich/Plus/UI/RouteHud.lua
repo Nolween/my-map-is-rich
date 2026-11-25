@@ -69,7 +69,7 @@ end
 
 local KINDS = {
     walk = "KIND_WALK", flight = "KIND_FLIGHT", boat = "KIND_BOAT",
-    zeppelin = "KIND_ZEPPELIN", portal = "KIND_PORTAL", tram = "KIND_TRAM",
+    zeppelin = "KIND_ZEPPELIN", portal = "KIND_PORTAL", tram = "KIND_TRAM", hearth = "KIND_HEARTH",
 }
 
 local function KindColor(kind)

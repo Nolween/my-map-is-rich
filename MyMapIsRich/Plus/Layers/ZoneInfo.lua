@@ -46,8 +46,9 @@ end
 
 local function On() return ns.Map.Settings.Get("zoneLevels") ~= false end
 
-local function LevelText(mapID)
-    if not On() then return "" end
+-- Les niveaux d'une zone : lo, hi (nil : inconnus) ; aussi pour « Où aller »
+-- (UI/Places.lua)
+function ZI.Levels(mapID)
     local levels = ns.Map.Data.Levels()
     local lv = levels and levels[mapID]
     if not levels and C_Map.GetMapLevels then
@@ -55,8 +56,14 @@ local function LevelText(mapID)
         lo, hi = ok and Plain(lo), ok and Plain(hi)
         if lo and hi and lo > 0 and hi >= lo then lv = { lo, hi } end
     end
-    if not (lv and lv[1] and lv[2]) then return "" end
-    local code, range = ZI.LevelColor(lv[1], lv[2])
+    if lv and lv[1] and lv[2] then return lv[1], lv[2] end
+end
+
+local function LevelText(mapID)
+    if not On() then return "" end
+    local lo, hi = ZI.Levels(mapID)
+    if not lo then return "" end
+    local code, range = ZI.LevelColor(lo, hi)
     return (" %s(%s)|r"):format(code, range)
 end
 

@@ -60,6 +60,18 @@ local armed                  -- le questID dont l'abandon attend sa confirmation
 local menuFrame              -- le cadre du menu d'une quête (UI.ShowMenu)
 local menuQuest              -- le questID du menu ouvert (nil : pas de menu à nous)
 local SetFocused             -- (plus bas)
+local spotlit                -- la quête annoncée aux marqueurs (Layers/QuestMarks.lua), ou nil
+local moved = false          -- la manette a choisi une quête dans la liste (pas seulement la première)
+
+-- La quête choisie pour de bon (sa fiche ouverte, ou une quête où la manette
+-- est allée dans la liste) : les marqueurs des autres quêtes pâlissent
+-- (« QUEST_SPOTLIGHT »)
+local function Spot()
+    local id = panel and panel:IsShown() and (view == "quest" or (focused and moved)) and selected or nil
+    if id == spotlit then return end
+    spotlit = id
+    ns.Fire("QUEST_SPOTLIGHT", id)
+end
 
 local function Plain(v)
     if issecretvalue and issecretvalue(v) then return nil end
@@ -480,6 +492,7 @@ function QP.Refresh()
     FillHead()
     FillList()
     if view == "quest" then FillPage(false) end
+    Spot()
 end
 
 ---------------------------------------------------------------------------
@@ -507,7 +520,11 @@ local function Select(q, glide)
     if not q then return end
     selected = q.questID
     FillList()
-    if glide then ShowOnMap(q) end
+    if glide then
+        ShowOnMap(q)
+        moved = true
+    end
+    Spot()
 end
 
 ---------------------------------------------------------------------------
@@ -527,7 +544,7 @@ local function FromText(q)
         local p = T().Preview(q.point)
         if not p then return L.TRAVEL_ALREADY end
         local kinds = {}
-        local K = { walk = "KIND_WALK", flight = "KIND_FLIGHT", boat = "KIND_BOAT", zeppelin = "KIND_ZEPPELIN", portal = "KIND_PORTAL", tram = "KIND_TRAM" }
+        local K = { walk = "KIND_WALK", flight = "KIND_FLIGHT", boat = "KIND_BOAT", zeppelin = "KIND_ZEPPELIN", portal = "KIND_PORTAL", tram = "KIND_TRAM", hearth = "KIND_HEARTH" }
         for i, leg in ipairs(p.legs) do kinds[i] = L[K[leg.kind] or "KIND_WALK"] end
         return L.FICHE_ABOUT:format(Duration(p.secs)) .. " · " .. table.concat(kinds, ", ")
     end
@@ -645,6 +662,45 @@ local function Para(fs, text, y, gap)
     return y + fs:GetStringHeight() + (gap or 10)
 end
 
+-- La chaîne d'une quête, une ligne par étape : faite (cochée), celle-ci, dans
+-- ton journal, à venir ; sous l'étape qui suit celle-ci, qui la donne et où.
+-- nil : la quête est seule, ou la base ne la connaît pas
+local function ChainText(questID)
+    local Db, Log = ns.Quests.Db, ns.Quests.Log
+    if not (questID and Db.Has()) then return end
+    local chain, at = Db.Chain(questID)
+    if #chain < 2 then return end
+    local inLog = Log.Quests()
+    local lines = {}
+    for i, id in ipairs(chain) do
+        local title = Db.Title(id)
+        if id == questID then
+            lines[#lines + 1] = ("|cffffd100» %d. %s|r"):format(i, title)
+        elseif Log.Done(id) then
+            lines[#lines + 1] = ("|cff40ff40%s%d. %s|r"):format(CHECK, i, title)
+        elseif inLog[id] then
+            lines[#lines + 1] = ("|cffffffff• %d. %s|r"):format(i, title)
+        else
+            lines[#lines + 1] = ("%s• %d. %s|r"):format(UI.Hex("textDim"), i, title)
+        end
+        -- (l'étape suivante : son donneur, et sa zone)
+        if i == at + 1 then
+            local q = Db.Quest(id)
+            local giver = q and q.starts[1]
+            local name = giver and Db.Name(giver)
+            if name then
+                local spot = Db.Places(giver)[1]
+                local zone = spot and ns.Map.Coords.ZoneAt(spot[1], spot[2])
+                local info = zone and C_Map.GetMapInfo and C_Map.GetMapInfo(zone)
+                local where = info and info.name
+                lines[#lines + 1] = ("%s     %s|r"):format(UI.Hex("textDim"),
+                    where and L.QUESTS_CHAIN_GIVER_AT:format(name, where) or L.QUESTS_CHAIN_GIVER:format(name))
+            end
+        end
+    end
+    return table.concat(lines, "\n")
+end
+
 function FillPage(fresh)
     local q = Selected()
     if not (page and q) then return end
@@ -685,6 +741,14 @@ function FillPage(fresh)
         y = Para(page.story, d.story, y, 14)
     else
         page.story:Hide()
+    end
+    -- (sa chaîne, d'après la base des quêtes : chaque étape, et qui donne la suivante)
+    local chain = ChainText(q.questID)
+    if chain then
+        y = Head(4, L.QUESTS_CHAIN, y)
+        y = Para(page.chain, chain, y, 14)
+    else
+        page.chain:Hide()
     end
     -- (les récompenses : au choix, données, puis l'argent et l'expérience)
     page.money:Hide()
@@ -755,6 +819,7 @@ function ShowView(v)
     end
     FillHead()
     P.Dirty()
+    Spot()
 end
 
 function QP.View() return QP.Shown() and view or nil end
@@ -767,6 +832,7 @@ local function OpenQuest(q)
     FillList()
     FillPage(true)
     ShowOnMap(q)
+    Spot()
 end
 
 -- B ou Retour : la liste, sur la même quête (et la manette avec)
@@ -909,6 +975,7 @@ end
 -- ferment (le contexte « questmenu », plus bas).
 ---------------------------------------------------------------------------
 local ShowQuestMenu          -- (plus bas)
+local GreyQuests, ShowAbandonGreyMenu
 
 -- (la ligne d'une quête, si la liste la montre)
 local function RowOf(questID)
@@ -1030,7 +1097,44 @@ function ShowQuestMenu(q, row)
     items[#items + 1] = { L.QUESTS_SHARE, OnQuest(id, Share) }
     if QuestLink(q) then items[#items + 1] = { L.QUESTS_LINK, OnQuest(id, LinkInChat) } end
     items[#items + 1] = { L.QUESTS_ABANDON .. "…", OnQuest(id, function(cur) ShowAbandonMenu(cur, RowOf(id)) end), sep = true }
+    -- (toutes les quêtes grises du journal, pas finies : confirmé dans le même menu)
+    local grey = GreyQuests()
+    if #grey > 0 then
+        items[#items + 1] = { L.QUESTS_ABANDON_GREY:format(#grey) .. "…", function() ShowAbandonGreyMenu(q, row) end }
+    end
     OpenMenu(items, q, row)
+end
+
+-- Les quêtes grises du journal (trop faciles pour toi), pas finies
+function GreyQuests()
+    local out = {}
+    local mine = Plain(UnitLevel("player")) or 1
+    local range = (GetQuestGreenRange and Plain(GetQuestGreenRange("player"))) or 8
+    for _, e in ipairs(entries) do
+        if e.level and e.level > 0 and mine - e.level > range and not e.complete then out[#out + 1] = e end
+    end
+    return out
+end
+
+-- Abandonner les grises : Annuler d'abord, puis « Vraiment ? » en rouge ; une
+-- quête par instant (le jeu en abandonne une à la fois)
+function ShowAbandonGreyMenu(q, row)
+    local grey = GreyQuests()
+    OpenMenu({
+        { GameText("CANCEL", "HINT_BACK"), function() end },
+        { UI.Hex("bad") .. L.QUESTS_ABANDON_GREY_SURE:format(#grey) .. "|r", function()
+            local n = 0
+            for i, e in ipairs(grey) do
+                C_Timer.After(0.4 * (i - 1), function()
+                    if Fresh(e.questID) and Abandon(e) then
+                        readCache[e.questID] = nil
+                        n = n + 1
+                    end
+                    if i == #grey then ns.Print(L.QUESTS_ABANDONED_GREY:format(n)) end
+                end)
+            end
+        end, sep = true },
+    }, q, row)
 end
 
 ---------------------------------------------------------------------------
@@ -1254,7 +1358,7 @@ local function Build(chrome)
     page.child:SetWidth(PAGE_W)
     page.colW = math.floor((PAGE_W - 6) / 2)
     page.heads, page.labels, page.items = {}, {}, {}
-    for i = 1, 3 do
+    for i = 1, 4 do
         local fs = UI.Text(page.child, "GameFontNormalLarge")
         local line = page.child:CreateTexture(nil, "ARTWORK")
         line:SetColorTexture(1, 0.82, 0, 0.25)
@@ -1274,6 +1378,7 @@ local function Build(chrome)
     page.summary = Paragraph("GameFontHighlight")
     page.objs = Paragraph("GameFontHighlightSmall")
     page.story = Paragraph("GameFontHighlight")
+    page.chain = Paragraph("GameFontHighlightSmall")
     page.money = Paragraph("GameFontHighlight")
     local half = math.floor((WIDTH - 24 - 6) / 2)
     page.route = Button(page, L.FICHE_ROUTE, half, 28, nil, "PAD4")
@@ -1354,6 +1459,7 @@ function QP.Hide()
     panel:Hide()
     ns.Map.View.QuestArea(nil)
     P.Dirty()
+    Spot()
 end
 
 function QP.Shown() return panel and panel:IsShown() or false end
@@ -1368,8 +1474,10 @@ function QP.MouseOver() return panel and panel:IsVisible() and panel:IsMouseOver
 -- carte par l'addon)
 function SetFocused(on)
     focused = on and true or false
+    if not focused then moved = false end
     if panel then panel.padPassive = not focused end
     P.Dirty()
+    Spot()
 end
 
 function QP.Focus() if QP.Shown() then SetFocused(true) end end

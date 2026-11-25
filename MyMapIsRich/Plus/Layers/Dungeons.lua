@@ -9,8 +9,10 @@
 --   à l'intérieur  la carte ouverte dans un donjon montre la sienne (réglage
 --                  « Carte du donjon à l'intérieur ») ; un donjon où tu es
 --                  entré compte comme trouvé (« Seulement les lieux trouvés »).
--- Les quêtes d'un donjon viennent de Questie (lues une fois, en tâche de
--- fond), ou de Dungeon Journal et NeedRoll (ouverts à sa page) : DN.QuestSource.
+-- Les quêtes d'un donjon viennent de la base des quêtes de l'addon (d'abord :
+-- Quests/Db.lua, DN.BaseQuests ; son entrée dit combien sont à prendre), de
+-- Questie (lues une fois, en tâche de fond), ou de Dungeon Journal et NeedRoll
+-- (ouverts à sa page) : DN.QuestSource.
 local _, root = ...
 local ns = root.Plus
 local L = ns.L
@@ -219,13 +221,94 @@ function DN.Questie()
     if ok and ok2 and db and db.QuestPointers and db.QueryQuestSingle and zones and zones.GetDungeons then return db, zones end
 end
 
--- D'où viennent les quêtes : celui choisi s'il est là, sinon le premier
--- installé de Questie (listées ici), Dungeon Journal, NeedRoll ; nil : aucun
+-- D'où viennent les quêtes : celle choisie si elle est là, sinon la base des
+-- quêtes de l'addon (Quests/Db.lua, listées ici), puis le premier installé de
+-- Questie (listées ici aussi), Dungeon Journal, NeedRoll ; nil : aucune
 function DN.QuestSource()
-    local have = { questie = _G.QuestieLoader ~= nil, journal = Journal() ~= nil, needroll = DN.NeedRoll() ~= nil }
+    local have = { base = ns.Quests.Db.Has(), questie = _G.QuestieLoader ~= nil, journal = Journal() ~= nil,
+        needroll = DN.NeedRoll() ~= nil }
     local want = Get("questSource")
     if have[want] then return want end
-    return have.questie and "questie" or have.journal and "journal" or have.needroll and "needroll" or nil
+    return have.base and "base" or have.questie and "questie" or have.journal and "journal"
+        or have.needroll and "needroll" or nil
+end
+
+-- Les quêtes d'un donjon dans la base de l'addon, celles de ta race et de ta
+-- classe, par niveau : { id, name, level, minLevel, done, inLog, offer (tu
+-- peux la prendre), why (sinon : ce qui manque), giver (son premier donneur
+-- amical : ref, et ses points) }
+function DN.BaseQuests(inst)
+    local Db, Offers, Log = ns.Quests.Db, ns.Quests.Offers, ns.Quests.Log
+    if not (inst and Db.Has()) then return {} end
+    local _, _, race = UnitRace("player")
+    local _, _, class = UnitClass("player")
+    local side = UnitFactionGroup("player") == "Horde" and 2 or 1
+    local inLog = Log.Quests()
+    local list = {}
+    for _, id in ipairs(Db.DungeonQuests(inst[1])) do
+        local q = Db.Quest(id)
+        local mine = q and not q.hidden
+            and (q.races == 0 or not race or bit.band(q.races, 2 ^ (race - 1)) ~= 0)
+            and (q.classes == 0 or not class or bit.band(q.classes, 2 ^ (class - 1)) ~= 0)
+        local giver
+        for _, ref in ipairs(mine and q.starts or {}) do
+            if bit.band(Db.React(ref), side) ~= 0 then
+                giver = ref
+                break
+            end
+        end
+        if mine and giver then
+            local e = { id = id, name = Db.Title(id), level = q.level or 0, minLevel = q.minLevel or 0, giver = giver }
+            e.inLog = inLog[id] ~= nil
+            e.done = not e.inLog and Log.Done(id)
+            if not (e.inLog or e.done) then
+                local key = Offers.Check(id)
+                e.offer = key == nil
+                if key then e.why = Offers.Why(id) end
+            end
+            list[#list + 1] = e
+        end
+    end
+    table.sort(list, function(a, b)
+        if a.level ~= b.level then return a.level < b.level end
+        return a.name < b.name
+    end)
+    return list
+end
+
+-- Le point du donneur d'une quête de la base le plus proche de toi : un point
+-- du monde (Travel/Planner.lua), avec son nom
+local function GiverPoint(q)
+    local Pl = ns.TravelPlanner
+    local spots = ns.Quests.Db.Places(q.giver)
+    if #spots == 0 or not Pl then return end
+    local here = Pl.PlayerPoint()
+    local hu, hv
+    if here then hu, hv = Pl.UV(here) end
+    local best, bestD = spots[1], math.huge
+    for _, p in ipairs(spots) do
+        local d = hu and (p[1] - hu) ^ 2 + (p[2] - hv) ^ 2 or 0
+        if d < bestD then best, bestD = p, d end
+    end
+    local point = Pl.PointAtUV(best[1], best[2])
+    if point then point.name = ns.Quests.Db.Name(q.giver) end
+    return point
+end
+
+-- La zone où se trouve ce donneur (le nom du jeu)
+function DN.GiverZone(q)
+    local point = GiverPoint(q)
+    return point and ns.TravelPlanner.ZoneName(point) or nil
+end
+
+-- L'itinéraire jusqu'au donneur (l'onglet Quêtes de la carte d'un donjon)
+function DN.RouteToGiver(q)
+    local point = GiverPoint(q)
+    if not point then
+        ns.Print(L.TRAVEL_NO_THERE)
+        return
+    end
+    if ns.Travel then ns.Travel.Go(point) end
 end
 
 local function DungeonArea(zones, areaId)
@@ -374,6 +457,14 @@ local function Enter(pin)
     local one = #pin.instances == 1 and pin.instances[1]
     local bosses = one and (Places().bosses or {})[one[1]]
     if bosses and #bosses > 0 then GameTooltip:AddLine(L.DUNGEON_BOSSES_N:format(#bosses), 0.8, 0.8, 0.8) end
+    -- (ses quêtes, d'après la base de l'addon : à prendre, dans ton journal)
+    if one and Get("dungeonQuests") ~= false and DN.QuestSource() == "base" then
+        local take, inLog = 0, 0
+        for _, q in ipairs(DN.BaseQuests(one)) do
+            if q.offer then take = take + 1 elseif q.inLog then inLog = inLog + 1 end
+        end
+        if take + inLog > 0 then GameTooltip:AddLine(L.DUNGEON_QUESTS_N:format(take, inLog), 1, 0.82, 0) end
+    end
     local hint
     if not DN.MapsOn() then hint = L.DUNGEON_CLICK_CLOSER
     elseif not one then hint = L.DUNGEON_CLICK_PICK

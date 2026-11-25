@@ -17,10 +17,17 @@
 --   - la quête qu'elle demande d'avoir en cours (ou prise, ou faite), le sort
 --     qu'elle demande de connaître (ou d'ignorer), la réputation qu'elle
 --     demande ; pas une quête de métier.
---   Offers.List()  -> { { id, trivial = vrai : grise }, ... }, gardée jusqu'au
---                     prochain changement du journal (QUESTS_CHANGED)
+--   Offers.List()      -> { { id, trivial = vrai : grise }, ... }, gardée jusqu'au
+--                         prochain changement du journal (QUESTS_CHANGED)
+--   Offers.Check(id)   -> nil si tu peux la prendre, sinon la règle qui s'y
+--                         oppose (une clé WHY_Q_ des Locales) et ce qu'elle vise
+--   Offers.Why(id)     -> la même raison, en toutes lettres (/mmir pourquoi)
+-- Les quêtes que le joueur a cachées de la carte (la fiche d'un marqueur),
+-- par personnage, dans ns.char.hiddenQuests : Offers.Hidden(id),
+-- Offers.Hide({ id, ... }), Offers.Unhide(), Offers.NumHidden().
 local _, root = ...
 local ns = root.Plus
+local L = ns.L
 
 ns.Quests = ns.Quests or {}
 local Offers = {}
@@ -89,7 +96,9 @@ local function GroupDone(id)
     return false
 end
 
-local function Open(q, inLog)
+-- Ce qui ferme la quête (ses prérequis, ses voisines), sinon nil : la clé de
+-- la règle, et la quête qu'elle vise (l'id ; nil : à retrouver dans Why)
+local function Closed(q, inLog)
     if #q.preAny > 0 then
         local any = false
         for _, id in ipairs(q.preAny) do
@@ -98,58 +107,258 @@ local function Open(q, inLog)
                 break
             end
         end
-        if not any then return false end
+        if not any then return "WHY_Q_PRE_ANY" end
     else
         -- (le groupe ne compte que sans « une parmi » : comme Questie)
         for _, id in ipairs(q.preAll) do
-            if not GroupDone(id) then return false end
+            if not GroupDone(id) then return "WHY_Q_PRE" end
         end
     end
-    if q.parent and not inLog[q.parent] then return false end
-    if q.nextInChain and (inLog[q.nextInChain] or Log.Done(q.nextInChain)) then return false end
+    if q.parent and not inLog[q.parent] then return "WHY_Q_PARENT", q.parent end
+    if q.nextInChain and (inLog[q.nextInChain] or Log.Done(q.nextInChain)) then return "WHY_Q_LATER", q.nextInChain end
     for _, id in ipairs(q.exclusive) do
-        if inLog[id] or Log.Done(id) then return false end
+        if inLog[id] or Log.Done(id) then return "WHY_Q_EXCLUSIVE", id end
     end
-    if q.breadcrumb and (inLog[q.breadcrumb] or Log.Done(q.breadcrumb)) then return false end
+    if q.breadcrumb and (inLog[q.breadcrumb] or Log.Done(q.breadcrumb)) then return "WHY_Q_BREADCRUMB", q.breadcrumb end
     for _, id in ipairs(q.breadcrumbs) do
-        if inLog[id] then return false end
+        if inLog[id] then return "WHY_Q_LEADS", id end
     end
-    if q.disabledBy and inLog[q.disabledBy] then return false end
-    if q.untilDone and Log.Done(q.untilDone) then return false end
-    if q.startWith and not (inLog[q.startWith] or Log.Done(q.startWith)) then return false end
-    return true
+    if q.disabledBy and inLog[q.disabledBy] then return "WHY_Q_BLOCKED", q.disabledBy end
+    if q.untilDone and Log.Done(q.untilDone) then return "WHY_Q_UNTIL", q.untilDone end
+    if q.startWith and not (inLog[q.startWith] or Log.Done(q.startWith)) then return "WHY_Q_START_WITH", q.startWith end
+end
+
+-- Ton personnage, une fois pour toute la liste
+local function Me()
+    local _, _, raceID = UnitRace("player")
+    local _, _, classID = UnitClass("player")
+    return { level = UnitLevel("player") or 1, race = Bit(raceID), class = Bit(classID),
+        side = UnitFactionGroup("player") == "Horde" and 2 or 1, inLog = Log.Quests() }
+end
+
+-- La règle qui t'empêche de prendre la quête (une clé WHY_Q_, et ce qu'elle
+-- vise : un niveau, une quête), ou nil : tu peux la prendre
+local function Check(id, me)
+    local q = Db.Quest(id)
+    if not q then return "WHY_Q_UNKNOWN" end
+    if me.inLog[id] then return "WHY_Q_IN_LOG" end
+    if q.hidden then return "WHY_Q_HIDDEN" end
+    if q.skill then return "WHY_Q_SKILL" end
+    if #q.starts == 0 then return "WHY_Q_NO_GIVER" end
+    -- (une quête sans niveau requis dans la base : son propre niveau, comme Questie)
+    local need = q.minLevel > 0 and q.minLevel or q.level
+    if need > me.level then return "WHY_Q_LEVEL_LOW", need end
+    if q.maxLevel > 0 and me.level > q.maxLevel then return "WHY_Q_LEVEL_HIGH", q.maxLevel end
+    if not Has(q.races, me.race) then return "WHY_Q_RACE" end
+    if not Has(q.classes, me.class) then return "WHY_Q_CLASS" end
+    -- (au moins un donneur qui t'est amical)
+    local friendly = false
+    for _, ref in ipairs(q.starts) do
+        if band and band(Db.React(ref), me.side) ~= 0 then
+            friendly = true
+            break
+        end
+    end
+    if not friendly then return "WHY_Q_FACTION" end
+    if Log.Done(id) then return "WHY_Q_DONE" end
+    local key, arg = Closed(q, me.inLog)
+    if key then return key, arg end
+    if not SpellOK(q.spell) then return "WHY_Q_SPELL" end
+    if not RepOK(q.rep, q.maxRep) then return "WHY_Q_REP" end
 end
 
 function Offers.List()
     if list then return list end
     list = {}
     if not Db.Has() then return list end
-    local mine = UnitLevel("player") or 1
-    local _, _, raceID = UnitRace("player")
-    local _, _, classID = UnitClass("player")
-    local race, class = Bit(raceID), Bit(classID)
-    local side = UnitFactionGroup("player") == "Horde" and 2 or 1
-    local inLog = Log.Quests()
+    local me = Me()
     Db.EachQuest(function(id)
-        local q = Db.Quest(id)
-        if not q or inLog[id] or q.hidden or q.skill or #q.starts == 0 then return end
-        -- (une quête sans niveau requis dans la base : son propre niveau, comme Questie)
-        local need = q.minLevel > 0 and q.minLevel or q.level
-        if need > mine or (q.maxLevel > 0 and mine > q.maxLevel) then return end
-        if not Has(q.races, race) or not Has(q.classes, class) then return end
-        -- (au moins un donneur qui t'est amical)
-        local friendly = false
-        for _, ref in ipairs(q.starts) do
-            if band and band(Db.React(ref), side) ~= 0 then
-                friendly = true
-                break
-            end
+        if not Check(id, me) then
+            local q = Db.Quest(id)
+            list[#list + 1] = { id = id, trivial = Trivial(q.level, me.level) }
         end
-        if not friendly or Log.Done(id) or not Open(q, inLog) or not SpellOK(q.spell)
-            or not RepOK(q.rep, q.maxRep) then return end
-        list[#list + 1] = { id = id, trivial = Trivial(q.level, mine) }
     end)
     return list
 end
 
+function Offers.Check(id)
+    if not Db.Has() then return "WHY_Q_UNKNOWN" end
+    return Check(id, Me())
+end
+
+-- Les quêtes bientôt prêtes : à SOON niveaux au plus de toi (tout le reste
+-- y est), ou dont il ne manque que des prérequis déjà dans ton journal.
+-- { { id, why = la raison en toutes lettres }, ... }, gardée comme la liste
+local SOON = 2
+local soon
+function Offers.Soon()
+    if soon then return soon end
+    soon = {}
+    if not Db.Has() then return soon end
+    local me = Me()
+    local later = Me()
+    Db.EachQuest(function(id)
+        local key, arg = Check(id, me)
+        local ok = false
+        if key == "WHY_Q_LEVEL_LOW" and arg <= me.level + SOON then
+            later.level = arg
+            ok = Check(id, later) == nil
+        elseif key == "WHY_Q_PRE" or key == "WHY_Q_PRE_ANY" then
+            local q = Db.Quest(id)
+            local list = key == "WHY_Q_PRE_ANY" and q.preAny or q.preAll
+            ok = #list > 0
+            for _, pre in ipairs(list) do
+                local inLog = me.inLog[math.abs(pre)]
+                if key == "WHY_Q_PRE_ANY" then
+                    if inLog then ok = true break end
+                    ok = false
+                elseif not (inLog or GroupDone(pre)) then
+                    ok = false
+                    break
+                end
+            end
+        end
+        if ok then soon[#soon + 1] = { id = id } end
+    end)
+    return soon
+end
+
+ns.On("QUESTS_CHANGED", function() soon = nil end)
+
+-- Une quête grise pour toi
+function Offers.Trivial(id)
+    local q = Db.Quest(id)
+    return q and Trivial(q.level, UnitLevel("player") or 1) or false
+end
+
 ns.On("QUESTS_CHANGED", function() list = nil end)
+
+---------------------------------------------------------------------------
+-- Les quêtes cachées par le joueur (par personnage)
+---------------------------------------------------------------------------
+local function HiddenTable()
+    local char = ns.char
+    if not char then return end
+    char.hiddenQuests = char.hiddenQuests or {}
+    return char.hiddenQuests
+end
+
+function Offers.Hidden(id)
+    local t = ns.char and ns.char.hiddenQuests
+    return t and t[id] and true or false
+end
+
+function Offers.Hide(ids)
+    local t = HiddenTable()
+    if not t then return end
+    for _, id in ipairs(ids) do t[id] = true end
+    ns.Fire("QUESTS_HIDDEN")
+end
+
+function Offers.Unhide()
+    local t = HiddenTable()
+    if t then wipe(t) end
+    ns.Fire("QUESTS_HIDDEN")
+end
+
+function Offers.NumHidden()
+    local n = 0
+    for _ in pairs(ns.char and ns.char.hiddenQuests or {}) do n = n + 1 end
+    return n
+end
+
+---------------------------------------------------------------------------
+-- Pourquoi une quête n'a pas de « ! » (/mmir pourquoi)
+---------------------------------------------------------------------------
+-- (des titres de quêtes, trois au plus)
+local function Titles(ids)
+    local out = {}
+    for i, id in ipairs(ids) do
+        if i > 3 then
+            out[#out + 1] = "..."
+            break
+        end
+        out[#out + 1] = Db.Title(math.abs(id))
+    end
+    return table.concat(out, ", ")
+end
+
+function Offers.Why(id)
+    local key, arg = Offers.Check(id)
+    if not key then
+        if Offers.Hidden(id) then return L.WHY_Q_YOURS end
+        if Offers.Trivial(id) and ns.Map.Settings.Get("questOffersGrey") ~= true then return L.WHY_Q_GREY end
+        return L.WHY_Q_OFFERED
+    end
+    local q = Db.Quest(id)
+    if key == "WHY_Q_PRE" then
+        local missing = {}
+        for _, pre in ipairs(q.preAll) do
+            if not GroupDone(pre) then missing[#missing + 1] = pre end
+        end
+        arg = Titles(missing)
+    elseif key == "WHY_Q_PRE_ANY" then
+        arg = Titles(q.preAny)
+    elseif key ~= "WHY_Q_LEVEL_LOW" and key ~= "WHY_Q_LEVEL_HIGH" and arg then
+        arg = Db.Title(arg)
+    end
+    return L[key]:format(arg)
+end
+
+-- /mmir pourquoi <numéro ou nom> : la quête retrouvée (dans ton journal, puis
+-- dans la base, par son titre anglais ou celui que le jeu sait), et sa raison
+function Offers.Explain(text)
+    text = strtrim(text or "")
+    if not Db.Has() then
+        ns.Print(L.PROBE_QUESTS_NO_BASE)
+        return
+    end
+    if text == "" then
+        ns.Print(L.WHY_Q_USAGE)
+        return
+    end
+    local found = {}
+    local id = tonumber(text:match("^#?(%d+)$"))
+    if id then
+        found[1] = id
+    else
+        local want = text:lower()
+        local exact
+        local function Look(qid, title)
+            if type(title) ~= "string" or exact then return end
+            local t = title:lower()
+            if t == want then
+                exact = qid
+            elseif t:find(want, 1, true) and #found < 6 then
+                for _, other in ipairs(found) do
+                    if other == qid then return end
+                end
+                found[#found + 1] = qid
+            end
+        end
+        for qid, q in pairs(Log.Quests()) do Look(qid, q.title) end
+        if not exact then
+            Db.EachQuest(function(qid)
+                local q = Db.Quest(qid)
+                Look(qid, q and q.title)
+            end)
+        end
+        if not exact and #found == 0 then
+            Db.EachQuest(function(qid) Look(qid, Db.Title(qid)) end)
+        end
+        if exact then found = { exact } end
+    end
+    if #found == 0 then
+        ns.Print(L.WHY_Q_NOT_FOUND:format(text))
+        return
+    end
+    if #found > 1 then
+        ns.Print(L.WHY_Q_MANY)
+        for i, qid in ipairs(found) do
+            if i > 5 then break end
+            ns.Print(("  [%d] %s"):format(qid, Db.Title(qid)))
+        end
+        return
+    end
+    ns.Print(L.WHY_Q_LINE:format(found[1], Db.Title(found[1]), Offers.Why(found[1])))
+end

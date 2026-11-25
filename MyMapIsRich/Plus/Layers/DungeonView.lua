@@ -537,7 +537,37 @@ local function Items(tab, inst)
         if DN.JournalName(inst) then Button(L.DUNGEON_OPEN_JOURNAL, function() DN.OpenJournal(inst) end) end
     elseif tab == "quests" then
         local source = DN.QuestSource()
-        if source == "journal" then
+        if source == "base" then
+            -- (la base des quêtes de l'addon : à prendre, en cours, faites ; un clic, l'itinéraire jusqu'au donneur)
+            local list = DN.BaseQuests(inst)
+            if #list == 0 then Text(Dim(L.DUNGEON_BASE_NONE)) end
+            for _, q in ipairs(list) do
+                local right = q.done and L.DUNGEON_DONE or q.inLog and ("|cff80f070" .. L.DUNGEON_IN_LOG .. "|r")
+                    or q.offer and ("|cffffd100" .. L.DUNGEON_TO_TAKE .. "|r") or L.DUNGEON_NOT_YET
+                local giverName = ns.Quests.Db.Name(q.giver)
+                items[#items + 1] = { kind = "row", ("%s[%d] %s|r"):format(DN.QuestColour(q), q.level, q.name),
+                    right = right,
+                    click = not (q.done or q.inLog) and function() DN.RouteToGiver(q) end or nil,
+                    tip = function(owner)
+                        GameTooltip:SetOwner(owner, "ANCHOR_LEFT")
+                        GameTooltip:AddLine(q.name, 1, 0.82, 0, true)
+                        local level = (LEVEL or "Level") .. " " .. q.level
+                        if q.minLevel > 0 then level = level .. "  (" .. L.DUNGEON_FROM_LEVEL:format(q.minLevel) .. ")" end
+                        GameTooltip:AddLine(level, 0.8, 0.8, 0.8)
+                        if giverName then
+                            local zone = DN.GiverZone(q)
+                            GameTooltip:AddLine(zone and L.DUNGEON_GIVER_AT:format(giverName, zone)
+                                or L.DUNGEON_GIVER:format(giverName), 1, 1, 1, true)
+                        end
+                        if q.done then GameTooltip:AddLine(L.DUNGEON_COMPLETED, 0.5, 0.95, 0.4)
+                        elseif q.inLog then GameTooltip:AddLine(L.DUNGEON_IN_QUEST_LOG, 0.5, 0.95, 0.4)
+                        elseif q.offer then GameTooltip:AddLine(L.DUNGEON_CAN_TAKE, 0.5, 0.95, 0.4)
+                        elseif q.why then GameTooltip:AddLine(q.why, 0.6, 0.6, 0.6, true) end
+                        if not (q.done or q.inLog) then GameTooltip:AddLine(L.DUNGEON_ROUTE_GIVER, 0.6, 0.6, 0.6) end
+                        GameTooltip:Show()
+                    end }
+            end
+        elseif source == "journal" then
             if DN.JournalName(inst) then
                 Text(L.DUNGEON_JOURNAL_QUESTS)
                 Button(L.DUNGEON_OPEN_JOURNAL, function() DN.OpenJournal(inst, true) end)

@@ -282,6 +282,8 @@ local function BuildTravel(page)
     Cycle(left, "travelSpeed", L.OPT_TRAVEL_SPEED, {
         { "auto", L.OPT_AUTO }, { "walk", L.OPT_SPEED_WALK }, { "slow", L.OPT_SPEED_SLOW }, { "fast", L.OPT_SPEED_FAST },
     }, y)
+    y = y - 62
+    Option(left, "travelHearth", L.OPT_TRAVEL_HEARTH, L.OPT_TRAVEL_HEARTH_TIP, y, Next)
 
     UI.Section(right, L.SET_GUIDE, 16, -14)
     y = -46

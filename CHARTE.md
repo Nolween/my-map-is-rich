@@ -151,6 +151,7 @@ Tout est posé sur la vue de la carte (`UI/MapChrome.lua`, `UI/Layers.lua`), au-
 | Menu contextuel | `UI.ShowMenu(éléments, x, y, titre)`, `UI.HideMenu()` | 250 px, fond `dialog`, une ligne de titre grise, des lignes de 26 px (libellé doré, raccourci gris à droite), un trait doré avant un groupe ; survol en voile doré ; se ferme au clic ailleurs. |
 | Bande sur la carte | `UI.Overlay(parent)`, `UI.PaintOverlay(cadre)` | Fond de la fenêtre, liseré `windowEdge`, trait noir dedans, ombre portée. |
 | Bouton-icône à allumer | `UI.IconToggle(parent, taille, texture, atlas)` + `:SetOn(true / false / nil)` | Allumé : dégradé et liseré dorés, pastille verte (sauf `b.noDot`) ; éteint : icône à 40 % ; `nil` : un simple bouton. |
+| Case d'action | `UI.ActionSlot(parent, taille, nom, protégé, recharge)` | Un carré sur le fond `dialog`, liseré `edgeLight`, l'icône rognée de son bord, survol en voile doré ; protégé (`SecureActionButtonTemplate`) : créé et changé hors combat seulement. Les boutons de la quête choisie (objet, cible). |
 | Icône dans un bouton | `UI.SetIcon(texture, chemin, atlas)` | L'atlas du jeu s'il existe, sinon la texture (une icône d'objet est rognée de son bord). |
 | Pastille de coordonnées | `UI.Pill(parent)` + `:Set(libellé, valeur, précision)` | Fond noir à 80 %, liseré `windowInner`, libellé doré, valeur blanche. |
 

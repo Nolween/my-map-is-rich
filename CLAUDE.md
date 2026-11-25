@@ -46,7 +46,7 @@ Aucune chaîne en dur dans le code, même pour un message de discussion ou une i
 - Les clés gardent leur préfixe de rubrique : `HINT_`, `OPT_`, `TRAVEL_`, `HUD_`, `PLACES_`, `SHARE_`, `STATUS_`, `WHATSNEW_`…
 - Les noms du jeu (zones, PNJ, objets) viennent de l'API du jeu, déjà traduits ; on ne les met pas dans les Locales.
 - La longueur compte : l'allemand et le russe sont plus longs, le coréen et le chinois plus courts. Un bouton ou une colonne doit tenir en allemand.
-- **Dette connue (1.0.0)** : `enUS` et `frFR` ont 764 clés, les 8 autres langues 531 ; il en manque 233 (surtout `TRAVEL_`, `HINT_`, `OPT_`, `HUD_`, `SHARE_`, `PLACES_`, `WHY_`, `STATUS_`). Quand on touche une rubrique, on complète ses clés manquantes dans les 8 langues.
+- **Dette connue (1.1.0)** : `enUS` et `frFR` ont 895 clés, les 8 autres langues 832 ; il en manque 63 (`STATUS_`, `SHARE_`, `TEST_`, `CAMERA_`, `WHATSNEW_`, `HUD_`, `TIME_`, `SEARCH_`…). Quand on touche une rubrique, on complète ses clés manquantes dans les 8 langues. Pour compter, lire toutes les clés d'une ligne : les 8 langues en rangent souvent plusieurs par ligne.
 
 **Dans le `.toc`** : `## Notes` existe en anglais et en `Notes-xxXX` pour les 10 autres codes (`esMX` compris). Une fonction majeure ajoutée ou retirée se reporte dans les 11.
 

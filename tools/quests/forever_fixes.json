@@ -4,10 +4,15 @@
         "hideQuests : les quêtes à ne jamais montrer (leur id).",
         "quests : { id : { position du champ dans quests[id] de Plus/Data/Quests.lua : valeur } } (ex. 3 : le niveau requis).",
         "npcs, objects : { id : { replace : true pour oublier les apparitions de la base, spawns : { carte (uiMapID) : [[x, y], ...] } } }",
-        "(x, y en % de la carte : /mmir sonde quetes les donne en jeu)."
+        "(x, y en % de la carte : /mmir sonde quetes les donne en jeu).",
+        "addQuests : les quêtes que QuestieDB n'a pas : { id : { title, level, minLevel, starts : [PNJ], ends : [PNJ] } }.",
+        "addNpcs : les PNJ que QuestieDB n'a pas : { id : { name, react (1 Alliance, 2 Horde, 3 les deux), spawns : { carte : [[x, y]] } } }.",
+        "(addQuests et addNpcs : /mmir quetes export les donne, appris en jeu ; à relire avant de les coller ici)."
     ],
     "hideQuests": [],
     "quests": {},
     "npcs": {},
-    "objects": {}
+    "objects": {},
+    "addQuests": {},
+    "addNpcs": {}
 }

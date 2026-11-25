@@ -3,7 +3,7 @@
 -- le portail de Darnassus et le tram des profondeurs.
 --   Planner.Find(from, to)  from, to : { cont, x, y } (yards du monde)
 --                           -> { legs = { étape, ... }, secs } ou nil
---   Une étape : { kind = "walk" | "flight" | "boat" | "zeppelin" | "portal" | "tram", from, to
+--   Une étape : { kind = "walk" | "flight" | "boat" | "zeppelin" | "portal" | "tram" | "hearth", from, to
 --   (des nœuds : { cont, x, y, name }), secs, paths (les sauts d'un vol),
 --   route (le nom d'une ligne de bateau), points (le tracé d'une marche :
 --   { {x, y}, ... }) }
@@ -188,6 +188,83 @@ function Pl.PathProfile()
 end
 
 ---------------------------------------------------------------------------
+-- La pierre de foyer (réglage travelHearth) : son auberge, apprise là où tu
+-- la lies (HEARTHSTONE_BOUND, chez l'aubergiste) ou là où elle te pose (son
+-- sort réussi), par personnage (ns.char.hearth) ; elle compte dans un
+-- itinéraire si elle est dans tes sacs et prête, comme un départ de plus.
+---------------------------------------------------------------------------
+local HEARTHSTONE = 6948      -- l'objet
+local HEARTH_SPELL = 8690     -- son sort
+local HEARTH_SECS = 15        -- s : l'incantation (10 s), puis l'arrivée
+Pl.HEARTH_SECS = HEARTH_SECS
+
+local function BindName()
+    if not GetBindLocation then return end
+    local ok, name = pcall(GetBindLocation)
+    name = ok and Plain(name) or nil
+    return type(name) == "string" and name ~= "" and name or nil
+end
+
+-- L'auberge de ta pierre, si on sait où elle est : { cont, x, y, name }
+function Pl.Inn()
+    local inn = ns.char and ns.char.hearth
+    local name = BindName()
+    if type(inn) == "table" and name and inn.name == name and inn.cont then return inn end
+end
+
+-- La pierre dans tes sacs, et prête
+local function HearthReady()
+    local count = C_Item and C_Item.GetItemCount or _G.GetItemCount
+    local okN, n = pcall(count, HEARTHSTONE)
+    n = okN and Plain(n) or nil
+    if type(n) ~= "number" or n <= 0 then return false end
+    local cooldown = C_Container and C_Container.GetItemCooldown or _G.GetItemCooldown
+    if not cooldown then return true end
+    local ok, start, duration = pcall(cooldown, HEARTHSTONE)
+    start, duration = ok and Plain(start) or nil, ok and Plain(duration) or nil
+    if type(start) ~= "number" or start <= 0 then return true end
+    return start + (duration or 0) <= GetTime()
+end
+
+-- L'auberge où la pierre peut t'emmener maintenant (nil : pas de pierre prête, ou l'auberge inconnue)
+function Pl.Hearth()
+    if not (ns.db and ns.db.options.travelHearth ~= false) then return end
+    local inn = Pl.Inn()
+    if inn and HearthReady() then return inn end
+end
+
+local function LearnInn()
+    local here, name = Pl.PlayerPoint(), BindName()
+    if here and name and ns.char then
+        ns.char.hearth = { cont = here.cont, x = here.x, y = here.y, name = name }
+    end
+end
+
+local hearthAt = -100         -- (le sort de la pierre réussi : l'arrivée à apprendre)
+local hearth = CreateFrame("Frame")
+hearth:SetScript("OnEvent", function(_, event, unit, _, spellID)
+    if ns.Conflict and ns.Conflict() then return end
+    if event == "HEARTHSTONE_BOUND" then
+        C_Timer.After(0.5, LearnInn)
+    elseif event == "UNIT_SPELLCAST_SUCCEEDED" then
+        if unit == "player" and Plain(spellID) == HEARTH_SPELL then
+            hearthAt = GetTime()
+            C_Timer.After(3, LearnInn)
+        end
+    elseif event == "PLAYER_ENTERING_WORLD" and GetTime() - hearthAt < 90 then
+        -- (d'un continent à l'autre : après l'écran de chargement)
+        C_Timer.After(2, LearnInn)
+    end
+end)
+pcall(hearth.RegisterEvent, hearth, "HEARTHSTONE_BOUND")
+pcall(hearth.RegisterEvent, hearth, "PLAYER_ENTERING_WORLD")
+if hearth.RegisterUnitEvent then
+    pcall(hearth.RegisterUnitEvent, hearth, "UNIT_SPELLCAST_SUCCEEDED", "player")
+else
+    pcall(hearth.RegisterEvent, hearth, "UNIT_SPELLCAST_SUCCEEDED")
+end
+
+---------------------------------------------------------------------------
 -- Le calcul
 ---------------------------------------------------------------------------
 -- La marche suit les routes (Travel/Roads.lua) : chaque point clé (départ,
@@ -220,6 +297,11 @@ function Pl.Find(from, to, opts)
     from.id, from.kind = "start", "start"
     to.id, to.kind = "goal", "goal"
     nodes.start, nodes.goal = from, to
+    -- (la pierre de foyer prête : son auberge, où l'on arrive depuis le départ)
+    local inn = not (opts and opts.walkOnly) and Pl.Hearth()
+    if inn then
+        nodes.hearth = { id = "hearth", kind = "inn", cont = inn.cont, x = inn.x, y = inn.y, name = inn.name }
+    end
     local speed = opts and opts.speed or Pl.Speed()
     local Roads = ns.TravelRoads
     local profile = Pl.PathProfile()
@@ -306,6 +388,9 @@ function Pl.Find(from, to, opts)
             if best == "goal" then break end
             local key, acc = nodes[best], access[best]
             if key then
+                if best == "start" and nodes.hearth then
+                    Relax("hearth", HEARTH_SECS, { kind = "hearth", secs = HEARTH_SECS })
+                end
                 -- (les vols, les bateaux, les zeppelins ; un vol qui en suit un
                 -- autre continue le même voyage : pas de nouveau décollage)
                 for _, e in ipairs(edges[best] or {}) do

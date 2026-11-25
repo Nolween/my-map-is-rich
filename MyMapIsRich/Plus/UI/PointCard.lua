@@ -9,7 +9,8 @@
 -- zone et ses coordonnées), le temps pour y aller depuis toi et par où, et
 -- propose : Itinéraire (Y : l'aperçu), Ajouter à la file (X), l'action de
 -- l'icône (la carte d'un donjon, les trajets d'un maître de vol, la fiche
--- d'une épingle), Poser une épingle ici, Envoyer au groupe. B la ferme.
+-- d'une épingle), Poser une épingle ici, Envoyer au groupe ; sur un marqueur
+-- de quête, Cacher ce marqueur (Layers/QuestMarks.lua). B la ferme.
 -- À la souris, sur une icône : Maj+clic l'itinéraire tout de suite, Ctrl+clic
 -- une épingle, Alt+clic le menu des actions.
 --
@@ -54,7 +55,7 @@ end
 
 local KINDS = {
     walk = "KIND_WALK", flight = "KIND_FLIGHT", boat = "KIND_BOAT",
-    zeppelin = "KIND_ZEPPELIN", portal = "KIND_PORTAL", tram = "KIND_TRAM",
+    zeppelin = "KIND_ZEPPELIN", portal = "KIND_PORTAL", tram = "KIND_TRAM", hearth = "KIND_HEARTH",
 }
 
 local function KindColor(kind)
@@ -249,7 +250,16 @@ local function BuildCard(chrome)
     card.share:SetScript("OnClick", function()
         if current and ns.TravelShare then ns.TravelShare.Propose(current.point) end
     end)
-    card.buttons = { card.route, card.queue, card.action, card.pinHere, card.share }
+    -- (un marqueur de quête : ses quêtes cachées de la carte, pour ce personnage)
+    card.hide = Button(card, L.QUESTMARK_HIDE, "grey")
+    card.hide:SetScript("OnClick", function()
+        local c = current
+        local QM = ns.Quests and ns.Quests.Marks
+        if not (c and c.pin and QM) then return end
+        Close()
+        QM.Hide(c.pin)
+    end)
+    card.buttons = { card.route, card.queue, card.action, card.pinHere, card.share, card.hide }
     card:Hide()
     Roots(card)
     F.RegisterWindow(card, { onBack = function() Close() end, first = function() return card.route end })
@@ -345,6 +355,8 @@ function PC.Show(u, v, pin)
     card.action:SetShown(action ~= nil)
     if action then card.action:SetText(L[action]) end
     card.pinHere:SetShown(not isPin)
+    local QM = ns.Quests and ns.Quests.Marks
+    card.hide:SetShown(pin and QM and QM.CanHide(pin) or false)
     card.route:SetEnabled(ns.db.options.travel and true or false)
     card.queue:SetEnabled(ns.db.options.travel and true or false)
     FillFrom()

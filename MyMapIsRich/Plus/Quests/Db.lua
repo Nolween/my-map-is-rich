@@ -9,6 +9,9 @@
 --   Db.Explore(questID)       les lieux à explorer d'une quête (mêmes points)
 --   Db.Sources(itemID)        qui lâche, où se ramasse, qui vend un objet
 --   Db.Name(ref)              son nom dans la langue du joueur, si on l'a
+--   Db.Title(questID)         le titre d'une quête (celui du jeu s'il le sait)
+--   Db.DungeonQuests(mapID)   les quêtes d'un donjon (le mapID de son instance)
+--   Db.Services(kind, class)  les PNJ de service (aubergistes, réparateurs...)
 -- Les points ne se décodent qu'une fois, à la première demande. Les noms
 -- traduits : ceux de ta langue seulement, décodés au chargement (les autres
 -- sont oubliés) ; ceux que le jeu montre quand tu croises un PNJ passent
@@ -64,7 +67,7 @@ function Db.Quest(id)
         rep = r[16] or nil, hidden = r[17] and true or false, explore = r[18] or nil,
         parent = r[19] or nil, spell = r[20] or nil, untilDone = r[21] or nil, startWith = r[22] or nil,
         preAny = r[23] or NONE, nextInChain = r[24] or nil, breadcrumbs = r[25] or NONE,
-        disabledBy = r[26] or nil, maxRep = r[27] or nil,
+        disabledBy = r[26] or nil, maxRep = r[27] or nil, repeatable = r[28] and true or false,
     }
     quests[id] = q
     return q
@@ -74,6 +77,97 @@ end
 function Db.EachQuest(fn)
     if not data then return end
     for id in pairs(data.quests) do fn(id) end
+end
+
+-- Le titre d'une quête dans ta langue, si le jeu le sait déjà (il ne connaît
+-- que celles qu'il a vues), sinon celui de la base (en anglais)
+function Db.Title(id)
+    if not id then return "?" end
+    if C_QuestLog and C_QuestLog.GetTitleForQuestID then
+        local ok, t = pcall(C_QuestLog.GetTitleForQuestID, id)
+        if ok and not (issecretvalue and issecretvalue(t)) and type(t) == "string" and t ~= "" then return t end
+    end
+    local q = Db.Quest(id)
+    local learned = not q and ns.Quests.Learn and ns.Quests.Learn.Title(id)
+    return q and q.title or learned or ("#" .. id)
+end
+
+-- Une quête de donjon (sa zone est celle d'un donjon)
+local dungeonZones
+function Db.IsDungeonQuest(id)
+    local q = Db.Quest(id)
+    if not (q and data) then return false end
+    if not dungeonZones then
+        dungeonZones = {}
+        for _, area in pairs(data.instances or NONE) do dungeonZones[area] = true end
+    end
+    return dungeonZones[q.zone] or false
+end
+
+-- Sa chaîne : { questID, ... } dans l'ordre (elle seule : { id }), et sa place
+-- dedans. En arrière par son prérequis s'il n'en a qu'un, en avant par sa
+-- quête suivante
+function Db.Chain(id)
+    local seen = { [id] = true }
+    local before, q = {}, Db.Quest(id)
+    while q and #before < 30 do
+        local prev = (#q.preAny == 1 and q.preAny[1]) or (#q.preAny == 0 and #q.preAll == 1 and math.abs(q.preAll[1])) or nil
+        if not prev or seen[prev] or not Db.Quest(prev) then break end
+        seen[prev] = true
+        table.insert(before, 1, prev)
+        q = Db.Quest(prev)
+    end
+    local chain = before
+    chain[#chain + 1] = id
+    local at = #chain
+    q = Db.Quest(id)
+    while q and q.nextInChain and #chain < 60 and not seen[q.nextInChain] and Db.Quest(q.nextInChain) do
+        seen[q.nextInChain] = true
+        chain[#chain + 1] = q.nextInChain
+        q = Db.Quest(q.nextInChain)
+    end
+    return chain, at
+end
+
+-- Sa place dans sa chaîne : l'étape, et le nombre d'étapes (1, 1 : seule)
+function Db.ChainPlace(id)
+    local chain, at = Db.Chain(id)
+    return at, #chain
+end
+
+-- Les PNJ de service qui ont cette fonction (1 aubergiste, 2 réparation, 4
+-- banquier, 8 maître de classe : de cette classe, 16 maître des écuries, 32
+-- commissaire-priseur) : { npcID, ... }
+Db.INN, Db.REPAIR, Db.BANKER, Db.CLASS_TRAINER, Db.STABLE, Db.AUCTION = 1, 2, 4, 8, 16, 32
+function Db.Services(kind, class)
+    local out = {}
+    for id, s in pairs(data and data.services or NONE) do
+        if bit.band(s[1] or 0, kind) ~= 0 and (kind ~= Db.CLASS_TRAINER or s[2] == class) then out[#out + 1] = id end
+    end
+    return out
+end
+
+-- Les quêtes d'un donjon, par le mapID de son instance (la zone de la quête
+-- est celle du donjon : comme Questie) : { questID, ... }
+local byInstance
+function Db.DungeonQuests(instanceID)
+    if not (data and instanceID) then return NONE end
+    if not byInstance then
+        byInstance = {}
+        local areaOf = data.instances or NONE        -- (mapID d'instance -> zone)
+        local inst = {}                              -- (zone -> ses instances : un donjon en ailes en a plusieurs)
+        for mapID, area in pairs(areaOf) do
+            inst[area] = inst[area] or {}
+            table.insert(inst[area], mapID)
+        end
+        for id, r in pairs(data.quests) do
+            for _, mapID in ipairs(r[7] and inst[r[7]] or NONE) do
+                byInstance[mapID] = byInstance[mapID] or {}
+                table.insert(byInstance[mapID], id)
+            end
+        end
+    end
+    return byInstance[instanceID] or NONE
 end
 
 ---------------------------------------------------------------------------

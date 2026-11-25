@@ -28,6 +28,7 @@ local COLORS = {
     zeppelin = { 1, 0.38, 0.32 },
     portal = { 0.75, 0.45, 1 },
     tram = { 0.65, 0.72, 0.8 },
+    hearth = { 0.45, 0.85, 1 },
 }
 -- (le diamètre de la vue, en yards, à chaque zoom : HereBeDragons)
 local VIEW = {
@@ -102,6 +103,40 @@ local function ViewRadius(mm)
     return (list[zoom] or VIEW.outdoor[0]) / 2
 end
 
+-- La vue de la minimap en ce moment (nil : cachée, ou ta place inconnue) :
+-- here (ta place), radius (yards), scale (px par yard), limit (un peu avant
+-- le bord), square, View(x, y) (un point du monde vu sur la minimap, en yards
+-- vers l'est et le nord) et Inside(sx, sy). Aussi pour les quêtes sur la
+-- minimap (Layers/QuestMinimap.lua). on : le cadre où l'on dessine (posé sur la
+-- minimap : ses px à lui)
+function MM.Viewer(on)
+    local mm = _G.Minimap
+    if not (mm and mm:IsVisible()) then return end
+    local here = Pl.PlayerPoint()
+    local rotate = GetCVar("rotateMinimap") == "1"
+    local facing = rotate and GetPlayerFacing and Plain(GetPlayerFacing()) or nil
+    if not here or (rotate and not facing) then return end
+    local radius = ViewRadius(mm)
+    local half = (on or mm):GetWidth() / 2
+    if not (radius and radius > 0 and half > 0) then return end
+    local limit = radius * EDGE
+    local square = GetMinimapShape and GetMinimapShape() == "SQUARE"
+    local sin, cos = 0, 1
+    if facing then sin, cos = math.sin(facing), math.cos(facing) end
+    local px, py = here.x, here.y
+    local v = { here = here, radius = radius, scale = half / radius, limit = limit, square = square }
+    function v.View(x, y)
+        local e, n = py - y, x - px
+        if facing then return e * cos + n * sin, n * cos - e * sin end
+        return e, n
+    end
+    function v.Inside(sx, sy)
+        if square then return math.abs(sx) <= limit and math.abs(sy) <= limit end
+        return sx * sx + sy * sy <= limit * limit
+    end
+    return v
+end
+
 local function Update()
     local mm = _G.Minimap
     local T = ns.Travel
@@ -109,39 +144,17 @@ local function Update()
     if T and ns.db and ns.db.options.travel and ns.db.options.travelMinimap then
         plan, index, proj, target = T.Live()
     end
-    if not (plan and mm and mm:IsVisible() and Build()) then
+    local viewer = plan and Build() and MM.Viewer(frame)
+    if not viewer then
         if frame then frame:Hide() end
-        return
-    end
-    local here = Pl.PlayerPoint()
-    local rotate = GetCVar("rotateMinimap") == "1"
-    local facing = rotate and GetPlayerFacing and Plain(GetPlayerFacing()) or nil
-    if not here or (rotate and not facing) then
-        frame:Hide()
         return
     end
     frame:SetFrameStrata(mm:GetFrameStrata())
     frame:SetFrameLevel(mm:GetFrameLevel() + 8)
     frame:Show()
-    local radius = ViewRadius(mm)
-    local half = frame:GetWidth() / 2
-    local scale = half / radius
-    local limit = radius * EDGE
-    local square = GetMinimapShape and GetMinimapShape() == "SQUARE"
-    local sin, cos = 0, 1
-    if facing then sin, cos = math.sin(facing), math.cos(facing) end
+    local here, radius, scale, limit, square = viewer.here, viewer.radius, viewer.scale, viewer.limit, viewer.square
     local px, py, cont = here.x, here.y, here.cont
-
-    -- (un point du monde, vu sur la minimap : vers l'est, vers le nord, en yards)
-    local function View(x, y)
-        local e, n = py - y, x - px
-        if facing then return e * cos + n * sin, n * cos - e * sin end
-        return e, n
-    end
-    local function Inside(sx, sy)
-        if square then return math.abs(sx) <= limit and math.abs(sy) <= limit end
-        return sx * sx + sy * sy <= limit * limit
-    end
+    local View, Inside = viewer.View, viewer.Inside
 
     local count = 0
     local step = radius * SPACING
@@ -185,7 +198,8 @@ local function Update()
         local leg = plan.legs[i]
         local geom = R.Geometry(leg)
         -- (un portail, un tram : pas de chemin au sol entre ses deux bouts)
-        if geom and leg.from.cont == cont and leg.kind ~= "portal" and leg.kind ~= "tram" then
+        if geom and leg.from.cont == cont and leg.kind ~= "portal" and leg.kind ~= "tram"
+            and leg.kind ~= "hearth" then
             local color = COLORS[leg.kind] or COLORS.walk
             if i == index and proj and leg.kind == "walk" and proj.j < #geom then
                 -- (l'étape en cours : du joueur au point du tracé le plus proche, puis la suite)

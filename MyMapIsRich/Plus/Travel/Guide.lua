@@ -30,7 +30,7 @@ local R = ns.TravelRoute
 local T = {}
 ns.Travel = T
 
-local REACH = { walk = 30, flight = 90, boat = 70, zeppelin = 70, portal = 40, tram = 40 }   -- yd : arrivé au bout d'une étape
+local REACH = { walk = 30, flight = 90, boat = 70, zeppelin = 70, portal = 40, tram = 40, hearth = 80 }   -- yd : arrivé au bout d'une étape
 local GOAL_REACH = 25        -- yd : arrivé à la destination
 local CORPSE_REACH = 20      -- yd : arrivé près du corps
 local CURSOR_ON_GOAL = 24    -- px : le curseur sur la destination (R3 l'annule)
@@ -85,6 +85,7 @@ function T.LegText(leg)
     if leg.kind == "zeppelin" then return L.TRAVEL_LEG_ZEPPELIN:format(Zone(to)) end
     if leg.kind == "portal" then return L.TRAVEL_LEG_PORTAL:format(Zone(to)) end
     if leg.kind == "tram" then return L.TRAVEL_LEG_TRAM:format(Zone(to)) end
+    if leg.kind == "hearth" then return L.TRAVEL_LEG_HEARTH:format(to.name or Zone(to)) end
     return L.TRAVEL_LEG_WALK:format(NodeName(to))
 end
 
@@ -691,6 +692,38 @@ function T.Enqueue(goal)
     T.Optimize()
     T.Say(L.TRAVEL_QUEUED, T.GoalName(goal), #queue)
     return true
+end
+
+-- Plusieurs destinations d'un coup (tout le journal de quêtes : UI/Places.lua),
+-- sans celles qui y sont déjà (la même quête) : la file rangée une seule fois ;
+-- sans trajet en cours, la plus proche part. Rend le nombre ajouté
+function T.EnqueueMany(goals)
+    if not (ns.db and ns.db.options.travel) then return 0 end
+    local have = {}
+    if state and state.goal.questID then have[state.goal.questID] = true end
+    for _, g in ipairs(queue) do if g.questID then have[g.questID] = true end end
+    local added = 0
+    for _, goal in ipairs(goals) do
+        if #queue >= QUEUE_MAX then break end
+        if not (goal.questID and have[goal.questID]) then
+            queue[#queue + 1] = goal
+            added = added + 1
+            if goal.questID then have[goal.questID] = true end
+        end
+    end
+    if added == 0 then
+        ns.Print(L.TRAVEL_QUEUED_NONE)
+        return 0
+    end
+    T.Optimize()
+    if not state and queue[1] then
+        local first = table.remove(queue, 1)
+        SaveQueue()
+        T.Go(first)
+    end
+    ns.Print(L.TRAVEL_QUEUED_MANY, added)
+    ns.Fire("TRAVEL")
+    return added
 end
 
 function T.Unqueue(i)

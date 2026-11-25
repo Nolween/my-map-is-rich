@@ -1053,6 +1053,36 @@ end
 
 -- Une pastille de coordonnées : fond noir, liseré brun, un libellé doré puis
 -- une valeur blanche. p:Set(libellé, valeur, précision grise) la redimensionne.
+-- Une case d'action : un bouton carré avec une icône d'objet ou de sort, sur
+-- le fond `dialog`, liseré `edgeLight`, survol en voile doré (les boutons de
+-- la quête choisie). name : son nom global (un raccourci CLICK le vise) ;
+-- secure : un bouton protégé (SecureActionButtonTemplate), à créer et changer
+-- hors combat seulement, ses attributs posés par celui qui s'en sert.
+-- b.icon ; b.cooldown (un CooldownFrameTemplate sur l'icône) si cooldown.
+function UI.ActionSlot(parent, size, name, secure, cooldown)
+    size = size or 36
+    local b = CreateFrame("Button", name, parent, secure and "SecureActionButtonTemplate" or nil)
+    b:SetSize(size, size)
+    b:RegisterForClicks("AnyUp")
+    local bg = b:CreateTexture(nil, "BACKGROUND")
+    bg:SetAllPoints()
+    UI.Fill(bg, "dialog", 0.9)
+    b.icon = b:CreateTexture(nil, "ARTWORK")
+    b.icon:SetPoint("TOPLEFT", 2, -2)
+    b.icon:SetPoint("BOTTOMRIGHT", -2, 2)
+    b.icon:SetTexCoord(0.07, 0.93, 0.07, 0.93)
+    local hl = b:CreateTexture(nil, "HIGHLIGHT")
+    hl:SetAllPoints()
+    hl:SetColorTexture(1, 0.82, 0, 0.18)
+    UI.Border(b, "edgeLight", 1)
+    if cooldown then
+        b.cooldown = CreateFrame("Cooldown", nil, b, "CooldownFrameTemplate")
+        b.cooldown:SetAllPoints(b.icon)
+    end
+    b:SetScript("OnLeave", GameTooltip_Hide)
+    return b
+end
+
 function UI.Pill(parent)
     local p = CreateFrame("Frame", nil, parent)
     p:SetHeight(24)

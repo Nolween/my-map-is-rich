@@ -6,4 +6,7 @@
 	<Binding name="MYMAPISRICH_PINS" category="My Map Is Rich">MyMapIsRich_Binding("pins")</Binding>
 	<Binding name="MYMAPISRICH_QUILL" category="My Map Is Rich">MyMapIsRich_Binding("quill")</Binding>
 	<Binding name="MYMAPISRICH_MENU" category="My Map Is Rich">MyMapIsRich_Binding("menu")</Binding>
+	<!-- Les boutons protégés de la quête choisie (Plus/UI/QuestButtons.lua) : un clic sur eux -->
+	<Binding name="CLICK MyMapIsRichQuestItem:LeftButton" category="My Map Is Rich"/>
+	<Binding name="CLICK MyMapIsRichQuestTarget:LeftButton" category="My Map Is Rich"/>
 </Bindings>

@@ -13,7 +13,13 @@ Depuis la 0.2.0, M (ou le bouton carte de la manette) ouvre la carte **en plein 
 - en haut au milieu, **Aller à…** (LB, Ctrl+F), qui s'ouvre sur la carte ;
 - en haut à droite, Me localiser, Me suivre, les réglages de la carte (l'onglet Carte de `/mmir`), Plein écran / Carte réduite et Fermer ;
 - à gauche, sous la zone, **le rail des calques** (donjons, maîtres de vol, bateaux et zeppelins, quêtes, citadins, groupe, épingles, dessins) : un clic affiche ou cache un calque, un clic droit (ou Y) ouvre le panneau des calques et leurs détails ; dessous, un bouton pour les maîtres de vol découverts seulement, et un pour les réglages de la carte ; une carte réduite trop basse garde les boutons qui tiennent, les réglages toujours en dernier ;
-- dans le calque des quêtes, **les marqueurs de quêtes**, tirés de la base des quêtes de l'addon (sans Questie) : les monstres à tuer, les objets à utiliser, ceux qui lâchent les objets à ramasser, le « ? » où rendre une quête finie, le « ! » des quêtes que tu peux prendre (selon ta race, ta classe, ton niveau et les quêtes déjà faites) ; chacun a son interrupteur dans les détails du calque, et LT / RT les parcourent à la manette ;
+- dans le calque des quêtes, **les marqueurs de quêtes**, tirés de la base des quêtes de l'addon (sans Questie) : les monstres à tuer, les objets à utiliser, ceux qui lâchent les objets à ramasser, le « ? » où rendre une quête finie, le « ! » des quêtes que tu peux prendre (selon ta race, ta classe, ton niveau et les quêtes déjà faites) ; chacun a son interrupteur dans les détails du calque, et LT / RT les parcourent à la manette. Les détails du calque disent aussi :
+  - **les camps** : les apparitions proches d'un monstre font une seule icône, et **les zones de chasse** sont tracées autour ;
+  - **seulement les quêtes suivies**, et **les autres estompées** quand tu choisis une quête dans la liste (sa fiche, ou la manette sur elle) ;
+  - **les quêtes bientôt prêtes** (un ou deux niveaux, ou une étape avant) : un « ! » violet et pâle ;
+  - **aussi sur la minimap**, **aussi dans les info-bulles** (un monstre, un PNJ, un objet dit sa quête et où tu en es), **des icônes sur les plaques de nom** (une épée, un sac, « ! », « ? ») ;
+  - **les boutons de la quête** : l'objet de quête à utiliser et le monstre à cibler, à l'écran (Maj+glisser pour les déplacer) et par deux raccourcis du jeu ;
+- un « ! » dit ce que sa quête a de particulier (de ta classe, de donjon, répétable : un « ! » bleu, « Chaîne 2/5 ») ; sa fiche (A, ou un clic) a **Cacher ce marqueur**, et l'onglet Carte de `/mmir` rend les quêtes cachées. Une quête que la base ne connaît pas est **apprise** quand tu la prends (son « ! » pour tes autres personnages), et un « ! » qu'un PNJ dément s'efface ;
 - à droite, **tes quêtes**, toujours affichées (à la manette, la croix du jeu y amène, et la manette passe alors dans la liste, où la croix va de quête en quête ; B, RT ou la croix gauche reviennent à la carte) : par zone ou les plus proches, la fiche d'une quête (A ou un clic : ses objectifs, son histoire, ses récompenses, comme dans le journal du jeu), l'itinéraire, la file, suivre, partager ; Y ou un clic droit sur une quête ouvre **son menu**, sans passer par la fiche : voir la quête, itinéraire, file, suivre, partager, lien dans la discussion, abandonner (après confirmation) ;
 - en bas à droite, tes coordonnées et celles du curseur ; au bord, « Toi » quand ta flèche sort de la vue ;
 - en bas, la barre d'aide : les boutons de la manette, ou les clics et les touches à la souris.
@@ -32,7 +38,7 @@ La carte du jeu reste ouverte dessous, invisible : c'est elle que M, Échap et B
 |---|---|---|
 | Carte | R3 | Itinéraire le plus rapide jusqu'au point sous le curseur (à pied, vols appris, bateaux, zeppelins, portail de Darnassus, tram des profondeurs) ; R3 sur sa destination l'annule |
 | Carte | RB | Me suivre : la carte me garde au centre quand je bouge (RB de nouveau : arrêter) |
-| Carte | LB | Aller à… (carte plein écran) ou Lieux : parcourir, rechercher au clavier (lieux, PNJ et objets de Questie), récents, la file |
+| Carte | LB | Aller à… (carte plein écran) ou Lieux : parcourir, rechercher au clavier (lieux, PNJ et objets de Questie), récents, **près de moi** (l'aubergiste, le réparateur, le maître de vol, le maître de ta classe... les plus proches, avec le temps pour y aller), **où aller** (les zones où tu as le plus de quêtes à prendre), la file (et « Tout mon journal dans la file ») |
 | Carte | Y | Le panneau des calques (carte plein écran) |
 | Carte | View | La roue, autour du curseur : ajouter à la file, envoyer au groupe, poser une épingle, épingles, plume, réglages de la carte (stick droit pour choisir, A pour valider, View pour fermer) |
 | Carte | LT / RT | L'icône précédente / suivante autour du curseur |
@@ -52,7 +58,8 @@ Pendant un itinéraire, en jeu (la carte plein écran le cache, la carte réduit
 
 - `/mmir` : la fenêtre de l'addon (Réglages, Carte, Trajets, Aide, Découvrir), aussi par le bouton de la minimap, le menu des addons de la minimap et Titan Panel
 - `/mmir carte` : les réglages de la carte (l'onglet Carte) ; `/mmir carte <…>` : les commandes de la carte (`status` : ce que fait la vue ; `pins` : tes épingles ; `draw` : la plume ; `forgetflights` : oublier les maîtres de vol appris par ce personnage)
-- Les raccourcis du jeu (Raccourcis > My Map Is Rich) : me localiser, poser une épingle, les épingles, la plume, les réglages de la carte
+- Les raccourcis du jeu (Raccourcis > My Map Is Rich) : me localiser, poser une épingle, les épingles, la plume, les réglages de la carte, utiliser l'objet de quête, cibler le monstre de la quête
+- `/mmir pourquoi <quête>` (son numéro ou son nom) : pourquoi une quête n'a pas de « ! » sur la carte ; `/mmir quetes export` : les quêtes apprises en jouant, à copier dans `tools/quests/forever_fixes.json`
 - `/mmir etat` : où en est l'addon ; `/mmir trajet` (`trajet stop`) : l'itinéraire en cours
 - `/mmir lieux`, `/mmir file` (`file vider`), `/mmir panneau`, `/mmir news`, `/mmir minimap`, `/mmir on` / `off`, `/mmir reset`
 - Diagnostic : `/mmir sonde`, `/mmir sonde carte` (les coordonnées comparées à celles du dessin de la carte), `/mmir sonde quetes` (tes quêtes du journal dans la base des quêtes, et où tu es sur la carte), `/mmir test`, `/mmir focus`, `/mmir camera sonde`, `/mmir camera trace`
@@ -117,7 +124,10 @@ Les données de la carte (`MyMapIsRich/Data/Map/`) et ses textures (`MyMapIsRich
 py tools/quests/build_quests.py --fetch
 ```
 
-Nos corrections (une quête à cacher, un PNJ déplacé) vont dans `tools/quests/forever_fixes.json`, une entrée de l'outil, puis on régénère. En jeu, `/mmir sonde quetes` dit ce que la base sait de tes quêtes et où tu es (la carte et x, y en %).
+Nos corrections (une quête à cacher, un PNJ déplacé) vont dans `tools/quests/forever_fixes.json`, une entrée de l'outil, puis on régénère. En jeu, `/mmir sonde quetes` dit ce que la base sait de tes quêtes et où tu es (la carte et x, y en %). Les quêtes et PNJ que QuestieDB n'a pas encore vont dans `addQuests` et `addNpcs` : `/mmir quetes export` donne ce que l'addon a appris en jouant, à relire avant de le coller.
+
+La base porte aussi les **PNJ de service** (aubergistes, réparateurs, banquiers, maîtres de classe, des écuries, commissaires-priseurs : l'onglet « Près de moi » des lieux), la **zone de chaque donjon** (l'onglet Quêtes de sa carte, sans Questie) et les quêtes **répétables**.
+
 
 ## Licence et crédits
 

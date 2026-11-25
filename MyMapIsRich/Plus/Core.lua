@@ -72,6 +72,7 @@ local DEFAULTS = {
     travelRumble = true,   -- la manette vibre à chaque étape (Pad/Rumble.lua)
     travelSound = true,    -- un son à chaque étape et à l'arrivée
     travelCorpse = true,   -- en fantôme : l'itinéraire jusqu'au corps
+    travelHearth = true,   -- la pierre de foyer prête compte dans un itinéraire (Travel/Planner.lua)
     travelShare = true,    -- les destinations envoyées par le groupe (Travel/Share.lua)
     travelShareChat = true, -- envoyer au groupe : aussi une ligne dans la discussion
 }
@@ -352,6 +353,12 @@ SlashCmdList.MYMAPISRICH = function(msg)
     elseif cmd == "sonde quetes" or cmd == "sonde quêtes" or cmd == "probe quests" then
         -- (tes quêtes du journal dans la base des quêtes : Layers/QuestMarks.lua)
         if ns.Quests and ns.Quests.Marks then ns.Quests.Marks.Probe() end
+    elseif cmd == "quetes export" or cmd == "quêtes export" or cmd == "quests export" then
+        -- (ce que la base ne savait pas, appris en jouant : Quests/Learn.lua)
+        if ns.Quests and ns.Quests.Learn then ns.Quests.Learn.ShowExport() end
+    elseif first == "pourquoi" or first == "why" then
+        -- (pourquoi une quête n'a pas de « ! » sur la carte : Quests/Offers.lua)
+        if ns.Quests and ns.Quests.Offers then ns.Quests.Offers.Explain(rest) end
     elseif cmd == "sonde" or cmd == "probe" then
         if ns.Diag then ns.Diag.Probe() end
     elseif cmd == "test" then

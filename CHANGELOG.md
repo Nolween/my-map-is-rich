@@ -1,5 +1,33 @@
 # Journal des versions — My Map Is Rich
 
+## 1.1.0
+
+**Des quêtes partout, et des trajets plus courts.** Vingt idées reprises des autres addons Forever (cartes et quêtes), à la façon de My Map Is Rich : à la souris comme à la manette, sans Questie.
+
+Après la mise à jour, **relance le jeu** (un `/reload` ne suffit pas : des fichiers s'ajoutent).
+
+- **Les marqueurs de quêtes**, dans les détails du calque Quêtes (clic droit ou Y sur le rail) :
+  - **les camps** : les apparitions proches d'un monstre font une seule icône, qui dit combien il y en a, et **les zones de chasse** sont tracées autour ;
+  - **seulement les quêtes suivies**, et **les autres estompées** quand tu choisis une quête (sa fiche ouverte, ou la manette sur elle dans la liste) ;
+  - **les quêtes bientôt prêtes** (dans un ou deux niveaux, ou une étape avant) : un « ! » violet et pâle, son info-bulle dit ce qui manque (éteint d'office) ;
+  - un « ! » dit ce que sa quête a de particulier : ta classe, un donjon, répétable (un « ! » bleu), « Chaîne 2/5 ».
+- **Cacher un marqueur** : sa fiche (A ou un clic dessus) a « Cacher ce marqueur ». L'onglet Carte de `/mmir`, rubrique Les quêtes, les rend.
+- **Les quêtes hors de la carte**, chacune avec sa case dans les détails du calque :
+  - sur **la minimap** ;
+  - dans **les info-bulles** : un monstre, un PNJ, un objet du monde ou de tes sacs dit à quelle quête il sert et où tu en es (« 3/10 ») ;
+  - en **icônes sur les plaques de nom** : une épée, un sac, un « ! », un « ? » (pour les PNJ amicaux, leurs plaques de nom doivent être affichées dans les options du jeu) ;
+  - **deux boutons à l'écran** : l'objet de quête à utiliser et le monstre à cibler, pour la quête de ton itinéraire, sinon celle que tu suis. Maj+glisser les déplace ; leurs raccourcis sont dans Raccourcis > My Map Is Rich (la manette aussi).
+- **Les lieux (LB)** ont deux onglets de plus :
+  - **Près de moi** : l'aubergiste, le réparateur, le maître de vol, le maître de ta classe, le banquier, le maître des écuries et le commissaire-priseur les plus proches, avec le temps pour y aller ; Y ou A l'itinéraire ;
+  - **Où aller** : les zones où tu as le plus de quêtes à prendre, avec leurs niveaux ; l'itinéraire mène au donneur qui en a le plus.
+  - Dans l'onglet File, en bas : **Tout mon journal dans la file** (chaque objectif, ou le donneur d'une quête finie, dans l'ordre le plus court).
+- **La pierre de foyer** compte dans les itinéraires quand elle est prête et fait gagner du temps : « Utilise ta pierre de foyer » est alors la première étape. L'auberge s'apprend là où tu la lies, ou la première fois que la pierre t'y emmène (onglet Trajets : « Utiliser la pierre de foyer »).
+- **La fiche d'une quête** montre sa chaîne : les étapes faites cochées, celle-ci, la suivante et qui la donne. **Son menu** (Y ou clic droit) peut abandonner toutes les quêtes grises, après confirmation.
+- **L'onglet Quêtes de la carte d'un donjon** vient maintenant de la base des quêtes de l'addon : à prendre, dans ton journal, faites ; un clic, l'itinéraire jusqu'au donneur. L'entrée du donjon dit combien sont à prendre. Questie, Dungeon Journal et NeedRoll restent au choix (onglet Carte, « Quêtes des donjons »).
+- **Ce que la base ne sait pas** : une quête de Forever absente de la base est apprise quand tu la prends (ses autres personnages de ta faction voient son « ! »), et un « ! » qu'un PNJ dément s'efface jusqu'à ton prochain niveau.
+- **Deux commandes** : `/mmir pourquoi <quête>` (son numéro ou son nom) dit pourquoi une quête n'a pas de « ! » ; `/mmir quetes export` donne les quêtes apprises, à copier.
+- Les traductions de l'itinéraire, de la file et des lieux sont complétées dans les 8 autres langues.
+
 ## 1.0.0
 
 **My Map Is Rich se passe d'OpenMap.** De la 0.5.0 à aujourd'hui, le code d'OpenMap a été remplacé par le nôtre, une version par étape. Avec la 1.0.0, il ne reste plus rien de lui qui tourne à part.
@@ -29,7 +57,7 @@ Après la mise à jour, **relance le jeu** (un `/reload` ne suffit pas : des fic
   - l'onglet Quêtes de la carte d'un donjon suit le journal quand une quête est acceptée ou rendue ;
   - à la manette, sur la carte réduite, la liste des quêtes défile jusqu'au bout : la manette du jeu qui y entre passe dans notre liste au lieu de s'arrêter à sa dernière ligne visible ;
   - à la manette, remonter dans la liste des quêtes la fait défiler jusqu'à la première quête, au lieu de sauter à la recherche ou aux boutons du dessus (plein écran comme carte réduite) ;
-  - à la manette, un seul appui sur la croix gauche passe de la liste des quêtes au curseur de la carte (il en fallait deux) ;
+  - à la manette, un seul appui sur la croix gauche passe de la liste des quêtes au curseur de la carte (il en fallait deux) ;
   - `/mmir on` après un `/reload` fait avec l'addon coupé remet la carte de l'addon sans un autre `/reload` ;
   - en veille, l'addon ne fait plus rien : plus de trajet vers ton corps, de destinations du groupe, de page dans les Options ni de menu dans la liste des addons de la minimap.
 

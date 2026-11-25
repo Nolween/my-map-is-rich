@@ -317,7 +317,25 @@ function UI.BuildMapPage(page, width, onRefresh)
         set = function(on) ns.Map.Settings.Set("entranceClick", on and "journal" or "map") end,
     })
     Cycle(more, L.OPT_MAP_QUEST_SOURCE, L.OPT_MAP_QUEST_SOURCE_TIP, {
-        { "auto", L.OPT_MAP_QUEST_SOURCE_AUTO }, { "questie", "Questie" }, { "journal", "Dungeon Journal" },
-        { "needroll", "NeedRoll" },
+        { "auto", L.OPT_MAP_QUEST_SOURCE_AUTO }, { "base", "My Map Is Rich" }, { "questie", "Questie" },
+        { "journal", "Dungeon Journal" }, { "needroll", "NeedRoll" },
     }, function() return Get("questSource") or "auto" end, function(v) Set("questSource", v) end)
+
+    -- (les quêtes cachées de la carte par ce personnage : Quests/Offers.lua)
+    local Offers = ns.Quests.Offers
+    Section(more, L.SET_MAP_QUESTS)
+    local unhide = UI.Button(more.p, "", colW - 28, 24, "grey")
+    unhide:SetPoint("TOPLEFT", 14, more.y)
+    unhide:SetScript("OnClick", function()
+        Offers.Unhide()
+        ns.Print(L.OPT_MAP_UNHIDE_DONE)
+        C_Timer.After(0.2, Refresh)
+    end)
+    UI.Tip(unhide, L.OPT_MAP_UNHIDE, L.OPT_MAP_UNHIDE_TIP)
+    refreshers[#refreshers + 1] = function()
+        local n = Offers.NumHidden()
+        unhide:SetText(L.OPT_MAP_UNHIDE_N:format(n))
+        Enable(unhide, n > 0)
+    end
+    more.y = more.y - ROW
 end

@@ -262,7 +262,7 @@ def main():
                     ids(r.get(16)) or None, r.get(27) or None, skill or None, lua_list(r.get(19)) or None,
                     never or None, None, r.get(25) or None, r.get(30) or None, r.get(33) or None, r.get(34) or None,
                     ids(r.get(13)) or None, r.get(22) or None, ids(r.get(28)) or None, r.get(36) or None,
-                    lua_list(r.get(20)) or None],
+                    lua_list(r.get(20)) or None, bool((r.get(24) or 0) & 1) or None],
             "trigger": trigger,
         }
         for ref in starts + ends + [g for goal in goals for g in goal]:
@@ -272,6 +272,19 @@ def main():
         if int(qid) in quests:
             for k, v in over.items():
                 quests[int(qid)]["rec"][int(k) - 1] = v
+    # (les quêtes de Forever que QuestieDB n'a pas encore : apprises en jeu, /mmir quetes export)
+    for qid, a in fixes.get("addQuests", {}).items():
+        qid = int(qid)
+        if qid in quests or qid in hidden:
+            continue
+        starts, ends = [int(x) for x in a.get("starts", [])], [int(x) for x in a.get("ends", [])]
+        rec = [None] * 28
+        rec[0], rec[1], rec[2] = a.get("title") or "?", a.get("level") or 0, a.get("minLevel") or 0
+        rec[3], rec[4], rec[5], rec[6] = 0, 0, 0, 0
+        rec[7], rec[8] = starts or None, ends or None
+        quests[qid] = {"rec": rec, "trigger": {}}
+        for ref in starts + ends:
+            (need_npc if ref > 0 else need_obj).add(abs(ref))
 
     # --- les objets de quête : qui les lâche, où ils se ramassent, qui les vend
     items = {}
@@ -285,6 +298,31 @@ def main():
             items[it] = [drops or None, vendors or None]
             need_npc.update(d for d in drops + vendors if d > 0)
             need_obj.update(-d for d in drops if d < 0)
+
+    # --- les PNJ de service (« Le plus proche », dans les lieux de l'addon) : leurs fonctions
+    # d'après les drapeaux de Questie (ceux de Vanilla), et la classe d'un maître de classe
+    SERVICE = [(128, 1), (16384, 2), (256, 4), (8192, 16), (4096, 32)]   # aubergiste, réparation, banquier, écuries, enchères
+    CLASSES = {"Druid": "DRUID", "Hunter": "HUNTER", "Mage": "MAGE", "Paladin": "PALADIN", "Priest": "PRIEST",
+               "Rogue": "ROGUE", "Shaman": "SHAMAN", "Warlock": "WARLOCK", "Warrior": "WARRIOR"}
+    services = {}
+    for e in db.ids("Npc"):
+        r = db.row("Npc", e)
+        if not r:
+            continue
+        f = r.get(15) or 0
+        if not isinstance(f, int):
+            continue
+        mask, cls = 0, None
+        for qf, ours in SERVICE:
+            if f & qf:
+                mask |= ours
+        sub = r.get(14) or ""
+        if f & 16 and isinstance(sub, str) and sub.endswith(" Trainer") and sub[:-8] in CLASSES:
+            mask |= 8
+            cls = CLASSES[sub[:-8]]
+        if mask:
+            services[e] = [mask, cls]
+            need_npc.add(e)
 
     # --- les apparitions
     lost = [0]
@@ -323,6 +361,16 @@ def main():
         npoints += sum(len(s) // 6 for s in enc.values())
         react = {"A": 1, "H": 2, "AH": 3}.get(r.get(13) or "", 0)
         npcs[e] = [r.get(1) or "", r.get(4) or 0, r.get(5) or 0, r.get(6) or 0, react, enc or None, sorted(inst) or None]
+    # (les PNJ de Forever que QuestieDB n'a pas encore : appris en jeu, /mmir quetes export)
+    for e, a in fixes.get("addNpcs", {}).items():
+        e = int(e)
+        if e in npcs:
+            continue
+        sp = defaultdict(list)
+        for ui, pts in a.get("spawns", {}).items():
+            sp[int(ui)].extend(tuple(p) for p in pts)
+        enc = {ui: encode(thin(p)) for ui, p in sp.items() if p}
+        npcs[e] = [a.get("name") or "", 0, 0, 0, a.get("react") or 0, enc or None, None]
     for e in sorted(need_obj):
         r = db.row("Object", e)
         if not r:
@@ -359,7 +407,8 @@ def main():
     w("--     noire et fêtes de Questie, ou aucun donneur dans le monde), 18 lieux à explorer, 19 quête à avoir en")
     w("--     cours, 20 sort à connaître (< 0 : à ne pas connaître), 21 quête qui la retire une fois faite,")
     w("--     22 quête à avoir prise ou faite, 23 prérequis (une parmi), 24 quête suivante, 25 quêtes qui y mènent,")
-    w("--     26 quête qui la bloque tant qu'elle est en cours, 27 réputation maxi }")
+    w("--     26 quête qui la bloque tant qu'elle est en cours, 27 réputation maxi, 28 répétable }")
+
     w("--     donneurs, preneurs : PNJ (id > 0) et objets du monde (id < 0) ; cibles : { { id, id qui en donne")
     w("--     aussi le crédit, ... } } ; prérequis (toutes) : id < 0, à avoir faite sans regarder ses exclusives ;")
     w("--     lieux à explorer : { [carte] = points }.")
@@ -369,6 +418,9 @@ def main():
     w("--     points : x, y en % de la carte, trois caractères chacun (A-Za-z0-9+/, six bits, le plus fort")
     w("--     d'abord), valeur * 100 + 32768 ; donjons : leur mapID d'instance.")
     w("--   items[id] = { { qui le lâche : PNJ > 0, objet < 0 }, { qui le vend } }")
+    w("--   services[id] = { fonctions (1 aubergiste, 2 réparation, 4 banquier, 8 maître de classe, 16 maître des")
+    w("--     écuries, 32 commissaire-priseur), classe du maître (WARRIOR...) } : les PNJ de service, dans npcs")
+    w("--   instances[mapID d'instance] = sa zone (celle des quêtes du donjon : leur zoneOrSort)")
     w("--   names[langue] = les noms traduits (ceux qui diffèrent de l'anglais), une ligne chacun : « n<id>=nom »")
     w("--     pour un PNJ, « o<id>=nom » pour un objet ; en zlib puis base64 (seule ta langue est décodée).")
     w("local _, root = ...")
@@ -391,6 +443,17 @@ def main():
     w("\titems = {")
     for it in sorted(items):
         w("\t\t[%d] = %s," % (it, lua(items[it])))
+    w("\t},")
+    # (les PNJ de service qui apparaissent quelque part dans le monde)
+    w("\tservices = {")
+    for e in sorted(services):
+        if e in npcs and npcs[e][5]:
+            w("\t\t[%d] = %s," % (e, lua(services[e])))
+    w("\t},")
+    # (les donjons : la zone de chacun, celle de ses quêtes, pour l'onglet Quêtes de sa carte)
+    w("\tinstances = {")
+    for inst in sorted(db.instance_to_area):
+        w("\t\t[%d] = %d," % (inst, db.instance_to_area[inst]))
     w("\t},")
     w("\tnames = {")
     for loc in LOCALES:
