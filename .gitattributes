@@ -6,3 +6,4 @@
 *.jpg binary
 *.ttf binary
 *.zip binary
+*.sh text eol=lf
