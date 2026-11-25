@@ -938,6 +938,7 @@ ns.AddLocale("zhTW", {
     TRACKER_ZONE_TIP = "點擊：摺疊或展開這個區域。",
     TRACKER_HIDE = "從追蹤中隱藏",
     TRACKER_UNHIDE = "在追蹤中顯示",
+    TRACKER_SHOW_LOG = "在任務日誌中查看",
     TRACKER_RESET = "任務追蹤已放回原位。",
     TRACKER_FOLDED = "任務追蹤已摺疊。",
     TRACKER_UNFOLDED = "任務追蹤已展開。",
@@ -971,4 +972,5 @@ ns.AddLocale("zhTW", {
     OPT_TRACKER_UNHIDE = "重新顯示隱藏的任務（%d）",
     WHATSNEW_MMIR_1_2_0 = "• |cffffd100自己的任務追蹤|r：在螢幕右側取代遊戲內建的追蹤，按由近到遠列出你的任務和距離（最近的目標，或接收任務的人）。你走動時它會自動排序。\n• |cffffd100待交付|r排在最前：誰接收任務，在哪裡。\n• |cffffd100篩選|r：全部、已追蹤、區域、附近；在地城中只顯示它的任務。\n• |cffffd100點擊|r任務：前往最近地點的路線。右鍵：選單（佇列、地圖、追蹤、隱藏、分享）。\n• |cffffd100隊伍進度|r：在共同的任務下，顯示擁有 My Map Is Rich 的隊友的進度。\n• /mmir 中新增|cffffd100任務|r分頁：排序、篩選、背景，以及插件保留原位的其他追蹤（EllesmereUI、Questie）。/mmir suivi 顯示或隱藏它。",
     WHATSNEW_MMIR_1_3_0 = "• |cffffd100首次啟動教學|r：無縫地圖、任務資料庫、路線，接著是你的初始設定，立即生效。它也能一鍵停用功能相同的插件。/mmir tuto，或說明分頁中的重看教學。\n• |cffffd100說明|r分頁現在是 13 步的指南。\n• |cffffd100地圖上的屍體|r：死亡或處於靈魂狀態時，遊戲的墓碑標出你倒下的地方。\n• |cffffd100你的箭頭|r更大了，帶有輕輕脈動的金色光暈。\n• 任務標記的卡片新增|cffffd100查看任務|r，|cffffd100!|r 也有了自己的卡片：等級、還缺什麼、誰給任務、目標、任務鏈。\n• |cffffd100城鎮居民|r來自插件的任務資料庫，無需 Questie：商人、訓練師、靈魂醫者、稀有怪物、郵箱。\n• |cffffd100主題|r用色塊選擇，與同系列插件一致。",
+    WHATSNEW_MMIR_1_3_1 = "• |cffffd100手把選擇目標不再被阻擋|r：提示遊戲阻擋了 My Map Is Rich（SetPreferredGamepadInteractTarget()）的訊息不會再出現。遊戲內建的任務追蹤只是在我們的追蹤下設為不可見，插件不會關閉它。\n• |cffffd100任務追蹤|r的右鍵選單以|cffffd100在任務日誌中查看|r開頭：地圖打開並顯示該任務的詳情。",
 })

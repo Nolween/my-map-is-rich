@@ -938,6 +938,7 @@ ns.AddLocale("ptBR", {
     TRACKER_ZONE_TIP = "Clique: recolher ou expandir esta zona.",
     TRACKER_HIDE = "Ocultar do rastreador",
     TRACKER_UNHIDE = "Mostrar no rastreador",
+    TRACKER_SHOW_LOG = "Ver no registro de missões",
     TRACKER_RESET = "rastreador de missões de volta ao lugar.",
     TRACKER_FOLDED = "rastreador de missões recolhido.",
     TRACKER_UNFOLDED = "rastreador de missões expandido.",
@@ -971,4 +972,5 @@ ns.AddLocale("ptBR", {
     OPT_TRACKER_UNHIDE = "Mostrar de novo as missões ocultas (%d)",
     WHATSNEW_MMIR_1_2_0 = "• |cffffd100Um rastreador de missões próprio|r, à direita da tela, no lugar do do jogo: suas missões, a mais próxima primeiro, com a distância (o objetivo mais próximo, ou quem recebe a missão). Ele se ordena sozinho enquanto você anda.\n• |cffffd100Para entregar|r vem primeiro: quem recebe a missão, e onde.\n• |cffffd100Filtros|r: Todas, Rastreadas, Zona, Perto; numa masmorra, só as missões dela.\n• Um |cffffd100clique|r numa missão: a rota até o ponto mais próximo. Clique direito: o menu dela (fila, mapa, rastrear, ocultar, compartilhar).\n• |cffffd100Progresso do grupo|r: sob uma missão em comum, como estão os membros que têm o My Map Is Rich.\n• Uma nova aba |cffffd100Missões|r no /mmir: ordem, filtro, fundo e os outros rastreadores (EllesmereUI, Questie), que o addon deixa no lugar. /mmir suivi mostra ou oculta o rastreador.",
     WHATSNEW_MMIR_1_3_0 = "• |cffffd100Um tutorial na primeira vez|r: o mapa contínuo, a base de missões, as rotas e depois suas primeiras escolhas, aplicadas na hora. Ele também desativa com um botão os addons que fazem a mesma coisa. /mmir tuto, ou Rever o tutorial na aba Ajuda.\n• A aba |cffffd100Ajuda|r agora é um guia em 13 etapas.\n• |cffffd100Seu corpo no mapa|r: morto ou como fantasma, a lápide do jogo marca onde você caiu.\n• |cffffd100Sua seta|r está maior, com um halo dourado que pulsa suavemente.\n• A ficha de um marcador de missão tem |cffffd100Ver a missão|r, e um |cffffd100!|r tem sua própria ficha: nível, o que ainda falta, quem a dá, objetivos, sequência.\n• |cffffd100Os moradores|r vêm da base de missões do addon, sem Questie: vendedores, instrutores, curandeiros espirituais, monstros raros, caixas de correio.\n• |cffffd100O tema|r é escolhido em amostras de cor, como nos addons irmãos.",
+    WHATSNEW_MMIR_1_3_1 = "• |cffffd100A mira com o controle não é mais bloqueada|r: a mensagem de que o jogo bloqueou o My Map Is Rich (SetPreferredGamepadInteractTarget()) não volta mais. O rastreador de missões do jogo só fica invisível sob o nosso; o addon nunca o fecha.\n• No |cffffd100rastreador de missões|r, o clique direito começa com |cffffd100Ver no registro de missões|r: o mapa abre na ficha da missão.",
 })

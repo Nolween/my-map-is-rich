@@ -1,5 +1,14 @@
 # Journal des versions — My Map Is Rich
 
+## 1.3.1
+
+**Le ciblage à la manette n'est plus bloqué, et le suivi des quêtes ouvre une quête dans le journal.**
+
+Après la mise à jour, un `/reload` suffit.
+
+- **Le message « le jeu a bloqué My Map Is Rich (SetPreferredGamepadInteractTarget()) » ne revient plus.** Il venait du suivi des quêtes du jeu, que l'addon fermait sous le nôtre après chaque combat et à chaque quête acceptée : l'interface manette du jeu s'en trouvait brouillée, et le ciblage à la manette restait bloqué jusqu'au `/reload`. Le suivi du jeu est maintenant seulement rendu invisible, jamais fermé. Seul revers : là où il se trouve, ses boutons invisibles répondent encore à la souris.
+- **Dans le suivi des quêtes**, à droite de l'écran, le clic droit commence par **« Voir dans le journal »** : la carte s'ouvre sur la fiche de la quête, avec son texte, ses objectifs et ses récompenses (cette entrée s'appelait « Voir sur la carte »).
+
 ## 1.3.0
 
 **Un tutoriel pour bien démarrer, une aide en étapes, et la carte qui te montre mieux.**

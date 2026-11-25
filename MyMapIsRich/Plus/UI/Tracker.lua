@@ -30,9 +30,14 @@
 -- LE SUIVI DU JEU (une exception à « rien n'est écrit dans les cadres de
 -- Blizzard », voulue, comme celle de Map/View.lua) : tant que le nôtre est
 -- actif, ObjectiveTrackerFrame est mis à l'alpha 0 (un SetAlpha du jeu est
--- repris par hooksecurefunc) et caché par Hide() hors combat seulement (à
--- alpha 0, ses boutons resteraient cliquables) ; en combat, on attend
--- PLAYER_REGEN_ENABLED. Le réglage coupé, il est rendu (alpha 1, Show). Rien
+-- repris par hooksecurefunc), et rien d'autre. Le réglage coupé, il est rendu
+-- (alpha 1). Jamais de Hide() ni de Show() depuis l'addon : ses scripts
+-- OnHide / OnShow tournaient alors au nom de l'addon, l'interface manette du
+-- jeu en prenait son état, et le jeu bloquait ensuite
+-- SetPreferredGamepadInteractTarget jusqu'au /reload (1.3.0 : après chaque
+-- combat, à chaque quête acceptée). Le revers : invisible, le suivi du jeu
+-- garde ses boutons cliquables à la souris, à son emplacement. L'alpha
+-- n'appelle aucun script et n'est pas protégé : il se change en combat. Rien
 -- n'est touché en veille (ns.Conflict), ni quand un autre suivi est là.
 -- Les autres suivis (TR.Rival) : celui d'EllesmereUI (EllesmereUIQuestTracker
 -- chargé) ou celui de Questie (son réglage « Activer le suivi ») : le nôtre
@@ -130,7 +135,6 @@ function TR.Rival()
 end
 
 local muted, hooked = false, false
-local waitHide, waitShow = false, false
 
 local function GameTracker() return _G.ObjectiveTrackerFrame end
 
@@ -144,25 +148,21 @@ local function HideGame()
             if muted and a ~= 0 then self:SetAlpha(0) end
         end)
         otf:HookScript("OnShow", function(self)
-            if not muted then return end
-            self:SetAlpha(0)
-            if InCombatLockdown() then waitHide = true else self:Hide() end
+            if muted then self:SetAlpha(0) end
         end)
     end
-    -- (déjà caché : rien à refaire à chaque relecture du suivi)
-    if muted and not otf:IsShown() then return end
-    muted, waitShow = true, false
+    -- (déjà invisible : rien à refaire à chaque relecture du suivi)
+    if muted and otf:GetAlpha() == 0 then return end
+    muted = true
     otf:SetAlpha(0)
-    if InCombatLockdown() then waitHide = true else otf:Hide() end
 end
 
 local function ShowGame()
     if not muted then return end
-    muted, waitHide = false, false
+    muted = false
     local otf = GameTracker()
     if not otf then return end
     otf:SetAlpha(1)
-    if InCombatLockdown() then waitShow = true else otf:Show() end
 end
 
 -- Le nôtre actif (le réglage, ni veille ni autre suivi) : celui du jeu caché
@@ -493,12 +493,16 @@ local function Menu(b, q)
     local id = q.id
     local qp = QP()
     local items = {}
+    -- (sa fiche dans la liste des quêtes de la carte : le texte, les
+    -- objectifs, les récompenses ; la carte s'ouvre, hors combat)
+    if qp then
+        items[#items + 1] = { L.TRACKER_SHOW_LOG, function() qp.OpenID(id) end }
+    end
     if Opt().travel then
-        items[#items + 1] = { Where.Routed(id) and L.HINT_TRAVEL_CANCEL or L.FICHE_ROUTE, function() Where.Route(id) end }
+        items[#items + 1] = { Where.Routed(id) and L.HINT_TRAVEL_CANCEL or L.FICHE_ROUTE, function() Where.Route(id) end, sep = true }
         items[#items + 1] = { L.ACT_QUEUE, function() Where.Enqueue(id) end }
     end
     if qp then
-        items[#items + 1] = { L.PLACES_SHOW, function() qp.OpenID(id) end }
         items[#items + 1] = { qp.IsWatched(id) and L.QUESTS_UNTRACK or L.QUESTS_TRACK, function()
             qp.ToggleWatch(id)
             Dirty()
@@ -1126,13 +1130,6 @@ events:SetScript("OnEvent", function(_, event, arg)
         if arg == "Blizzard_ObjectiveTracker" and ns.db then C_Timer.After(0, Mute) end
     elseif event == "PLAYER_ENTERING_WORLD" or event == "ZONE_CHANGED_NEW_AREA" then
         EnterZone()
-    elseif event == "PLAYER_REGEN_ENABLED" then
-        -- (ce qui attendait la fin du combat)
-        local otf = GameTracker()
-        if otf and waitHide and muted then otf:Hide() end
-        if otf and waitShow and not muted then otf:Show() end
-        waitHide, waitShow = false, false
-        Dirty()
     else
         Dirty()
     end

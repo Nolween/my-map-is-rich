@@ -1107,6 +1107,7 @@ ns.AddLocale("enUS", {
     TRACKER_ZONE_TIP = "Click: fold or unfold this zone.",
     TRACKER_HIDE = "Hide from the tracker",
     TRACKER_UNHIDE = "Show in the tracker",
+    TRACKER_SHOW_LOG = "View in the quest log",
     TRACKER_RESET = "quest tracker put back in place.",
     TRACKER_FOLDED = "quest tracker folded.",
     TRACKER_UNFOLDED = "quest tracker unfolded.",
@@ -1140,4 +1141,5 @@ ns.AddLocale("enUS", {
     OPT_TRACKER_UNHIDE = "Show the hidden quests again (%d)",
     WHATSNEW_MMIR_1_2_0 = "• |cffffd100A quest tracker of its own|r, on the right of the screen, in place of the game's: your quests, the nearest first, with how far they are (the nearest objective, or who takes the quest back). It sorts itself as you walk.\n• |cffffd100To turn in|r comes first: who takes the quest back, and where.\n• |cffffd100Filters|r: All, Tracked, Zone, Nearby; in a dungeon, its quests on their own.\n• A |cffffd100click|r on a quest: the route to the nearest spot. Right-click: its menu (queue, map, track, hide, share).\n• |cffffd100Group progress|r: under a quest you share, how far the members who have My Map Is Rich are.\n• A new |cffffd100Quests|r tab in /mmir: sort, filter, background, and the other trackers (EllesmereUI, Questie), which the addon leaves in place. /mmir suivi shows or hides it.",
     WHATSNEW_MMIR_1_3_0 = "• |cffffd100A first-launch tutorial|r: the one-piece map, the quest database, routes, then your first choices, each applied at once. It also turns off the addons that do the same thing, in one click. /mmir tuto, or Replay the tutorial in the Help tab.\n• The |cffffd100Help|r tab is now a 13-step guide.\n• |cffffd100Your body on the map|r: dead or a ghost, the game's gravestone marks where you fell.\n• |cffffd100Your arrow|r is bigger, with a softly pulsing golden glow.\n• A quest marker's card has |cffffd100See the quest|r, and a |cffffd100!|r has its own card: level, what you still lack, who gives it, objectives, chain.\n• |cffffd100Townsfolk|r come from the addon's quest database, without Questie: vendors, trainers, spirit healers, rare monsters, mailboxes.\n• The |cffffd100theme|r is picked from color swatches, as in the sister addons.",
+    WHATSNEW_MMIR_1_3_1 = "• |cffffd100No more blocked gamepad targeting|r: the message saying the game blocked My Map Is Rich (SetPreferredGamepadInteractTarget()) no longer comes back. The game's quest tracker is only made invisible under ours, never closed by the addon.\n• In |cffffd100the quest tracker|r, right-click now starts with |cffffd100View in the quest log|r: the map opens on the quest's page.",
 })
