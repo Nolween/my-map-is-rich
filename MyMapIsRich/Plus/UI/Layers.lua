@@ -83,13 +83,16 @@ local LAYERS = {
             { "LAYER_D_QUESTIE", questie = true },
         } },
     { id = "townsfolk", label = "LAYER_TOWNSFOLK", texture = Icon("INV_Misc_Bag_10"),
-        folk = { "vendor", "repair", "innkeeper", "stable", "banker", "mailbox", "classTrainer", "profTrainer" },
+        folk = { "vendor", "repair", "innkeeper", "stable", "banker", "mailbox", "classTrainer", "profTrainer",
+            "spirit", "rare" },
         folkStart = { vendor = true, repair = true, innkeeper = true, banker = true, mailbox = true },
         details = {
             { "LAYER_D_VENDORS", folk = { "vendor", "repair" } },
             { "LAYER_D_INNS", folk = { "innkeeper", "stable" } },
             { "LAYER_D_BANKS", folk = { "banker", "mailbox" } },
             { "LAYER_D_TRAINERS", folk = { "classTrainer", "profTrainer" } },
+            { "LAYER_D_SPIRITS", folk = { "spirit" } },
+            { "LAYER_D_RARES", folk = { "rare" } },
         } },
     { id = "group", label = "LAYER_GROUP", texture = Icon("Spell_Holy_PrayerOfFortitude"),
         keys = { "group" },
@@ -112,7 +115,7 @@ local function QuestieProfile()
     return _G.Questie and Questie.db and Questie.db.profile or nil
 end
 
--- Le calque est-il disponible (les citadins : Questie) ?
+-- Le calque est-il disponible (les citadins : la base de l'addon, Quests/Db.lua) ?
 local function Available(layer)
     if layer.folk then return HasFolk() end
     return true
@@ -270,9 +273,7 @@ local function LayerTip(self)
     local layer = self.layer
     GameTooltip:SetOwner(self, "ANCHOR_RIGHT")
     GameTooltip:SetText(L[layer.label], 1, 0.82, 0)
-    if not Available(layer) then
-        GameTooltip:AddLine(L.LAYERS_NEEDS_QUESTIE, 1, 0.44, 0.38, true)
-    else
+    if Available(layer) then
         GameTooltip:AddLine(IsOn(layer) and L.LAYERS_TIP_ON or L.LAYERS_TIP_OFF, 1, 1, 1, true)
     end
     GameTooltip:AddLine(L.LAYERS_TIP_DETAILS, UI.RGB("textDim"))
@@ -413,8 +414,7 @@ local function FillDetails()
     local y = -26 - perCol * 24
 
     local why
-    if not Available(layer) then why = L.LAYERS_NEEDS_QUESTIE
-    elseif n == 0 then why = L.LAYERS_NO_DETAILS end
+    if Available(layer) and n == 0 then why = L.LAYERS_NO_DETAILS end
     detailEmpty:SetText(why or "")
     detailEmpty:SetShown(why ~= nil)
     if why then y = y - 20 end
@@ -433,7 +433,6 @@ local function FillRows()
         row.selected:SetShown(layer == chosen)
         if layer == chosen then row.text:SetTextColor(1, 1, 1) else row.text:SetTextColor(1, 0.82, 0) end
         row.icon:SetAlpha(available and 1 or 0.4)
-        row.note:SetText(layer.folk and "Questie" or "")
     end
     FillDetails()
 end
@@ -468,8 +467,6 @@ local function BuildPanel(chrome)
         UI.SetIcon(row.icon, layer.texture, layer.atlasFn and layer.atlasFn() or layer.atlas)
         row.text = UI.Text(row, "GameFontNormalSmall", L[layer.label])
         row.text:SetPoint("LEFT", row.icon, "RIGHT", 8, 0)
-        row.note = UI.DimText(row, nil, "GameFontDisableSmall")
-        row.note:SetPoint("LEFT", row.text, "RIGHT", 6, 0)
         -- (la case, dessinée : un clic sur la ligne l'allume ou l'éteint)
         row.box = CreateFrame("Frame", nil, row)
         row.box:SetSize(16, 16)
@@ -492,7 +489,6 @@ local function BuildPanel(chrome)
             GameTooltip:SetOwner(self, "ANCHOR_RIGHT")
             GameTooltip:SetText(L[self.layer.label], 1, 0.82, 0)
             GameTooltip:AddLine(L.LAYERS_ROW_TIP, 1, 1, 1, true)
-            if not Available(self.layer) then GameTooltip:AddLine(L.LAYERS_NEEDS_QUESTIE, 1, 0.44, 0.38, true) end
             GameTooltip:Show()
         end)
         row:SetScript("OnLeave", GameTooltip_Hide)

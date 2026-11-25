@@ -414,40 +414,6 @@ local function BuildTravel(page)
 end
 
 ---------------------------------------------------------------------------
--- Aide : les boutons, carte par carte, et les commandes
----------------------------------------------------------------------------
-local function HelpPanel(parent, x, y, w, h, title, text)
-    local p = UI.Inset(parent)
-    p:SetPoint("TOPLEFT", x, y)
-    p:SetSize(w, h)
-    UI.Section(p, title, 14, -12)
-    local fs = UI.Text(p, "GameFontHighlight", text)
-    fs:SetPoint("TOPLEFT", 16, -44)
-    fs:SetPoint("RIGHT", p, "RIGHT", -16, 0)
-    fs:SetJustifyH("LEFT")
-    fs:SetJustifyV("TOP")
-    fs:SetSpacing(3)
-    return p
-end
-
-local function BuildHelp(page)
-    UI.PageIntro(page, L.HELP_INTRO, 300)
-    -- (les nouveautés des dernières versions : UI/WhatsNew.lua ; les crédits : UI/Credits.lua)
-    local credits = UI.PageButton(page, L.CREDITS_BUTTON, 130)
-    credits:SetScript("OnClick", function() if ns.Credits then ns.Credits.Open(page) end end)
-    UI.Tip(credits, L.CREDITS_BUTTON, L.CREDITS_BUTTON_TIP)
-    local news = UI.PageButton(page, L.WHATSNEW_BUTTON, 160, credits)
-    news:SetScript("OnClick", function() if ns.WhatsNew then ns.WhatsNew.Open() end end)
-    UI.Tip(news, L.WHATSNEW_BUTTON, L.WHATSNEW_BUTTON_TIP)
-    local w = math.floor((WIDTH - 16 - 8 - GAP) / 2)
-    local h1, h2 = 250, 250
-    HelpPanel(page, 0, UI.PAGE_TOP, w, h1, L.HELP_MAP_TITLE, L.HELP_MAP)
-    HelpPanel(page, w + GAP, UI.PAGE_TOP, w, h1, L.HELP_WINDOW_TITLE, L.HELP_WINDOW)
-    HelpPanel(page, 0, UI.PAGE_TOP - h1 - GAP, w, h2, L.HELP_DUNGEON_TITLE, L.HELP_DUNGEON)
-    HelpPanel(page, w + GAP, UI.PAGE_TOP - h1 - GAP, w, h2, L.HELP_COMMANDS_TITLE, L.HELP_COMMANDS)
-end
-
----------------------------------------------------------------------------
 -- La fenêtre
 ---------------------------------------------------------------------------
 local function Build()
@@ -507,7 +473,9 @@ local function Build()
     UI.BuildMapPage(pages.map, WIDTH - 24, function(fn) refreshers[#refreshers + 1] = fn end)
     BuildQuests(pages.quests)
     BuildTravel(pages.travel)
-    BuildHelp(pages.help)
+    -- (l'aide, un guide en étapes : UI/HelpTab.lua ; la page fait la hauteur
+    -- de la fenêtre, moins la barre de titre, la barre d'état et les marges)
+    UI.BuildHelpPage(pages.help, HEIGHT - TITLE_H - 4 - 4 - (STATUS_H + 2))
     UI.BuildDonatePage(pages.donate)
     -- (les cases et les champs du jeu aux couleurs de la charte)
     UI.SkinControls(c)

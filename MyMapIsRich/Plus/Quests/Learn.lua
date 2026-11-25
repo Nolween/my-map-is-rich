@@ -7,6 +7,9 @@
 --   - un « ! » démenti : un PNJ à qui tu parles ne propose pas une quête que
 --     la carte lui prêtait (elle n'est pas grise) ; ce « ! » s'efface pour ce
 --     personnage, jusqu'à son prochain niveau (MyMapIsRichPlusCharDB.notOffered).
+--     Le PNJ le dit par sa discussion, sa liste de quêtes, ou en ouvrant tout de
+--     suite une quête (il n'a qu'elle à proposer) ou une quête à rendre (il
+--     n'a rien à proposer).
 -- /mmir quetes export : ce qui a été appris, dans une fenêtre à copier, au
 -- format de tools/quests/forever_fixes.json (addQuests, addNpcs).
 --   Learn.Offers()        -> { { id, ref, spots, level }, ... } : les « ! » appris
@@ -123,22 +126,11 @@ local function TurnedIn(questID)
     e.ends[talking.ref] = Spot(talking)
 end
 
--- Un PNJ qui parle : les quêtes qu'il propose vraiment (C_GossipInfo), face
--- aux « ! » que la carte lui prête
-local function Gossip()
-    local ref = TalkingTo()
+-- Les « ! » que la carte prête au PNJ ref, face aux quêtes qu'il propose
+-- vraiment (offered : { [id] = true }) : ceux qu'il ne propose pas sont démentis
+local function Deny(ref, offered)
     local QM = ns.Quests.Marks
-    if not (ref and QM and C_GossipInfo and C_GossipInfo.GetAvailableQuests) then return end
-    local avail = Call(C_GossipInfo.GetAvailableQuests)
-    if type(avail) ~= "table" then return end
-    local offered = {}
-    for _, info in ipairs(avail) do
-        local id = Plain(info.questID)
-        -- (une quête sans numéro : le client ne dit pas tout, rien n'est conclu)
-        if type(id) ~= "number" or id <= 0 then return end
-        offered[id] = true
-    end
-    local t = NotOfferedTable()
+    local t = QM and NotOfferedTable()
     if not t then return end
     local level, changed = UnitLevel("player") or 1, false
     for _, e in ipairs(QM.Entries().offer or {}) do
@@ -154,6 +146,69 @@ local function Gossip()
         end
     end
     if changed then ns.Fire("QUESTS_LEARNED") end
+end
+
+-- Un PNJ qui ouvre une discussion : les quêtes qu'elle propose (C_GossipInfo)
+local function Gossip()
+    local ref = TalkingTo()
+    if not (ref and C_GossipInfo and C_GossipInfo.GetAvailableQuests) then return end
+    local avail = Call(C_GossipInfo.GetAvailableQuests)
+    if type(avail) ~= "table" then return end
+    local offered = {}
+    for _, info in ipairs(avail) do
+        local id = Plain(info.questID)
+        -- (une quête sans numéro : le client ne dit pas tout, rien n'est conclu)
+        if type(id) ~= "number" or id <= 0 then return end
+        offered[id] = true
+    end
+    Deny(ref, offered)
+end
+
+-- Un PNJ qui ouvre une liste de quêtes, sans discussion
+local function Greeting()
+    local ref = TalkingTo()
+    local count = ref and Call(_G.GetNumAvailableQuests)
+    if type(count) ~= "number" then return end
+    local offered = {}
+    for i = 1, count do
+        -- (le 5e retour est le numéro de la quête ; sans lui, rien n'est conclu)
+        local id = Plain(select(5, Call(_G.GetAvailableQuestInfo, i)))
+        if type(id) ~= "number" or id <= 0 then return end
+        offered[id] = true
+    end
+    Deny(ref, offered)
+end
+
+-- L'échange en cours : le PNJ qui a ouvert une discussion ou une liste. Une
+-- fenêtre de quête qui s'ouvre ensuite vient de là ; sans elle, le PNJ l'a
+-- ouverte tout de suite, et c'est tout ce qu'il a : une seule quête à
+-- proposer (QUEST_DETAIL), ou rien que des quêtes à reprendre.
+local opened
+local closing = 0
+local CLOSE_DELAY = 1           -- s : entre deux pages d'un même échange, le jeu ferme et rouvre
+
+local function Touch() closing = closing + 1 end
+
+local function Close()
+    Touch()
+    local mine = closing
+    C_Timer.After(CLOSE_DELAY, function()
+        if mine == closing then opened = nil end
+    end)
+end
+
+local function Direct(event)
+    local ref = TalkingTo()
+    if not ref or opened == ref then return end
+    opened = ref
+    local offered = {}
+    if event == "QUEST_DETAIL" then
+        -- (une quête sans numéro, poussée par un PNJ d'escorte… : rien n'est conclu)
+        local id = Plain(Call(_G.GetQuestID))
+        if type(id) ~= "number" or id <= 0 then return end
+        offered[id] = true
+    end
+    Deny(ref, offered)
 end
 
 function Learn.NotOffered(id, ref)
@@ -190,11 +245,17 @@ end
 local events = CreateFrame("Frame")
 events:SetScript("OnEvent", function(_, event, arg, ...)
     if ns.Conflict and ns.Conflict() or not Db.Has() then return end
-    if event == "QUEST_DETAIL" or event == "QUEST_PROGRESS" or event == "QUEST_COMPLETE" or event == "QUEST_GREETING" then
+    if event == "QUEST_DETAIL" or event == "QUEST_PROGRESS" or event == "QUEST_COMPLETE" then
+        Touch()
         Remember()
-    elseif event == "GOSSIP_SHOW" then
+        pcall(Direct, event)
+    elseif event == "GOSSIP_SHOW" or event == "QUEST_GREETING" then
+        Touch()
         Remember()
-        pcall(Gossip)
+        opened = TalkingTo()
+        pcall(event == "GOSSIP_SHOW" and Gossip or Greeting)
+    elseif event == "GOSSIP_CLOSED" or event == "QUEST_FINISHED" then
+        Close()
     elseif event == "QUEST_ACCEPTED" then
         -- (QUEST_ACCEPTED donne questID ; sur les clients de Classic, après l'index du journal : le dernier nombre)
         local id = select("#", ...) > 0 and select(select("#", ...), ...) or arg
@@ -206,7 +267,7 @@ events:SetScript("OnEvent", function(_, event, arg, ...)
     end
 end)
 for _, e in ipairs({ "QUEST_DETAIL", "QUEST_PROGRESS", "QUEST_COMPLETE", "QUEST_GREETING", "GOSSIP_SHOW",
-    "QUEST_ACCEPTED", "QUEST_TURNED_IN" }) do
+    "GOSSIP_CLOSED", "QUEST_FINISHED", "QUEST_ACCEPTED", "QUEST_TURNED_IN" }) do
     pcall(events.RegisterEvent, events, e)
 end
 

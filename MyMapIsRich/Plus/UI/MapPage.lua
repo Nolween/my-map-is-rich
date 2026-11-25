@@ -2,8 +2,8 @@
 -- Depuis la 0.6.0, ils remplacent le menu et la fenêtre de réglages venus
 -- d'OpenMap. Trois panneaux, d'après la charte (CHARTE.md) :
 --   L'aspect     : les zones inexplorées, les couleurs, le zoom, les icônes
---   Au plus près : la minimap du jeu mêlée à la carte, les grottes ; les
---                  détails (les niveaux des zones, la teinte de l'ombre)
+--   De près      : la minimap du jeu mêlée à la carte, les grottes ; les
+--                  autres réglages (les niveaux des zones, la teinte de l'ombre)
 --   Épingles et donjons : ce que les autres partagent, les cartes des donjons
 -- Ce que la carte montre (les calques) reste sur son rail, à gauche de la
 -- carte (UI/Layers.lua). Chaque réglage passe par ns.Map (Map/Api.lua,
@@ -300,7 +300,10 @@ function UI.BuildMapPage(page, width, onRefresh)
     local more = Column(3)
     Section(more, L.SET_MAP_PINS)
     Check(more, "pinsShared", L.OPT_MAP_PINS_SHARED, L.OPT_MAP_PINS_SHARED_TIP)
-    Check(more, "pinsGroupAdd", L.OPT_MAP_PINS_ADD, L.OPT_MAP_PINS_ADD_TIP)
+    -- (sans les épingles des autres, celles du groupe n'arrivent pas non plus : Layers/MyPins.lua)
+    Check(more, "pinsGroupAdd", L.OPT_MAP_PINS_ADD, L.OPT_MAP_PINS_ADD_TIP, {
+        enabled = function() return Get("pinsShared") ~= false end,
+    })
     Check(more, "pinsShareGroup", L.OPT_MAP_PINS_SEND, L.OPT_MAP_PINS_SEND_TIP)
     Check(more, "pinsFollowNew", L.OPT_MAP_PINS_FOLLOW, L.OPT_MAP_PINS_FOLLOW_TIP)
     Check(more, "ctrlClickPin", L.OPT_MAP_CTRL_PIN, L.OPT_MAP_CTRL_PIN_TIP, {

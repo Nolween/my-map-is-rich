@@ -86,7 +86,7 @@ Par lots :
 
 **Les 20 sont écrites (1.1.0, novembre 2026), rien n'est encore testé en jeu.** Ce qui diffère de l'idée de départ :
 - 12 : la file se rangeait déjà au plus court à chaque ajout ; il reste « Tout mon journal dans la file », en bas de l'onglet File.
-- 14 : les PNJ de service viennent désormais de la base des quêtes (`services`, tiré des drapeaux de Questie) ; la boîte aux lettres n'y est pas (Questie la tient dans son code). Les citadins du rail lisent encore Questie : ils pourraient passer à cette base.
+- 14 : les PNJ de service viennent désormais de la base des quêtes (`services`, tiré des drapeaux de Questie) ; après la 1.2.0, s'y ajoutent les marchands, les autres maîtres, les esprits soigneurs, les monstres rares et les boîtes aux lettres (les objets « Mailbox »), et les citadins du rail lisent cette base : plus besoin de Questie.
 - 7 : ni l'expérience ni « Élite » (la base ne les a pas).
 - 16 : la chaîne est une liste dans la fiche, sans « < > ».
 - 10 : pas de ligne dans la fiche d'une quête (une quête du journal est déjà prise) : la raison est dans `/mmir pourquoi` et l'info-bulle des « ! » bientôt prêts.

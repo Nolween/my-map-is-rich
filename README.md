@@ -74,6 +74,7 @@ Il reste en jeu et avec la carte réduite ; la carte plein écran le cache (sa l
 - `/mmir pourquoi <quête>` (son numéro ou son nom) : pourquoi une quête n'a pas de « ! » sur la carte ; `/mmir quetes export` : les quêtes apprises en jouant, à copier dans `tools/quests/forever_fixes.json`
 - `/mmir etat` : où en est l'addon ; `/mmir trajet` (`trajet stop`) : l'itinéraire en cours
 - `/mmir suivi` : le suivi des quêtes montré ou coupé (`suivi replacer` : remis en place ; `suivi replier`)
+- `/mmir tuto` : le tutoriel du premier lancement (la carte d'un seul tenant, la base des quêtes, les itinéraires, les premiers réglages, et les addons qui font la même chose, à désactiver d'un bouton), aussi par « Revoir le tutoriel » dans l'onglet Aide ; il répond même en veille
 - `/mmir lieux`, `/mmir file` (`file vider`), `/mmir panneau`, `/mmir news`, `/mmir minimap`, `/mmir on` / `off`, `/mmir reset`
 - Diagnostic : `/mmir sonde`, `/mmir sonde carte` (les coordonnées comparées à celles du dessin de la carte), `/mmir sonde quetes` (tes quêtes du journal dans la base des quêtes, et où tu es sur la carte), `/mmir test`, `/mmir focus`, `/mmir camera sonde`, `/mmir camera trace`
 
@@ -140,7 +141,7 @@ py tools/quests/build_quests.py --fetch
 
 Nos corrections (une quête à cacher, un PNJ déplacé) vont dans `tools/quests/forever_fixes.json`, une entrée de l'outil, puis on régénère. En jeu, `/mmir sonde quetes` dit ce que la base sait de tes quêtes et où tu es (la carte et x, y en %). Les quêtes et PNJ que QuestieDB n'a pas encore vont dans `addQuests` et `addNpcs` : `/mmir quetes export` donne ce que l'addon a appris en jouant, à relire avant de le coller.
 
-La base porte aussi les **PNJ de service** (aubergistes, réparateurs, banquiers, maîtres de classe, des écuries, commissaires-priseurs : l'onglet « Près de moi » des lieux), la **zone de chaque donjon** (l'onglet Quêtes de sa carte, sans Questie) et les quêtes **répétables**.
+La base porte aussi les **citadins** (aubergistes, marchands, réparateurs, banquiers, maîtres de classe, de métier et des écuries, commissaires-priseurs, esprits soigneurs, avec leur sous-titre traduit), les **monstres rares** et les **boîtes aux lettres** : le calque Citadins du rail et l'onglet « Près de moi » des lieux, sans Questie. Elle porte encore la **zone de chaque donjon** (l'onglet Quêtes de sa carte, sans Questie) et les quêtes **répétables**.
 
 
 ## Licence et crédits

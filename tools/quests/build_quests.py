@@ -19,7 +19,10 @@ Ce qui est gardé :
   - leurs noms dans les 9 autres langues du client (pas l'italien : QuestieDB
     ne l'a pas) ;
   - pour chaque objet de quête : qui le lâche, où il se ramasse, qui le vend
-    (sans les chances de butin : celles de QuestieDB viennent de Wowhead).
+    (sans les chances de butin : celles de QuestieDB viennent de Wowhead) ;
+  - les citadins (aubergistes, marchands, maîtres, banquiers, esprits soigneurs...,
+    avec leur sous-titre traduit), les monstres rares et les boîtes aux lettres :
+    le calque Citadins (Plus/Layers/Townsfolk.lua) et « Le plus proche ».
 S'y ajoute la liste des quêtes que Questie ne propose jamais sur Forever (sa liste
 noire et ses fêtes, lues comme des données : questie_hidden.py).
 Les corrections à nous sont dans forever_fixes.json (une entrée de l'outil,
@@ -302,16 +305,21 @@ def main():
             need_npc.update(d for d in drops + vendors if d > 0)
             need_obj.update(-d for d in drops if d < 0)
 
-    # --- les PNJ de service (« Le plus proche », dans les lieux de l'addon) : leurs fonctions
-    # d'après les drapeaux de Questie (ceux de Vanilla), et la classe d'un maître de classe
-    SERVICE = [(128, 1), (16384, 2), (256, 4), (8192, 16), (4096, 32)]   # aubergiste, réparation, banquier, écuries, enchères
+    # --- les PNJ de service (« Le plus proche » dans les lieux de l'addon, le calque Citadins) :
+    # leurs fonctions d'après les drapeaux de Questie (ceux de Vanilla), la classe d'un maître de
+    # classe, leur sous-titre ; et les monstres rares (rang 2 élite rare, 4 rare)
+    SERVICE = [(128, 1), (16384, 2), (256, 4), (8192, 16), (4096, 32), (4, 64), (32, 256)]
+    # (aubergiste, réparation, banquier, écuries, enchères, marchand, esprit soigneur ; 16 maître : ci-dessous)
     CLASSES = {"Druid": "DRUID", "Hunter": "HUNTER", "Mage": "MAGE", "Paladin": "PALADIN", "Priest": "PRIEST",
                "Rogue": "ROGUE", "Shaman": "SHAMAN", "Warlock": "WARLOCK", "Warrior": "WARRIOR"}
-    services = {}
+    services, rares = {}, set()
     for e in db.ids("Npc"):
         r = db.row("Npc", e)
         if not r:
             continue
+        if r.get(6) in (2, 4):
+            rares.add(e)
+            need_npc.add(e)
         f = r.get(15) or 0
         if not isinstance(f, int):
             continue
@@ -319,13 +327,24 @@ def main():
         for qf, ours in SERVICE:
             if f & qf:
                 mask |= ours
-        sub = r.get(14) or ""
-        if f & 16 and isinstance(sub, str) and sub.endswith(" Trainer") and sub[:-8] in CLASSES:
-            mask |= 8
-            cls = CLASSES[sub[:-8]]
+        sub = r.get(14) if isinstance(r.get(14), str) else ""
+        if f & 16:
+            if sub.endswith(" Trainer") and sub[:-8] in CLASSES:
+                mask |= 8
+                cls = CLASSES[sub[:-8]]
+            else:
+                mask |= 128             # (les autres maîtres : métiers, armes, familiers...)
         if mask:
-            services[e] = [mask, cls]
+            services[e] = [mask, cls, sub or None]
             need_npc.add(e)
+
+    # --- les boîtes aux lettres : des objets du monde (« Mailbox »)
+    mailboxes = set()
+    for e in db.ids("Object"):
+        r = db.row("Object", e)
+        if r and r.get(1) == "Mailbox":
+            mailboxes.add(e)
+            need_obj.add(e)
 
     # --- les apparitions
     lost = [0]
@@ -422,10 +441,14 @@ def main():
     w("--     d'abord), valeur * 100 + 32768 ; donjons : leur mapID d'instance.")
     w("--   items[id] = { { qui le lâche : PNJ > 0, objet < 0 }, { qui le vend } }")
     w("--   services[id] = { fonctions (1 aubergiste, 2 réparation, 4 banquier, 8 maître de classe, 16 maître des")
-    w("--     écuries, 32 commissaire-priseur), classe du maître (WARRIOR...) } : les PNJ de service, dans npcs")
+    w("--     écuries, 32 commissaire-priseur, 64 marchand, 128 autre maître : métier, armes..., 256 esprit")
+    w("--     soigneur), classe du maître (WARRIOR...), sous-titre anglais } : les PNJ de service, dans npcs")
+    w("--   rares = { id, ... } : les monstres rares (élite rare, rare), dans npcs")
+    w("--   mailboxes = { id, ... } : les boîtes aux lettres, dans objects")
     w("--   instances[mapID d'instance] = sa zone (celle des quêtes du donjon : leur zoneOrSort)")
     w("--   names[langue] = les noms traduits (ceux qui diffèrent de l'anglais), une ligne chacun : « n<id>=nom »")
-    w("--     pour un PNJ, « o<id>=nom » pour un objet ; en zlib puis base64 (seule ta langue est décodée).")
+    w("--     pour un PNJ, « o<id>=nom » pour un objet, « s<id>=sous-titre » pour un PNJ de service ; en zlib")
+    w("--     puis base64 (seule ta langue est décodée).")
     w("local _, root = ...")
     w("local ns = root.Plus")
     w("")
@@ -453,6 +476,11 @@ def main():
         if e in npcs and npcs[e][5]:
             w("\t\t[%d] = %s," % (e, lua(services[e])))
     w("\t},")
+    # (les monstres rares et les boîtes aux lettres qui apparaissent quelque part dans le monde)
+    seen = [e for e in sorted(rares) if e in npcs and npcs[e][5]]
+    w("\trares = {%s}," % ",".join(str(e) for e in seen))
+    seen = [e for e in sorted(mailboxes) if e in objects and objects[e][2]]
+    w("\tmailboxes = {%s}," % ",".join(str(e) for e in seen))
     # (les donjons : la zone de chacun, celle de ses quêtes, pour l'onglet Quêtes de sa carte)
     w("\tinstances = {")
     for inst in sorted(db.instance_to_area):
@@ -468,6 +496,12 @@ def main():
                 n = names.get(e)
                 if n and n != keep[e][0] and "\n" not in n:
                     text.append("%s%d=%s" % (tag, e, n))
+        # (les sous-titres des PNJ de service : « Nourriture & boissons »)
+        subs = db.names(loc, "Npc", 2)
+        for e in sorted(services):
+            n = subs.get(e)
+            if e in npcs and npcs[e][5] and n and n != services[e][2] and "\n" not in n:
+                text.append("s%d=%s" % (e, n))
         blob = base64.b64encode(zlib.compress("\n".join(text).encode("utf-8"), 9)).decode("ascii")
         w("\t\t%s = %s," % (loc, lstr(blob)))
     w("\t},")

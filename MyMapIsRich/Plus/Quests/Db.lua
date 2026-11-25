@@ -12,6 +12,8 @@
 --   Db.Title(questID)         le titre d'une quête (celui du jeu s'il le sait)
 --   Db.DungeonQuests(mapID)   les quêtes d'un donjon (le mapID de son instance)
 --   Db.Services(kind, class)  les PNJ de service (aubergistes, réparateurs...)
+--   Db.SubName(id)            le sous-titre d'un PNJ de service
+--   Db.Rares(), Db.Mailboxes() les monstres rares, les boîtes aux lettres
 -- Les points ne se décodent qu'une fois, à la première demande. Les noms
 -- traduits : ceux de ta langue seulement, décodés au chargement (les autres
 -- sont oubliés) ; ceux que le jeu montre quand tu croises un PNJ passent
@@ -28,9 +30,9 @@ local NONE = {}
 
 local data = type(ns.QuestData) == "table" and ns.QuestData or nil
 local quests, places, explore = {}, {}, {}   -- les quêtes nommées, les points décodés
-local localNames = { n = {}, o = {} }         -- les noms de la base dans la langue du joueur
+local localNames = { n = {}, o = {}, s = {} } -- les noms (et sous-titres) de la base dans la langue du joueur
 
--- Les noms traduits de ta langue (« n<id>=nom » ou « o<id>=nom », en zlib puis base64)
+-- Les noms traduits de ta langue (« n<id>=nom », « o<id>=nom » ou « s<id>=sous-titre », en zlib puis base64)
 if data and type(data.names) == "table" then
     local blob = data.names[GetLocale and GetLocale() or "enUS"]
     if type(blob) == "string" and C_EncodingUtil and C_EncodingUtil.DecodeBase64 and C_EncodingUtil.DecompressString
@@ -39,7 +41,7 @@ if data and type(data.names) == "table" then
             return C_EncodingUtil.DecompressString(C_EncodingUtil.DecodeBase64(blob), Enum.CompressionMethod.Zlib)
         end)
         if ok and type(text) == "string" then
-            for kind, id, name in text:gmatch("([no])(%d+)=([^\n]+)") do localNames[kind][tonumber(id)] = name end
+            for kind, id, name in text:gmatch("([nos])(%d+)=([^\n]+)") do localNames[kind][tonumber(id)] = name end
         end
     end
     data.names = nil
@@ -142,8 +144,10 @@ end
 
 -- Les PNJ de service qui ont cette fonction (1 aubergiste, 2 réparation, 4
 -- banquier, 8 maître de classe : de cette classe, 16 maître des écuries, 32
--- commissaire-priseur) : { npcID, ... }
+-- commissaire-priseur, 64 marchand, 128 autre maître : métier, armes...,
+-- 256 esprit soigneur) : { npcID, ... }
 Db.INN, Db.REPAIR, Db.BANKER, Db.CLASS_TRAINER, Db.STABLE, Db.AUCTION = 1, 2, 4, 8, 16, 32
+Db.VENDOR, Db.TRAINER, Db.SPIRIT = 64, 128, 256
 function Db.Services(kind, class)
     local out = {}
     for id, s in pairs(data and data.services or NONE) do
@@ -151,6 +155,17 @@ function Db.Services(kind, class)
     end
     return out
 end
+
+-- Le sous-titre d'un PNJ de service (« Nourriture & boissons ») : dans ta langue si on l'a
+function Db.SubName(id)
+    local s = data and data.services and data.services[id]
+    if not s then return end
+    return localNames.s[id] or s[3] or nil
+end
+
+-- Les monstres rares (élite rare, rare) : { npcID, ... } ; les boîtes aux lettres : { objectID, ... }
+function Db.Rares() return data and data.rares or NONE end
+function Db.Mailboxes() return data and data.mailboxes or NONE end
 
 -- Les quêtes d'un donjon, par le mapID de son instance (la zone de la quête
 -- est celle du donjon : comme Questie) : { questID, ... }

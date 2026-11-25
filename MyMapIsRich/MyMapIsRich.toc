@@ -140,6 +140,8 @@ Plus\UI\Projects.lua
 Plus\UI\DonateTab.lua
 Plus\UI\MapPage.lua
 Plus\UI\Credits.lua
+Plus\UI\HelpTab.lua
+Plus\UI\Tutorial.lua
 Plus\UI\MainFrame.lua
 Plus\UI\WhatsNew.lua
 Plus\UI\MinimapButton.lua

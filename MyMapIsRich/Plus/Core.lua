@@ -417,11 +417,21 @@ events:SetScript("OnEvent", function(_, event, arg)
         local rival = ns.Conflict()
         if rival then
             ns.Print(L.DORMANT, rival)
+            -- (le tutoriel, lui, s'ouvre quand même : c'est lui qui propose
+            -- de couper l'autre ; il n'accroche rien du jeu)
+            C_Timer.After(6, function() if ns.Tutorial then ns.Tutorial.MaybeShow() end end)
             return
         end
-        -- (après une mise à jour : les nouveautés, l'écran de chargement
-        -- passé ; UI/WhatsNew.lua)
-        C_Timer.After(6, function() if ns.WhatsNew then ns.WhatsNew.MaybeShow() end end)
+        -- (l'écran de chargement passé : le tutoriel au premier lancement,
+        -- UI/Tutorial.lua ; sinon, après une mise à jour, les nouveautés,
+        -- UI/WhatsNew.lua. Le tutoriel fermé, les nouveautés suivent.)
+        C_Timer.After(6, function()
+            if ns.Tutorial and ns.Tutorial.Pending() then
+                ns.Tutorial.MaybeShow()
+            elseif ns.WhatsNew then
+                ns.WhatsNew.MaybeShow()
+            end
+        end)
         local ok, why = ns.Map.Attach()
         if not ok then
             ns.Print(L.DISABLED_WHY, why or "?")
@@ -453,6 +463,11 @@ SLASH_MYMAPISRICH2 = "/mymapisrich"
 SlashCmdList.MYMAPISRICH = function(msg)
     local raw = strtrim(msg or "")
     local cmd = raw:lower()
+    -- (le tutoriel : UI/Tutorial.lua ; aussi en veille)
+    if cmd == "tuto" or cmd == "tutoriel" or cmd == "tutorial" then
+        if ns.Tutorial then ns.Tutorial.Open(1) end
+        return
+    end
     local rival = ns.Conflict()
     if rival then
         ns.Print(L.DORMANT, rival)

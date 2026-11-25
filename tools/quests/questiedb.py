@@ -217,12 +217,13 @@ class QuestieDB:
                     out[field] = cbor(base64.b64decode(t))
         return out
 
-    def names(self, locale, entity):
-        """{ id : nom } dans une langue (la colonne 1 du bloc, alignée sur les ids)."""
+    def names(self, locale, entity, column=1):
+        """{ id : nom } dans une langue (une colonne du bloc, alignée sur les ids : 1 le nom,
+        2 le sous-titre d'un PNJ)."""
         s = self.stored("X-l10n-%s-%s" % (locale, entity))
         if s is None:
             return {}
         block = cbor(zlib.decompress(base64.b64decode(s)))
-        col = lua_list(at(block, 1))
+        col = lua_list(at(block, column))
         ids = self.ids(entity)
         return {ids[i]: n for i, n in enumerate(col) if isinstance(n, str) and n and i < len(ids)}
