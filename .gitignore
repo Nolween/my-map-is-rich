@@ -5,3 +5,4 @@ tools/roads/out/
 __pycache__/
 .venv/
 tools/quests/source/
+.claude/settings.local.json

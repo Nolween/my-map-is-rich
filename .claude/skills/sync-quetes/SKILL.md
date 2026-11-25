@@ -21,6 +21,7 @@ La base des quêtes de My Map Is Rich (`MyMapIsRich/Plus/Data/Quests.lua`) est u
    - le nombre de cartes et la vérification de la quête 7.
 
    Si la version est déjà là, l'outil le dit et régénère quand même : `forever_fixes.json` a pu changer.
+   Une fois la génération réussie, l'outil écrit la date du jour dans `tools/quests/source/last_sync.txt`. Le crochet de fin de tâche (`.claude/hooks/check-quests-sync.sh`) s'en sert pour relancer cette commande une fois par jour.
 3. **Vérifier.**
    - La syntaxe Lua 5.1 du fichier généré. Il n'y a pas de Lua sur ce poste : installe `lupa` dans un environnement virtuel du dossier temporaire et compile le fichier avec `loadstring`, sans l'exécuter.
    - Les points « hors des cartes connues » doivent rester à 0 ou presque. Sinon, QuestieDB a ajouté des zones absentes de `support/Forever/Zones/areaIdToUiMapId.lua`, et il faut le signaler.

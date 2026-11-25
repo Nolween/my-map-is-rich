@@ -31,6 +31,7 @@ Les corrections à nous sont dans forever_fixes.json (une entrée de l'outil,
 """
 
 import base64
+import datetime
 import io
 import json
 import os
@@ -420,6 +421,11 @@ def main():
     print("  cartes : %d (Rives Claires, 2548 : %d PNJ)" % (len(maps), maps.get(2548, 0)))
     if 7 in quests:
         print("  contrôle : quête 7 %r, cibles %s" % (quests[7]["rec"][0], quests[7]["rec"][9]))
+    # (la date de la dernière synchronisation avec GitHub : le crochet de fin de tâche de Claude Code
+    # la regarde, .claude/settings.local.json)
+    if "--fetch" in sys.argv:
+        with open(os.path.join(SOURCE, "last_sync.txt"), "w", encoding="ascii") as f:
+            f.write(datetime.date.today().isoformat())
 
 
 if __name__ == "__main__":
