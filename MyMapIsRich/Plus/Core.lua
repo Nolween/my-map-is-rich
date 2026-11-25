@@ -75,6 +75,14 @@ local DEFAULTS = {
     travelHearth = true,   -- la pierre de foyer prête compte dans un itinéraire (Travel/Planner.lua)
     travelShare = true,    -- les destinations envoyées par le groupe (Travel/Share.lua)
     travelShareChat = true, -- envoyer au groupe : aussi une ligne dans la discussion
+    tracker = true,        -- le suivi des quêtes à droite de l'écran, à la place de celui du jeu (UI/Tracker.lua)
+    trackerSort = "dist",  -- ... rangé par distance (dist) ou par zone (zone)
+    trackerFilter = "all", -- ... ce qu'il montre : all, watched (suivies), zone, near (proches)
+    trackerAlpha = 0.7,    -- ... l'opacité de son fond
+    trackerParty = true,   -- ... l'avancée du groupe sous les quêtes communes (Quests/Party.lua)
+    trackerCombat = false, -- ... caché en combat
+    trackerLock = false,   -- ... verrouillé à sa place
+    trackerFolded = false, -- ... replié : l'en-tête seul
 }
 
 local function Fill(into, from)
@@ -518,6 +526,21 @@ SlashCmdList.MYMAPISRICH = function(msg)
         if ns.RouteHud then
             ns.RouteHud.ResetPosition()
             ns.Print(L.HUD_RESET)
+        end
+    elseif cmd == "suivi replacer" or cmd == "tracker reset" then
+        -- (le suivi des quêtes remis à sa place : UI/Tracker.lua)
+        if ns.Tracker then
+            ns.Tracker.ResetPosition()
+            ns.Print(L.TRACKER_RESET)
+        end
+    elseif cmd == "suivi replier" or cmd == "tracker fold" then
+        if ns.Tracker then
+            ns.Print(ns.Tracker.ToggleFold() and L.TRACKER_FOLDED or L.TRACKER_UNFOLDED)
+        end
+    elseif cmd == "suivi" or cmd == "tracker" then
+        -- (le suivi des quêtes montré ou coupé ; coupé, celui du jeu revient)
+        if ns.Tracker then
+            ns.Print(ns.Tracker.Toggle() and L.TRACKER_ON or L.TRACKER_OFF)
         end
     elseif cmd == "camera" or cmd == "caméra" or cmd == "camera inverse" or cmd == "caméra inverse" or cmd == "camera invert"
         or cmd == "camera sonde" or cmd == "caméra sonde" or cmd == "camera probe"

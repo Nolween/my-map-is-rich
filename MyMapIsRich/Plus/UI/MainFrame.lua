@@ -4,6 +4,7 @@
 -- d'accueil à côté du portrait, puis ses panneaux.
 --   Réglages : la manette sur la carte, l'apparence
 --   Carte     : les réglages de la carte elle-même (UI/MapPage.lua)
+--   Quêtes    : le suivi des quêtes à droite de l'écran (UI/Tracker.lua)
 --   Trajets  : le calcul des itinéraires, le guidage, le groupe
 --   Aide     : les boutons, carte par carte, et les commandes
 --   Découvrir : UI/DonateTab.lua (mes projets ; don PayPal)
@@ -19,10 +20,11 @@ local TITLE_MID = -21           -- (le milieu de la barre de titre)
 local STATUS_H = 24             -- (la barre d'état, en bas)
 local TAB_H, TAB_GAP = 26, 4
 local GAP = UI.PAGE_GAP
-local TAB_ORDER = { "settings", "map", "travel", "help", "donate" }
+local TAB_ORDER = { "settings", "map", "quests", "travel", "help", "donate" }
 local ICONS = {
     settings = "Interface\\Icons\\Trade_Engineering",
     map = "Interface\\Icons\\INV_Misc_Spyglass_02",
+    quests = "Interface\\Icons\\INV_Scroll_03",
     travel = "Interface\\Icons\\INV_Misc_Map_01",
     help = "Interface\\Icons\\INV_Misc_Book_08",
     -- (un coffre au trésor : UI/DonateTab.lua, chargé avant)
@@ -248,6 +250,100 @@ local function BuildSettings(page)
 end
 
 ---------------------------------------------------------------------------
+-- Quêtes : le suivi des quêtes à droite de l'écran (UI/Tracker.lua), et les
+-- autres suivis qui lui prennent la place
+---------------------------------------------------------------------------
+local function BuildQuests(page)
+    UI.PageIntro(page, L.TRACKER_PAGE_DESC)
+    local half = math.floor((WIDTH - 16 - 8 - GAP) / 2)
+    local left = Panel(page, 0, UI.PAGE_TOP, half)
+    local right = Panel(page, half + GAP, UI.PAGE_TOP)
+    local function TR() return ns.Tracker end
+
+    UI.Section(left, L.SET_TRACKER, 16, -14)
+    local y = -46
+    Option(left, "tracker", L.OPT_TRACKER, L.OPT_TRACKER_TIP, y)
+    -- (sur la même ligne, à droite : le remettre à sa place)
+    local place = UI.Button(left, L.OPT_TRACKER_RESET, 200, 22, "grey")
+    place:SetPoint("TOPRIGHT", -16, y)
+    place:SetScript("OnClick", function() if TR() then TR().ResetPosition() end end)
+    y = y - 76
+    Cycle(left, "trackerSort", L.OPT_TRACKER_SORT, {
+        { "dist", L.TRACKER_SORT_DIST }, { "zone", L.TRACKER_SORT_ZONE },
+    }, y)
+    y = y - 38
+    Cycle(left, "trackerFilter", L.OPT_TRACKER_FILTER, {
+        { "all", L.TRACKER_FILTER_ALL }, { "watched", L.TRACKER_FILTER_WATCHED },
+        { "zone", L.TRACKER_FILTER_ZONE }, { "near", L.TRACKER_FILTER_NEAR },
+    }, y)
+    y = y - 40
+    -- (l'opacité du fond : en direct, sans repasser par tous les réglages)
+    local alphaLabel = UI.Text(left, "GameFontNormal", L.OPT_TRACKER_ALPHA)
+    alphaLabel:SetPoint("TOPLEFT", 20, y - 3)
+    local alpha = UI.Slider(left, 150, 0, 100, 5, function(v)
+        ns.db.options.trackerAlpha = v / 100
+        if TR() then TR().Repaint() end
+    end, function(v) return ("%d %%"):format(v) end)
+    alpha:SetPoint("TOPRIGHT", -76, y)
+    refreshers[#refreshers + 1] = function()
+        alpha:SetValueQuiet(math.floor((tonumber(ns.db.options.trackerAlpha) or 0.7) * 100 + 0.5))
+    end
+    y = y - 40
+    Option(left, "trackerParty", L.OPT_TRACKER_PARTY, L.OPT_TRACKER_PARTY_TIP, y)
+    y = y - 62
+    Option(left, "trackerCombat", L.OPT_TRACKER_COMBAT, L.OPT_TRACKER_COMBAT_TIP, y)
+    y = y - 58
+    Option(left, "trackerLock", L.OPT_TRACKER_LOCK, L.OPT_TRACKER_LOCK_TIP, y)
+    -- (en bas : les quêtes masquées du suivi, remises)
+    local unhide = UI.Button(left, "", 280, 24, "grey")
+    unhide:SetPoint("BOTTOMLEFT", 16, 16)
+    unhide:SetScript("OnClick", function() if TR() then TR().UnhideAll() end end)
+    refreshers[#refreshers + 1] = function()
+        local n = TR() and TR().NumHidden() or 0
+        unhide:SetText(L.OPT_TRACKER_UNHIDE:format(n))
+        unhide:SetEnabled(n > 0)
+    end
+
+    -- (les autres suivis : celui d'EllesmereUI, celui de Questie)
+    UI.Section(right, L.SET_TRACKER_OTHER, 16, -14)
+    local rival = UI.Text(right, "GameFontHighlight")
+    rival:SetPoint("TOPLEFT", 20, -48)
+    rival:SetPoint("RIGHT", right, "RIGHT", -16, 0)
+    rival:SetJustifyH("LEFT")
+    local use = UI.Button(right, L.TRACKER_RIVAL_USE, 280, 24)
+    use:SetPoint("TOPLEFT", rival, "BOTTOMLEFT", 0, -12)
+    use:SetScript("OnClick", function()
+        if not TR() then return end
+        if TR().reload then
+            ReloadUI()
+            return
+        end
+        TR().UseOurs()
+        RefreshAll()
+    end)
+    refreshers[#refreshers + 1] = function()
+        local who = TR() and TR().Rival()
+        if who == "ellesmere" then
+            rival:SetText(L.TRACKER_RIVAL_ELLESMERE)
+        elseif who == "questie" then
+            rival:SetText(L.TRACKER_RIVAL_QUESTIE)
+        else
+            rival:SetText(L.TRACKER_RIVAL_NONE)
+        end
+        use:SetShown(who ~= nil)
+        use:SetText(TR() and TR().reload and L.TRACKER_RIVAL_RELOAD or L.TRACKER_RIVAL_USE)
+    end
+
+    UI.Section(right, L.TRACKER_HELP_TITLE, 16, -150)
+    local help = UI.Text(right, "GameFontHighlight", L.TRACKER_HELP)
+    help:SetPoint("TOPLEFT", 20, -184)
+    help:SetPoint("RIGHT", right, "RIGHT", -16, 0)
+    help:SetJustifyH("LEFT")
+    help:SetJustifyV("TOP")
+    help:SetSpacing(3)
+end
+
+---------------------------------------------------------------------------
 -- Trajets : le calcul (R3 sur la carte, Travel/), le guidage pendant le
 -- trajet, le groupe
 ---------------------------------------------------------------------------
@@ -384,7 +480,7 @@ local function Build()
     c:SetPoint("TOPLEFT", f, "TOPLEFT", 4, -TITLE_H)
     c:SetPoint("BOTTOMRIGHT", f, "BOTTOMRIGHT", -4, 4)
 
-    local labels = { settings = L.TAB_SETTINGS, map = L.TAB_MAP, travel = L.TAB_TRAVEL, help = L.TAB_HELP, donate = L.TAB_DONATE }
+    local labels = { settings = L.TAB_SETTINGS, map = L.TAB_MAP, quests = L.TAB_QUESTS, travel = L.TAB_TRAVEL, help = L.TAB_HELP, donate = L.TAB_DONATE }
     for _, key in ipairs(TAB_ORDER) do tabs[key] = CategoryTab(f, key, labels[key]) end
     LayoutTabs()
     for _, key in ipairs(TAB_ORDER) do
@@ -409,6 +505,7 @@ local function Build()
 
     BuildSettings(pages.settings)
     UI.BuildMapPage(pages.map, WIDTH - 24, function(fn) refreshers[#refreshers + 1] = fn end)
+    BuildQuests(pages.quests)
     BuildTravel(pages.travel)
     BuildHelp(pages.help)
     UI.BuildDonatePage(pages.donate)
@@ -463,3 +560,5 @@ function UI.Toggle(tab)
 end
 
 ns.On("OPTIONS", function() if frame and frame:IsShown() then RefreshAll() end end)
+-- (une quête masquée ou remise, le tri changé depuis le suivi : UI/Tracker.lua)
+ns.On("TRACKER", function() if frame and frame:IsShown() then RefreshAll() end end)

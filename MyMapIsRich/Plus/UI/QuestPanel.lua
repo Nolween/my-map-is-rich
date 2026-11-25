@@ -347,6 +347,10 @@ local function Read()
                     q.point = point
                     if here and here.cont == point.cont then q.dist = ns.TravelGraph.Dist(here, point) end
                 end
+                -- (la distance au plus proche de ce qu'il reste à faire, comme le
+                -- suivi des quêtes : Quests/Where.lua ; sinon celle du point du jeu)
+                local w = ns.Quests.Where and ns.Quests.Where.Of(q.questID, here or false)
+                if w and w.dist then q.dist = w.dist end
                 entries[#entries + 1] = q
             end
         end
@@ -1098,6 +1102,11 @@ function ShowQuestMenu(q, row)
         FillList()
         if view == "quest" then FillPage(false) end
     end), sep = true }
+    -- (le suivi des quêtes, à droite de l'écran : UI/Tracker.lua)
+    local TR = ns.Tracker
+    if TR then
+        items[#items + 1] = { TR.IsHidden(id) and L.TRACKER_UNHIDE or L.TRACKER_HIDE, function() TR.ToggleHidden(id) end }
+    end
     items[#items + 1] = { L.QUESTS_SHARE, OnQuest(id, Share) }
     if QuestLink(q) then items[#items + 1] = { L.QUESTS_LINK, OnQuest(id, LinkInChat) } end
     items[#items + 1] = { L.QUESTS_ABANDON .. "…", OnQuest(id, function(cur) ShowAbandonMenu(cur, RowOf(id)) end), sep = true }
@@ -1107,6 +1116,66 @@ function ShowQuestMenu(q, row)
         items[#items + 1] = { L.QUESTS_ABANDON_GREY:format(#grey) .. "…", function() ShowAbandonGreyMenu(q, row) end }
     end
     OpenMenu(items, q, row)
+end
+
+---------------------------------------------------------------------------
+-- Les mêmes gestes par le questID, pour le suivi des quêtes (UI/Tracker.lua)
+---------------------------------------------------------------------------
+local function ById(questID)
+    local lq = questID and ns.Quests.Log.Quests()[questID]
+    if not lq then return end
+    return { questID = questID, index = lq.index, title = lq.title, level = lq.level, complete = lq.complete }
+end
+
+function QP.IsWatched(questID)
+    local q = ById(questID)
+    return q and Watched(q) or false
+end
+
+function QP.ToggleWatch(questID)
+    local q = ById(questID)
+    if not q then return end
+    ToggleWatch(q)
+    if QP.Shown() then FillList() end
+end
+
+function QP.Share(questID)
+    local q = ById(questID)
+    if q then Share(q) end
+end
+
+function QP.HasLink(questID)
+    local q = ById(questID)
+    return q and QuestLink(q) ~= nil or false
+end
+
+function QP.Link(questID)
+    local q = ById(questID)
+    if q then LinkInChat(q) end
+end
+
+-- La fiche d'une quête sur la carte : la carte ouverte (hors combat), puis sa
+-- fiche, comme A sur la quête dans la liste
+local OPEN_TRIES = { 0.15, 0.4, 0.8 }
+function QP.OpenID(questID)
+    local function Try()
+        if not QP.Shown() then return false end
+        QP.Refresh()
+        local q = Fresh(questID)
+        if not q then return true end
+        OpenQuest(q)
+        return true
+    end
+    if Try() then return end
+    if InCombatLockdown() or not _G.ToggleWorldMap or ns.MapShown() then return end
+    if not ns.Risky("OpenMap") then return end
+    Call(_G.ToggleWorldMap)
+    local done = false
+    for _, t in ipairs(OPEN_TRIES) do
+        C_Timer.After(t, function()
+            if not done then done = Try() end
+        end)
+    end
 end
 
 -- Les quêtes grises du journal (trop faciles pour toi), pas finies

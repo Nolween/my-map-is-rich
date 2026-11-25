@@ -46,7 +46,7 @@ Aucune chaîne en dur dans le code, même pour un message de discussion ou une i
 - Les clés gardent leur préfixe de rubrique : `HINT_`, `OPT_`, `TRAVEL_`, `HUD_`, `PLACES_`, `SHARE_`, `STATUS_`, `WHATSNEW_`…
 - Les noms du jeu (zones, PNJ, objets) viennent de l'API du jeu, déjà traduits ; on ne les met pas dans les Locales.
 - La longueur compte : l'allemand et le russe sont plus longs, le coréen et le chinois plus courts. Un bouton ou une colonne doit tenir en allemand.
-- **Dette connue (1.1.0)** : `enUS` et `frFR` ont 895 clés, les 8 autres langues 832 ; il en manque 63 (`STATUS_`, `SHARE_`, `TEST_`, `CAMERA_`, `WHATSNEW_`, `HUD_`, `TIME_`, `SEARCH_`…). Quand on touche une rubrique, on complète ses clés manquantes dans les 8 langues. Pour compter, lire toutes les clés d'une ligne : les 8 langues en rangent souvent plusieurs par ligne.
+- **Dette connue (1.2.0)** : `enUS` et `frFR` ont 973 clés, les 8 autres langues 918 ; il en manque 55 (`STATUS_`, `SHARE_`, `TEST_`, `CAMERA_`, `WHATSNEW_`, `SEARCH_`… ; `HUD_` et `TIME_` sont complètes depuis la 1.2.0). Quand on touche une rubrique, on complète ses clés manquantes dans les 8 langues. Pour compter, lire toutes les clés d'une ligne : les 8 langues en rangent souvent plusieurs par ligne.
 
 **Dans le `.toc`** : `## Notes` existe en anglais et en `Notes-xxXX` pour les 10 autres codes (`esMX` compris). Une fonction majeure ajoutée ou retirée se reporte dans les 11.
 
@@ -63,12 +63,14 @@ Tout écran neuf, et tout écran refait, suit [CHARTE.md](CHARTE.md) (la même q
 
 ## Règles du jeu (taint, combat, manette)
 
-- **Rien n'est écrit dans les cadres de Blizzard** : seulement `hooksecurefunc` et `HookScript`. Pas de remplacement de fonction globale du jeu. Seules exceptions, venues d'OpenMap et dites en tête de `Plus/Map/View.lua` : l'alpha du dessin de la carte du jeu (`ScrollContainer.Child`) et de son nom de zone, cachés sous notre vue et rendus à sa fermeture.
+- **Rien n'est écrit dans les cadres de Blizzard** : seulement `hooksecurefunc` et `HookScript`. Pas de remplacement de fonction globale du jeu. Seules exceptions, dites en tête de leur fichier :
+  - venue d'OpenMap, dans `Plus/Map/View.lua` : l'alpha du dessin de la carte du jeu (`ScrollContainer.Child`) et de son nom de zone, cachés sous notre vue et rendus à sa fermeture ;
+  - depuis la 1.2.0, dans `Plus/UI/Tracker.lua` : le suivi des quêtes du jeu (`ObjectiveTrackerFrame`), mis à l'alpha 0 et caché par `Hide()` **hors combat seulement** tant que le nôtre est actif, rendu quand on le coupe. Rien n'est touché si le suivi d'EllesmereUI ou de Questie est actif (`TR.Rival()`).
 - **Aucune fenêtre de l'addon dans `UISpecialFrames`** : l'interface manette de Forever la parcourt et bloquerait B au nom de l'addon. B ferme les fenêtres de l'addon par [Plus/Pad/Focus.lua](MyMapIsRich/Plus/Pad/Focus.lua).
 - **En combat** (`InCombatLockdown()`) : pas de création ni de déplacement de cadres protégés, pas de changement de raccourcis ; on attend `PLAYER_REGEN_ENABLED`. La manette rend la main au jeu au début d'un combat.
-- **Tout écran se joue à la manette** : ses éléments sont atteignables à la croix (focus de `Pad/Focus.lua`, `ns.Map.Cursor.AddRoot` pour les fenêtres sur la carte), A / B / X ont un sens, et la barre d'aide (`UI/HintBar.lua`) annonce les boutons avec leurs pastilles (`UI/Glyphs.lua`).
+- **Tout écran se joue à la manette** : ses éléments sont atteignables à la croix (focus de `Pad/Focus.lua`, `ns.Map.Cursor.AddRoot` pour les fenêtres sur la carte), A / B / X ont un sens, et la barre d'aide (`UI/HintBar.lua`) annonce les boutons avec leurs pastilles (`UI/Glyphs.lua`). Le suivi des quêtes (`UI/Tracker.lua`) est l'exception voulue : hors de la carte, il ne fait qu'afficher (la manette est au jeu) ; ses gestes passent à la manette par la liste des quêtes de la carte et l'onglet Quêtes.
 - **La veille** : si OpenMap ou OpenMap On Gamepad est activé, My Map Is Rich n'accroche rien (`ns.Conflict()` dans `Plus/Core.lua`). Tout nouveau point d'accroche passe par ce test.
-- **Les préfixes de messages entre joueurs ne changent pas** (`OpenMap`, `OMGPRoute`) : ils font passer épingles et destinations entre les trois addons (`OpenMapLoc`, les positions d'amis, est parti avec les amis en 0.5.0). Un format de message qui change reste lisible par les versions d'avant.
+- **Les préfixes de messages entre joueurs ne changent pas** (`OpenMap`, `OMGPRoute`) : ils font passer épingles et destinations entre les trois addons (`OpenMapLoc`, les positions d'amis, est parti avec les amis en 0.5.0). Un format de message qui change reste lisible par les versions d'avant. L'avancée des quêtes du groupe (1.2.0, `Plus/Quests/Party.lua`) a son propre préfixe, `MMIRQuest`, entre joueurs de My Map Is Rich seulement.
 - Les dépendances facultatives (Questie, My Gamepad Is Rich, Leatrix_Maps…) se testent avant usage ; l'addon marche sans aucune.
 - Une API qui peut manquer sur Forever se teste (`if C_ChatInfo and C_ChatInfo.X then`) ou passe par `pcall`.
 - Les globaux nouveaux sont préfixés `MyMapIsRich` ; tout le reste est `local`.

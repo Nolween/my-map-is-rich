@@ -1,5 +1,25 @@
 # Journal des versions — My Map Is Rich
 
+## 1.2.0
+
+**Un suivi des quêtes à nous.** À droite de l'écran, à la place de celui du jeu : tes quêtes, la plus proche d'abord, avec ce qu'il reste à faire et où aller.
+
+Après la mise à jour, **relance le jeu** (un `/reload` ne suffit pas : des fichiers s'ajoutent).
+
+- **La plus proche d'abord** : chaque quête dit sa distance, jusqu'au plus proche de ce qu'il reste à faire (un monstre, un objet, un lieu à explorer, d'après la base des quêtes de l'addon), ou jusqu'à celui qui la reprend une fois finie. La liste se range toute seule quand tu marches ; elle ne bouge pas sous la souris. Le bouton de l'en-tête passe au tri **par zone** (la tienne d'abord, chaque zone repliable d'un clic sur son nom).
+- **À rendre**, en tête : à qui rendre la quête, et où (« Rendre à Dunston Willis · Bolder'ok »).
+- **Des filtres** sous l'en-tête : Toutes, Suivies, Zone, Proches (moins de 800 yd). Dans un donjon, le filtre **Donjon** se choisit tout seul, avec ses quêtes ; à la sortie, on revient au filtre d'avant.
+- Sous chaque quête, ses objectifs (celui qui avance s'allume d'or), « (Élite) » ou « (Donjon) », et le temps qui reste à une quête minutée. La quête de ton itinéraire porte une barre d'or.
+- **À la souris** : un clic, l'itinéraire jusqu'au plus proche (encore un clic : annulé) ; Maj+clic, le lien dans la discussion ; clic droit, le menu (itinéraire, file, voir sur la carte, suivre, masquer du suivi, partager, lien).
+- **Le progrès du groupe** : sous une quête que vous avez en commun, l'avancée des membres du groupe qui ont My Map Is Rich (« Pam : 3/8 »), aussi dans un donjon.
+- **Masquer une quête du suivi** : par son menu, ou par celui de la liste des quêtes de la carte (à la manette aussi). « 3 quêtes masquées », en bas du suivi, les montre.
+- Le suivi se déplace par son en-tête et se replie par sa flèche. La carte plein écran le cache (sa liste des quêtes fait la même chose) ; la carte réduite le laisse.
+- **Un nouvel onglet Quêtes** dans `/mmir` : le suivi, son tri, ce qu'il montre, l'opacité de son fond, le progrès du groupe, masquer en combat, verrouiller, le remettre en place, remettre les quêtes masquées.
+- **EllesmereUI ou Questie** : si leur suivi des quêtes est actif, celui de My Map Is Rich s'efface et l'onglet Quêtes le dit, avec un bouton pour passer au nôtre (EllesmereUI Quest Tracker coupé pour ce personnage, puis recharger l'interface).
+- `/mmir suivi` le montre ou le coupe (coupé, celui du jeu revient) ; `/mmir suivi replacer` le remet en place.
+- La liste des quêtes de la carte dit la même distance que le suivi.
+- Les textes du panneau de trajet (temps, distances, fantôme, ralliement) sont complétés dans les 8 autres langues.
+
 ## 1.1.0
 
 **Des quêtes partout, et des trajets plus courts.** Vingt idées reprises des autres addons Forever (cartes et quêtes), à la façon de My Map Is Rich : à la souris comme à la manette, sans Questie.

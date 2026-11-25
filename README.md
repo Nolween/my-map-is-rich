@@ -54,21 +54,33 @@ La carte du jeu reste ouverte dessous, invisible : c'est elle que M, Échap et B
 
 Pendant un itinéraire, en jeu (la carte plein écran le cache, la carte réduite le laisse), le **panneau de trajet** dit l'étape, le temps restant et l'heure d'arrivée (en vol : la barre de vol et l'alerte d'atterrissage), une **flèche GPS** dessous montre où aller, et la manette **vibre** à chaque étape. En fantôme, l'itinéraire mène au corps. Ta **pierre de foyer**, prête, compte dans l'itinéraire quand son auberge fait gagner du temps (onglet Trajets : « Utiliser la pierre de foyer ») ; l'auberge s'apprend là où tu la lies.
 
+## Le suivi des quêtes
+
+Depuis la 1.2.0, à droite de l'écran, **le suivi des quêtes de My Map Is Rich** remplace celui du jeu :
+- tes quêtes, **la plus proche d'abord**, avec leur distance : jusqu'au plus proche de ce qu'il reste à faire (un monstre, un objet, un lieu à explorer, d'après la base des quêtes de l'addon), ou jusqu'à celui qui reprend la quête une fois finie ; la liste se range toute seule quand tu marches (pas sous la souris) ; ou **par zone**, la tienne d'abord, chaque zone repliable ;
+- **À rendre** en tête : à qui rendre la quête, et où ;
+- **des filtres** : Toutes, Suivies, Zone, Proches (moins de 800 yd) ; dans un donjon, ses quêtes seules ;
+- sous chaque quête, ses objectifs (celui qui avance s'allume d'or), le temps qui reste à une quête minutée, et **l'avancée du groupe** : ceux qui ont My Map Is Rich et la même quête (« Pam : 3/8 ») ;
+- un **clic** : l'itinéraire jusqu'au plus proche (encore un clic : annulé) ; **Maj+clic** : le lien dans la discussion ; **clic droit** : le menu (itinéraire, file, voir sur la carte, suivre, masquer du suivi, partager, lien).
+
+Il reste en jeu et avec la carte réduite ; la carte plein écran le cache (sa liste des quêtes fait la même chose, à la manette aussi, et son menu peut masquer une quête du suivi). Ses réglages sont dans **l'onglet Quêtes** de `/mmir` (tri, filtre, opacité du fond, progrès du groupe, masquer en combat, verrouiller). Si le suivi d'**EllesmereUI** ou celui de **Questie** est actif, celui de My Map Is Rich s'efface et l'onglet Quêtes le dit, avec un bouton pour passer au nôtre.
+
 
 ## Commandes
 
-- `/mmir` : la fenêtre de l'addon (Réglages, Carte, Trajets, Aide, Découvrir), aussi par le bouton de la minimap, le menu des addons de la minimap et Titan Panel
+- `/mmir` : la fenêtre de l'addon (Réglages, Carte, Quêtes, Trajets, Aide, Découvrir), aussi par le bouton de la minimap, le menu des addons de la minimap et Titan Panel
 - `/mmir carte` : les réglages de la carte (l'onglet Carte) ; `/mmir carte <…>` : les commandes de la carte (`status` : ce que fait la vue ; `pins` : tes épingles ; `draw` : la plume ; `forgetflights` : oublier les maîtres de vol appris par ce personnage)
 - Les raccourcis du jeu (Raccourcis > My Map Is Rich) : me localiser, poser une épingle, les épingles, la plume, les réglages de la carte, utiliser l'objet de quête, cibler le monstre de la quête
 - `/mmir pourquoi <quête>` (son numéro ou son nom) : pourquoi une quête n'a pas de « ! » sur la carte ; `/mmir quetes export` : les quêtes apprises en jouant, à copier dans `tools/quests/forever_fixes.json`
 - `/mmir etat` : où en est l'addon ; `/mmir trajet` (`trajet stop`) : l'itinéraire en cours
+- `/mmir suivi` : le suivi des quêtes montré ou coupé (`suivi replacer` : remis en place ; `suivi replier`)
 - `/mmir lieux`, `/mmir file` (`file vider`), `/mmir panneau`, `/mmir news`, `/mmir minimap`, `/mmir on` / `off`, `/mmir reset`
 - Diagnostic : `/mmir sonde`, `/mmir sonde carte` (les coordonnées comparées à celles du dessin de la carte), `/mmir sonde quetes` (tes quêtes du journal dans la base des quêtes, et où tu es sur la carte), `/mmir test`, `/mmir focus`, `/mmir camera sonde`, `/mmir camera trace`
 
 ## Avec OpenMap ou OpenMap On Gamepad
 
 My Map Is Rich les remplace tous les deux. Si l'un d'eux est activé aussi, My Map Is Rich **reste en veille** (rien n'est accroché à la carte) et le dit dans la discussion : désactive-les dans la liste des addons, puis `/reload`.
-Les messages entre joueurs gardent leurs préfixes (`OpenMap` pour les épingles, `OMGPRoute` pour les destinations du groupe) : les épingles partagées et les destinations passent entre My Map Is Rich, OpenMap et OpenMap On Gamepad. (Les positions d'amis, préfixe `OpenMapLoc`, sont parties avec les amis et la guilde sur la carte, en 0.5.0.)
+Les messages entre joueurs gardent leurs préfixes (`OpenMap` pour les épingles, `OMGPRoute` pour les destinations du groupe) : les épingles partagées et les destinations passent entre My Map Is Rich, OpenMap et OpenMap On Gamepad. (Les positions d'amis, préfixe `OpenMapLoc`, sont parties avec les amis et la guilde sur la carte, en 0.5.0.) L'avancée des quêtes du groupe (1.2.0) a son préfixe à elle, `MMIRQuest`, entre joueurs de My Map Is Rich.
 Avec **My Gamepad Is Rich** (après la 1.6.2), ses boutons s'effacent quand la carte a la manette.
 
 ## Comment c'est fait
@@ -92,7 +104,8 @@ tools/                      roads/ et nav/ : les données de marche (voir plus b
 - **Plus** porte tout le code : chaque fichier commence par `local _, root = ... ; local ns = root.Plus` (l'espace de noms `root` ne garde que les tables de `Data/Map/`). Ses `ns.L`, `ns.db` (`MyMapIsRichPlusDB`), `ns.char` (`MyMapIsRichPlusCharDB`), `ns.UI`... Il atteint la carte **par `ns.Map`** (`Plus/Map/Api.lua` : la vue, le curseur, les coordonnées, les icônes, les épingles, les vols, la plume, les donjons ; `Plus/Map/Data.lua` : les données ; `Plus/Map/Settings.lua` : les réglages de la carte).
 - **Les anciennes sauvegardes** (`MyMapIsRichDB`, `MyMapIsRichCharDB`, celles de la carte d'OpenMap) restent déclarées dans le `.toc` : chaque module en copie une fois ce que le joueur avait (`ns.Map.Migrate`), sans rien effacer. Un personnage secondaire migre à sa propre connexion.
 - La veille : `ns.Conflict()` (`Plus/Core.lua`), demandée à la connexion.
-- Règle : rien n'est écrit dans les cadres de Blizzard (seulement `hooksecurefunc` / `HookScript`), et aucune fenêtre de la manette n'entre dans `UISpecialFrames` : sinon l'interface manette du jeu bloque des actions au nom de l'addon.
+- Règle : rien n'est écrit dans les cadres de Blizzard (seulement `hooksecurefunc` / `HookScript`), et aucune fenêtre de la manette n'entre dans `UISpecialFrames` : sinon l'interface manette du jeu bloque des actions au nom de l'addon. Deux exceptions, dites en tête de leur fichier : le dessin de la carte du jeu caché sous notre vue (`Plus/Map/View.lua`), et le suivi des quêtes du jeu (`ObjectiveTrackerFrame`) caché tant que le nôtre est actif (`Plus/UI/Tracker.lua` : alpha 0, `Hide()` hors combat seulement, rendu quand on le coupe).
+- **Les quêtes** : `Plus/Quests/` lit le journal (`Log.lua`), la base (`Db.lua`), ce qui peut se prendre (`Offers.lua`), ce qui s'apprend en jouant (`Learn.lua`), où aller et à quelle distance (`Where.lua`, partagé par le suivi et la liste des quêtes de la carte) et l'avancée du groupe (`Party.lua`).
 - **La carte plein écran** est notre vue (`Plus/Map/View.lua`, depuis la 0.12.0 ; elle venait de la vue manette d'OpenMap), pour la souris et la manette : elle se bâtit une fois, en arrière-plan quelques secondes après la connexion (par tranches de quelques ms par image, hors combat ; la carte ouverte avant, le reste se fait aussitôt), sur son propre cadre, enfant de la carte du jeu (qui reste ouverte dessous). Le dessin de la carte est `Plus/Map/Art.lua`, ses icônes `Plus/Map/PinSets.lua` et le zoom rapproché (la minicarte, les grottes) `Plus/Map/Close.lua` ; le dessin et le zoom rapproché sont ceux d'OpenMap, portés. La vue les atteint par `ns.Map.Art`. Plus pose dessus son habillage (`Plus/UI/MapChrome.lua`) et le rail des calques (`Plus/UI/Layers.lua`).
 - Le détail des modules de Plus (la couche des boutons, les itinéraires, le panneau, la roue, les lieux, le groupe) est dans les en-têtes de leurs fichiers, comme dans OpenMap On Gamepad.
 
