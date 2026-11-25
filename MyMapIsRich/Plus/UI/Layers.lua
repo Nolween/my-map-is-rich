@@ -36,6 +36,7 @@ local function Icon(name) return "Interface\\Icons\\" .. name end
 
 -- Les calques. keys : les réglages qu'il allume ou éteint ensemble ;
 -- details : { libellé, clé } ou { libellé, get =, set = } ou { libellé, folk = { types } }
+-- (base = true : un détail qui demande la base des quêtes, Data/Quests.lua)
 local function Faction()
     local ok, f = pcall(UnitFactionGroup, "player")
     return ok and f or nil
@@ -62,6 +63,11 @@ local LAYERS = {
         keys = { "questIcons" },
         details = {
             { "LAYER_D_ALLQUESTS", "allQuests" },
+            -- (les marqueurs de la base des quêtes : Layers/QuestMarks.lua)
+            { "LAYER_D_GOALS", "questGoals", base = true },
+            { "LAYER_D_ENDS", "questEnds", base = true },
+            { "LAYER_D_OFFERS", "questOffers", base = true },
+            { "LAYER_D_OFFERS_GREY", "questOffersGrey", base = true },
             { "LAYER_D_QUESTIE", questie = true },
         } },
     { id = "townsfolk", label = "LAYER_TOWNSFOLK", texture = Icon("INV_Misc_Bag_10"),
@@ -212,6 +218,7 @@ end
 
 local function DetailAvailable(layer, d)
     if d.questie then return QuestieProfile() ~= nil end
+    if d.base then return ns.Quests.Db.Has() end
     return Available(layer)
 end
 

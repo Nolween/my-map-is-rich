@@ -33,7 +33,8 @@ local iconScale = 1
 -- une instance : celles du monde (world)
 local places = { from = nil, hidden = false, foundOnly = false,
     sets = { dungeons = true, boats = true, zeppelins = true, flight = true },
-    world = { boats = true, zeppelins = true, routes = true, flight = true, route = true, quests = true } }
+    world = { boats = true, zeppelins = true, routes = true, flight = true, route = true, quests = true,
+        qm_goal = true, qm_end = true, qm_offer = true } }
 -- (les jeux des lieux qu'on trouve : « seulement les lieux trouvés »)
 local FOUND = { "dungeons", "boats", "zeppelins" }
 local player = {}

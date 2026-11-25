@@ -13,6 +13,7 @@ Depuis la 0.2.0, M (ou le bouton carte de la manette) ouvre la carte **en plein 
 - en haut au milieu, **Aller à…** (LB, Ctrl+F), qui s'ouvre sur la carte ;
 - en haut à droite, Me localiser, Me suivre, les réglages de la carte (l'onglet Carte de `/mmir`), Plein écran / Carte réduite et Fermer ;
 - à gauche, sous la zone, **le rail des calques** (donjons, maîtres de vol, bateaux et zeppelins, quêtes, citadins, groupe, épingles, dessins) : un clic affiche ou cache un calque, un clic droit (ou Y) ouvre le panneau des calques et leurs détails ; dessous, un bouton pour les maîtres de vol découverts seulement, et un pour les réglages de la carte ; une carte réduite trop basse garde les boutons qui tiennent, les réglages toujours en dernier ;
+- dans le calque des quêtes, **les marqueurs de quêtes**, tirés de la base des quêtes de l'addon (sans Questie) : les monstres à tuer, les objets à utiliser, ceux qui lâchent les objets à ramasser, le « ? » où rendre une quête finie, le « ! » des quêtes que tu peux prendre (selon ta race, ta classe, ton niveau et les quêtes déjà faites) ; chacun a son interrupteur dans les détails du calque, et LT / RT les parcourent à la manette ;
 - à droite, **tes quêtes**, toujours affichées (à la manette, la croix du jeu y amène, et la manette passe alors dans la liste, où la croix va de quête en quête ; B, RT ou la croix gauche reviennent à la carte) : par zone ou les plus proches, la fiche d'une quête (A ou un clic : ses objectifs, son histoire, ses récompenses, comme dans le journal du jeu), l'itinéraire, la file, suivre, partager ; Y ou un clic droit sur une quête ouvre **son menu**, sans passer par la fiche : voir la quête, itinéraire, file, suivre, partager, lien dans la discussion, abandonner (après confirmation) ;
 - en bas à droite, tes coordonnées et celles du curseur ; au bord, « Toi » quand ta flèche sort de la vue ;
 - en bas, la barre d'aide : les boutons de la manette, ou les clics et les touches à la souris.
@@ -54,7 +55,7 @@ Pendant un itinéraire, en jeu (la carte plein écran le cache, la carte réduit
 - Les raccourcis du jeu (Raccourcis > My Map Is Rich) : me localiser, poser une épingle, les épingles, la plume, les réglages de la carte
 - `/mmir etat` : où en est l'addon ; `/mmir trajet` (`trajet stop`) : l'itinéraire en cours
 - `/mmir lieux`, `/mmir file` (`file vider`), `/mmir panneau`, `/mmir news`, `/mmir minimap`, `/mmir on` / `off`, `/mmir reset`
-- Diagnostic : `/mmir sonde`, `/mmir sonde carte` (les coordonnées comparées à celles du dessin de la carte), `/mmir test`, `/mmir focus`, `/mmir camera sonde`, `/mmir camera trace`
+- Diagnostic : `/mmir sonde`, `/mmir sonde carte` (les coordonnées comparées à celles du dessin de la carte), `/mmir sonde quetes` (tes quêtes du journal dans la base des quêtes, et où tu es sur la carte), `/mmir test`, `/mmir focus`, `/mmir camera sonde`, `/mmir camera trace`
 
 ## Avec OpenMap ou OpenMap On Gamepad
 
@@ -75,6 +76,7 @@ MyMapIsRich/                le dossier de l'addon
   LICENSE  LICENSES/ (OpenMap.txt, Ace3.txt, README.txt)
 tools/                      roads/ et nav/ : les données de marche (voir plus bas) ;
                             hazards/ : les villes de l'autre faction (voir plus bas) ;
+                            quests/ : la base des quêtes (voir plus bas) ;
                             media/Arrow.ps1 : la flèche GPS (Media/Arrow.tga)
 ```
 
@@ -105,9 +107,21 @@ powershell -ExecutionPolicy Bypass -File tools\hazards\build_hazards.ps1 ["K:\Wo
 
 Les données de la carte (`MyMapIsRich/Data/Map/`) et ses textures (`MyMapIsRich/Media/Map/`) viennent des outils d'OpenMap, dans son dépôt : on les régénère, on ne les édite pas.
 
+## La base des quêtes
+
+`MyMapIsRich/Plus/Data/Quests.lua` (les quêtes, leurs donneurs et leurs objectifs, les PNJ et objets qui y servent avec leurs emplacements, leurs noms dans 9 langues) est écrit par `tools/quests/build_quests.py`, en Python sans dépendance. Le jeu ne dit pas où sont les monstres et les objets d'une quête, et aucune API officielle non plus : ils viennent de la base Forever de [QuestieDB](https://github.com/Questie/QuestieDB) (données sous GPLv3, relevées en jeu par la communauté de Questie et revues pour Forever, nouvelles zones comprises). S'y ajoute la liste des quêtes que Questie ne propose jamais sur Forever (sa liste noire : doublons, quêtes retirées, fêtes, effort de guerre d'Ahn'Qiraj), lue comme une donnée dans son dépôt (`tools/quests/questie_hidden.py`, rien n'y est exécuté). Le tout est **copié dans l'addon** : les joueurs n'ont ni Questie ni QuestieDB à installer.
+
+À chaque nouvelle version de QuestieDB, la commande **`/sync-quetes`** de Claude Code (`.claude/skills/sync-quetes/`) fait tout : elle télécharge la dernière archive Forever de QuestieDB et la liste noire de Questie dans `tools/quests/source/` (ignoré par git), régénère, vérifie et résume ce qui a changé. À la main :
+
+```
+py tools/quests/build_quests.py --fetch
+```
+
+Nos corrections (une quête à cacher, un PNJ déplacé) vont dans `tools/quests/forever_fixes.json`, une entrée de l'outil, puis on régénère. En jeu, `/mmir sonde quetes` dit ce que la base sait de tes quêtes et où tu es (la carte et x, y en %).
+
 ## Licence et crédits
 
-My Map Is Rich est sous licence **GPL-3.0-or-later** (`MyMapIsRich/LICENSE`), parce qu'il livre les données de marche tirées de Shortest Path Forever (merci à cjber).
+My Map Is Rich est sous licence **GPL-3.0-or-later** (`MyMapIsRich/LICENSE`), parce qu'il livre les données de marche tirées de Shortest Path Forever (merci à cjber) et la base des quêtes tirée de QuestieDB (GPLv3, `MyMapIsRich/LICENSES/QuestieDB.txt` ; My Map Is Rich n'est pas Questie et n'en prend ni le nom ni le logo).
 Le dessin de la carte, son zoom rapproché et ses données viennent d'**OpenMap** (© OpenMap contributors, licence MIT : `MyMapIsRich/LICENSES/OpenMap.txt`) ; ses crédits sont dans la fenêtre Crédits de l'onglet Aide (`MyMapIsRich/Plus/UI/Credits.lua`). Ace3 n'est plus livré depuis la 0.6.0. Les images de la carte sont celles de Blizzard.
 
 ## Paquet

@@ -159,6 +159,9 @@ end
 -- Les « ! » : les quêtes qu'on peut commencer dans la zone où est la carte
 -- du jeu ; pas celles de ton journal, ni d'un autre étage, ni une cachée
 local function Offers(ids)
+    -- (les « ! » de la base des quêtes allumés, Layers/QuestMarks.lua : pas ceux du jeu en double)
+    local marks = ns.Quests and ns.Quests.Marks
+    if marks and marks.OffersOn() then return end
     local zone = V.GameMapID()
     if not (offerSet and zone and K.Rect(zone) and C_QuestLine and C_QuestLine.GetAvailableQuestLines) then return end
     Pins.SetOn(offerSet, true)

@@ -90,27 +90,10 @@ end
 ---------------------------------------------------------------------------
 -- Le journal du jeu (l'API moderne, sinon celle de Classic)
 ---------------------------------------------------------------------------
-local function NumEntries()
-    if C_QuestLog and C_QuestLog.GetNumQuestLogEntries then
-        return Plain(Call(C_QuestLog.GetNumQuestLogEntries)) or 0
-    end
-    return Plain(Call(_G.GetNumQuestLogEntries)) or 0
-end
+-- (la lecture du journal est celle de tout l'addon : Quests/Log.lua)
+local function NumEntries() return ns.Quests.Log.NumEntries() end
 
-local function InfoAt(i)
-    if C_QuestLog and C_QuestLog.GetInfo then
-        local info = Call(C_QuestLog.GetInfo, i)
-        if type(info) == "table" then
-            return { title = Plain(info.title), level = Plain(info.level), isHeader = Plain(info.isHeader),
-                questID = Plain(info.questID), complete = Plain(info.isComplete) }
-        end
-    end
-    local title, level, _, isHeader, _, complete, _, questID = Call(_G.GetQuestLogTitle, i)
-    if title then
-        return { title = Plain(title), level = Plain(level), isHeader = Plain(isHeader), questID = Plain(questID),
-            complete = Plain(complete) }
-    end
-end
+local function InfoAt(i) return ns.Quests.Log.InfoAt(i) end
 
 local function MaxQuests()
     if C_QuestLog and C_QuestLog.GetMaxNumQuestsCanAccept then
@@ -122,21 +105,7 @@ end
 
 local function Objectives(q)
     local out = {}
-    if C_QuestLog and C_QuestLog.GetQuestObjectives and q.questID then
-        local objs = Call(C_QuestLog.GetQuestObjectives, q.questID)
-        for _, o in ipairs(type(objs) == "table" and objs or {}) do
-            local text = Plain(o.text)
-            if type(text) == "string" and text ~= "" then out[#out + 1] = { text, Plain(o.finished) and true or false } end
-        end
-    end
-    if #out == 0 and _G.GetNumQuestLeaderBoards then
-        local n = Plain(Call(_G.GetNumQuestLeaderBoards, q.index)) or 0
-        for j = 1, n do
-            local text, _, done = Call(_G.GetQuestLogLeaderBoard, j, q.index)
-            text = Plain(text)
-            if type(text) == "string" and text ~= "" then out[#out + 1] = { text, Plain(done) and true or false } end
-        end
-    end
+    for _, o in ipairs(ns.Quests.Log.Objectives(q.questID, q.index)) do out[#out + 1] = { o.text, o.finished } end
     return out
 end
 

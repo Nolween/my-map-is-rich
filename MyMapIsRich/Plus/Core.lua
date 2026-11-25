@@ -349,6 +349,9 @@ SlashCmdList.MYMAPISRICH = function(msg)
         if ns.Diag then ns.Diag.Status() end
     elseif cmd == "sonde carte" or cmd == "probe map" then
         if ns.Diag then ns.Diag.ProbeCoords() end
+    elseif cmd == "sonde quetes" or cmd == "sonde quêtes" or cmd == "probe quests" then
+        -- (tes quêtes du journal dans la base des quêtes : Layers/QuestMarks.lua)
+        if ns.Quests and ns.Quests.Marks then ns.Quests.Marks.Probe() end
     elseif cmd == "sonde" or cmd == "probe" then
         if ns.Diag then ns.Diag.Probe() end
     elseif cmd == "test" then

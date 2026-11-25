@@ -35,6 +35,7 @@ local SETS = {
     "dungeons", "boats", "zeppelins", "flight", "route", "routes",
     "userpins", "waypoint", "group",
     "quests", "questoffers",
+    "qm_goal", "qm_end", "qm_offer",     -- (les marqueurs de la base des quêtes : Layers/QuestMarks.lua)
     "tf_vendor", "tf_repair", "tf_innkeeper", "tf_banker", "tf_mailbox",
     "tf_auctioneer", "tf_stable", "tf_classTrainer", "tf_profTrainer",
     "tf_spirit", "tf_rare",

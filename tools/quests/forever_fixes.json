@@ -1,0 +1,13 @@
+{
+    "_doc": [
+        "Nos corrections à la base Forever de QuestieDB, appliquées par build_quests.py à chaque génération.",
+        "hideQuests : les quêtes à ne jamais montrer (leur id).",
+        "quests : { id : { position du champ dans quests[id] de Plus/Data/Quests.lua : valeur } } (ex. 3 : le niveau requis).",
+        "npcs, objects : { id : { replace : true pour oublier les apparitions de la base, spawns : { carte (uiMapID) : [[x, y], ...] } } }",
+        "(x, y en % de la carte : /mmir sonde quetes les donne en jeu)."
+    ],
+    "hideQuests": [],
+    "quests": {},
+    "npcs": {},
+    "objects": {}
+}

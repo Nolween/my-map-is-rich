@@ -24,7 +24,7 @@ Le [README.md](README.md) décrit les fonctions et la structure, la [CHARTE.md](
 
 - Le reste de Plus atteint la carte **par `ns.Map`** ([Plus/Map/Api.lua](MyMapIsRich/Plus/Map/Api.lua)) et ses données **par `ns.Map.Data`** ([Plus/Map/Data.lua](MyMapIsRich/Plus/Map/Data.lua)), jamais par `root` ou un global.
 - **L'ordre de chargement est celui du `.toc`** ([MyMapIsRich/MyMapIsRich.toc](MyMapIsRich/MyMapIsRich.toc)) : `Plus/Init.lua`, puis les données, puis le reste de Plus. Tout fichier ajouté s'y inscrit à sa place (une nouvelle langue avant `Plus\Locales\Init.lua`, un écran après `UI\Widgets.lua`…). Un fichier ajouté demande de **relancer le jeu** : `/reload` ne le charge pas.
-- Ne pas modifier : `Data/Map/` et `Media/Map/` (générés par les outils d'OpenMap), `Plus/Data/` (généré par `tools/roads`, `tools/nav` et `tools/hazards`, voir le README). On régénère, on n'édite pas à la main.
+- Ne pas modifier : `Data/Map/` et `Media/Map/` (générés par les outils d'OpenMap), `Plus/Data/` (généré par `tools/roads`, `tools/nav`, `tools/hazards` et `tools/quests`, voir le README). On régénère, on n'édite pas à la main. La base des quêtes (`Plus/Data/Quests.lua`) se synchronise avec QuestieDB par la commande `/sync-quetes` ; nos corrections vont dans `tools/quests/forever_fixes.json`.
 
 ## D'où vient le code (OpenMap, de la 0.5.0 à la 1.0.0)
 
