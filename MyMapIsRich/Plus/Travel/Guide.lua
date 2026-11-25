@@ -712,15 +712,20 @@ function T.EnqueueMany(goals)
         end
     end
     if added == 0 then
-        ns.Print(L.TRAVEL_QUEUED_NONE)
+        if #queue >= QUEUE_MAX then ns.Print(L.TRAVEL_QUEUE_FULL, QUEUE_MAX) else ns.Print(L.TRAVEL_QUEUED_NONE) end
         return 0
     end
     T.Optimize()
     if not state and queue[1] then
+        -- (la plus proche part ; pas possible maintenant : elle reprend sa place, rien n'est perdu)
         local first = table.remove(queue, 1)
-        SaveQueue()
-        T.Go(first)
+        if Plan(first, true) then
+            SaveQueue()
+        else
+            table.insert(queue, 1, first)
+        end
     end
+
     ns.Print(L.TRAVEL_QUEUED_MANY, added)
     ns.Fire("TRAVEL")
     return added
@@ -965,8 +970,12 @@ ticker:SetScript("OnUpdate", function(_, elapsed)
     end
     FollowWalk(here)
     local p = state.proj
+    -- (la pierre de foyer pas utilisée : parti du départ, l'itinéraire est recalculé sans elle si elle ne sert plus)
+    local now = legs[state.index]
+    local away = now and now.kind == "hearth" and now.from.cont == here.cont and G.Dist(here, now.from) > OFF_ROUTE
     -- (loin du chemin quelques secondes de suite : recalculé depuis où il est)
-    if p and p.dist > OFF_ROUTE then
+    if (p and p.dist > OFF_ROUTE) or away then
+
         state.off = (state.off or 0) + 1
         if state.off >= OFF_TICKS and GetTime() - lastReplan >= REPLAN_GAP then
             lastReplan = GetTime()

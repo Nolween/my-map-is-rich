@@ -24,8 +24,8 @@ local NOTES = {
     { version = "0.15.0", text = "WHATSNEW_MMIR_0_15_0" },
     { version = "0.14.0", text = "WHATSNEW_MMIR_0_14_0" },
     { version = "0.13.0", text = "WHATSNEW_MMIR_0_13_0" },
-
 }
+
 
 -- (la version d'avant celle qui a introduit cette fenêtre : ce qu'on
 -- suppose chez qui avait déjà l'addon, faute de version retenue)

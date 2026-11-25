@@ -128,9 +128,11 @@ local function Drag(b)
         if IsShiftKeyDown() and not InCombatLockdown() then frame:StartMoving() end
     end)
     b:SetScript("OnDragStop", function()
+        if InCombatLockdown() then return end
         frame:StopMovingOrSizing()
         SavePosition()
     end)
+
 end
 
 -- (une case d'action protégée : UI/Widgets.lua)
@@ -206,7 +208,13 @@ function QB.Refresh()
     end
     pending = false
     if not On() or not ns.Quests.Db.Has() then
-        if frame then frame:Hide() end
+        -- (éteints : plus rien à utiliser ni à cibler, leurs raccourcis compris)
+        if frame then
+            item:SetAttribute("item", nil)
+            target:SetAttribute("macrotext", nil)
+            shown.item, shown.target = nil, nil
+            frame:Hide()
+        end
         return
     end
     if not Build() then return end

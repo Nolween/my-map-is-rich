@@ -18,7 +18,7 @@
 --   File        les destinations du trajet en plusieurs étapes
 --               (Travel/Guide.lua) : la destination en cours, puis la file ;
 --               en bas, « Tout mon journal dans la file » (chaque quête :
---               son objectif, ou son donneur si elle est finie).
+--               son objectif, ou à qui la rendre si elle est finie).
 -- Sur un lieu : Y l'itinéraire jusqu'à lui, X l'ajouter à la file. Dans la
 -- recherche, A lance l'itinéraire, Y montre le lieu sur la carte. Dans la
 -- file : A y aller maintenant, X retirer, LT / RT monter / descendre, Y la
@@ -549,27 +549,30 @@ local function NearestNpc(s, here)
     if not Db.Has() then return end
     local side = UnitFactionGroup("player") == "Horde" and 2 or 1
     local class = s.class and select(2, UnitClass("player")) or nil
-    local best, bestD, bestId
+    -- (à vol d'oiseau dans les yards de ton continent : un point de l'autre
+    -- continent peut y tomber près de toi, d'où la vérification du plus proche)
+    local near = {}
     for _, id in ipairs(Db.Services(Db[s.bit], class)) do
         if bit.band(Db.React(id), side) ~= 0 then
             for _, p in ipairs(Db.Places(id)) do
                 if not p.inside then
                     local x, y = K.ToYards(here.cont, p[1], p[2])
-                    if x then
-                        local d = (x - here.x) ^ 2 + (y - here.y) ^ 2
-                        if not bestD or d < bestD then
-                            best, bestD, bestId = { cont = here.cont, x = x, y = y, u = p[1], v = p[2] }, d, id
-                        end
-                    end
+                    local d = x and (x - here.x) ^ 2 + (y - here.y) ^ 2
+                    if d and d <= NEAR_MAX * NEAR_MAX then near[#near + 1] = { d = d, id = id, u = p[1], v = p[2] } end
                 end
             end
         end
     end
-    if best and bestD <= NEAR_MAX * NEAR_MAX then
-        best.name = Db.Name(bestId)
-        return best, math.sqrt(bestD)
+    table.sort(near, function(a, b) return a.d < b.d end)
+    for _, c in ipairs(near) do
+        local point = Pl().PointAtUV(c.u, c.v)
+        if point and point.cont == here.cont then
+            point.name = Db.Name(c.id)
+            return point, math.sqrt(c.d)
+        end
     end
 end
+
 
 local function NearestFlight(here)
     local ok, g = pcall(ns.TravelGraph.Build)
@@ -670,7 +673,7 @@ local function FillNext()
     list:SetItems(items)
 end
 
--- Tout le journal dans la file : chaque quête, son objectif (son donneur si elle est finie)
+-- Tout le journal dans la file : chaque quête, son objectif (à qui la rendre si elle est finie)
 local function AddLog()
     local goals = {}
     for id in pairs(ns.Quests.Log.Quests()) do

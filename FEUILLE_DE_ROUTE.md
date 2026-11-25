@@ -60,7 +60,7 @@ En novembre 2026, on a lu sur CurseForge une vingtaine d'addons Forever qui touc
 | 7 | Des **« ! » qui en disent plus** : répétable, donjon, classe, élite, chaîne 2/5 ; niveau et XP dans l'info-bulle | Forever Quest Pins, QuestSpot, QuestForever | les champs de `Db`, `ns.ZoneInfo.LevelColor` | ★★ |
 | 8 | **Cacher un marqueur** depuis son menu, le rétablir dans l'onglet Carte | Forever Quest Pins, Simple Quests, QuestSpot | `ns.char`, un filtre dans `Offers.List()` | ★★★ |
 | 9 | **Apprendre** une quête absente de la base (donneur, endroit), oublier un « ! » démenti ; `/mmir quetes export` pour `forever_fixes.json` | QuestForever, QuestSpot, Forever Quest Routes, Quester | `QUEST_DETAIL`, `GOSSIP_SHOW`, `QUEST_ACCEPTED` | ★★★ |
-| 10 | **Pourquoi pas de « ! »** : `/mmir pourquoi <quête>` et une ligne grise dans la fiche | Forever Quest Pins (`why`) | la règle qui refuse, rendue par `Quests/Offers.lua` | ★★ |
+| 10 | **Pourquoi pas de « ! »** : `/mmir pourquoi <quête>` (et l'info-bulle d'un « ! » bientôt prêt) | Forever Quest Pins (`why`) | la règle qui refuse, rendue par `Quests/Offers.lua` | ★★ |
 | 11 | Les quêtes **bientôt prêtes** (un ou deux niveaux, une étape avant) en « ! » violet grisé | Simple Quests, QuestForever | Offers, une règle relâchée d'un cran | ★★ |
 | 12 | **Ordonner la file** au plus court ; tout le journal dans la file | Forever Quest Routes, Queston, Adventure Guide | la file, `TravelPlanner.Find`, un ordre glouton | ★★★ |
 | 13 | La **pierre de foyer** dans l'itinéraire quand elle est prête et rapproche | Forever Quest Routes, Loreward, BuddiesQuest | `GetBindLocation`, la recharge de l'objet 6948, un départ de plus dans `Travel/Planner.lua` | ★★★ |
@@ -69,7 +69,7 @@ En novembre 2026, on a lu sur CurseForge une vingtaine d'addons Forever qui touc
 | 16 | La **chaîne d'une quête** dans sa fiche : étapes cochées, qui donne la suivante | Forever Quest Routes, Forever Wayfinder, Adventure Guide | `nextInChain` et les prérequis de `Db` | ★★ |
 | 17 | Le **bouton de l'objet de quête**, avec raccourci et bouton de manette | Forever Quest Routes, Dungeon Quests Forever | un `SecureActionButton` créé et changé hors combat, `Bindings.xml` | ★★ |
 | 18 | **Cibler le monstre** de l'objectif d'un appui | Quester, BuddiesQuest, Dungeon Quests Forever | le même bouton protégé, `/targetexact` | ★★ |
-| 19 | **Abandonner les quêtes grises** en lot, confirmé deux fois | Simple Quests, Forever Quest Routes | l'abandon du menu d'une quête, en lot | ★ |
+| 19 | **Abandonner les quêtes grises** en lot, après confirmation | Simple Quests, Forever Quest Routes | l'abandon du menu d'une quête, en lot | ★ |
 | 20 | Les **quêtes de donjon sans Questie** : à prendre (et le donneur), en cours, faites | Dungeon Quests Forever, BuddiesQuest, 4Ever Leveling | `DN.QuestSource` de `Layers/Dungeons.lua` lit encore Questie : passer à `Quests/Db.lua` | ★★★ |
 
 Plus tard : le taux d'exploration des zones, les sous-zones non découvertes et les défis Legacy (Legacy Forever, QuestSpot) ; les livres de bibliothèque et secrets de Forever (ForeverSecrets) ; les quêtes du groupe sur la carte (un préfixe de message **neuf**, sans toucher à `OpenMap` ni `OMGPRoute`) ; « 12 / 40 quêtes faites » sous le nom de la zone.
@@ -86,6 +86,9 @@ Par lots :
 - 14 : les PNJ de service viennent désormais de la base des quêtes (`services`, tiré des drapeaux de Questie) ; la boîte aux lettres n'y est pas (Questie la tient dans son code). Les citadins du rail lisent encore Questie : ils pourraient passer à cette base.
 - 7 : ni l'expérience ni « Élite » (la base ne les a pas).
 - 16 : la chaîne est une liste dans la fiche, sans « < > ».
+- 10 : pas de ligne dans la fiche d'une quête (une quête du journal est déjà prise) : la raison est dans `/mmir pourquoi` et l'info-bulle des « ! » bientôt prêts.
+- Après relecture : le calque Quêtes a ses détails sur deux colonnes (ils ne tenaient plus dans la hauteur de la carte).
+
 - 2 : les « ! » et « ? » ne se voient que si les plaques de nom des PNJ amicaux sont affichées (réglage du jeu).
 - 9 : l'export va dans deux entrées neuves de `forever_fixes.json`, `addQuests` et `addNpcs`, que `build_quests.py` lit.
 - Les nouveaux fichiers (`Quests/Learn.lua`, `Layers/QuestMinimap.lua`, `Layers/QuestUnits.lua`, `UI/QuestButtons.lua`) demandent de relancer le jeu.

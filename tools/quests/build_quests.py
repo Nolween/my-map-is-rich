@@ -268,11 +268,8 @@ def main():
         for ref in starts + ends + [g for goal in goals for g in goal]:
             (need_npc if ref > 0 else need_obj).add(abs(ref))
         need_item.update(items)
-    for qid, over in fixes.get("quests", {}).items():
-        if int(qid) in quests:
-            for k, v in over.items():
-                quests[int(qid)]["rec"][int(k) - 1] = v
-    # (les quêtes de Forever que QuestieDB n'a pas encore : apprises en jeu, /mmir quetes export)
+    # (les quêtes de Forever que QuestieDB n'a pas encore : apprises en jeu, /mmir quetes export ;
+    # races et classes : des masques, 0 pour tous ; la faction vient de la réaction du donneur)
     for qid, a in fixes.get("addQuests", {}).items():
         qid = int(qid)
         if qid in quests or qid in hidden:
@@ -280,13 +277,19 @@ def main():
         starts, ends = [int(x) for x in a.get("starts", [])], [int(x) for x in a.get("ends", [])]
         rec = [None] * 28
         rec[0], rec[1], rec[2] = a.get("title") or "?", a.get("level") or 0, a.get("minLevel") or 0
-        rec[3], rec[4], rec[5], rec[6] = 0, 0, 0, 0
+        rec[3], rec[4], rec[5], rec[6] = 0, a.get("races") or 0, a.get("classes") or 0, 0
         rec[7], rec[8] = starts or None, ends or None
         quests[qid] = {"rec": rec, "trigger": {}}
         for ref in starts + ends:
             (need_npc if ref > 0 else need_obj).add(abs(ref))
+    # (nos corrections, après : elles valent aussi pour les quêtes ajoutées)
+    for qid, over in fixes.get("quests", {}).items():
+        if int(qid) in quests:
+            for k, v in over.items():
+                quests[int(qid)]["rec"][int(k) - 1] = v
 
     # --- les objets de quête : qui les lâche, où ils se ramassent, qui les vend
+
     items = {}
     for it in sorted(need_item):
         r = db.row("Item", it)

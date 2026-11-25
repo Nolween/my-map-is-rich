@@ -236,7 +236,8 @@ end
 local function LearnInn()
     local here, name = Pl.PlayerPoint(), BindName()
     if here and name and ns.char then
-        ns.char.hearth = { cont = here.cont, x = here.x, y = here.y, name = name }
+        -- (sa carte aussi : une auberge sous terre, Fossoyeuse, part de son étage : Travel/Nav.lua)
+        ns.char.hearth = { cont = here.cont, x = here.x, y = here.y, map = here.map, name = name }
     end
 end
 
@@ -300,7 +301,8 @@ function Pl.Find(from, to, opts)
     -- (la pierre de foyer prête : son auberge, où l'on arrive depuis le départ)
     local inn = not (opts and opts.walkOnly) and Pl.Hearth()
     if inn then
-        nodes.hearth = { id = "hearth", kind = "inn", cont = inn.cont, x = inn.x, y = inn.y, name = inn.name }
+        nodes.hearth = { id = "hearth", kind = "inn", cont = inn.cont, x = inn.x, y = inn.y, map = inn.map, name = inn.name }
+
     end
     local speed = opts and opts.speed or Pl.Speed()
     local Roads = ns.TravelRoads

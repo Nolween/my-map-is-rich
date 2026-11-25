@@ -85,6 +85,7 @@ local sets = {}                 -- "goal" | "end" | "offer" -> jeu d'icônes
 local building = 0              -- (la construction en cours : une nouvelle annule l'ancienne)
 local dirty = true
 local spot                      -- la quête choisie dans la liste des quêtes (QUEST_SPOTLIGHT), ou nil
+local spotToken                 -- (le dernier choix de quête, pour ne refaire les icônes qu'une fois)
 
 local function On() return Db.Has() and Settings.Get("questIcons") ~= false end
 function QM.OffersOn() return On() and Settings.Get("questOffers") ~= false end
@@ -97,7 +98,7 @@ local function Title(id)
     local title = q and q.title
     if not title and C_QuestLog and C_QuestLog.GetTitleForQuestID then
         local ok, t = pcall(C_QuestLog.GetTitleForQuestID, id)
-        if ok and type(t) == "string" and t ~= "" then title = t end
+        if ok and not (issecretvalue and issecretvalue(t)) and type(t) == "string" and t ~= "" then title = t end
     end
     local base = Db.Quest(id)
     title = title or (base and base.title) or (ns.Quests.Learn and ns.Quests.Learn.Title(id)) or ("#" .. id)
@@ -197,7 +198,9 @@ end
 
 -- Ce qu'une quête à prendre a de particulier, pour son info-bulle : de ta
 -- classe (sa couleur), de donjon, répétable, sa place dans une chaîne
+local tagsOf = {}               -- (ce qu'une quête a de particulier ne change pas : gardé)
 function QM.Tags(id)
+    if tagsOf[id] ~= nil then return tagsOf[id] or nil end
     local q = Db.Quest(id)
     if not q then return end
     local tags = {}
@@ -211,7 +214,8 @@ function QM.Tags(id)
     if q.repeatable then tags[#tags + 1] = L.QUESTMARK_TAG_REPEAT end
     local step, total = Db.ChainPlace(id)
     if total > 1 then tags[#tags + 1] = L.QUESTMARK_TAG_CHAIN:format(step, total) end
-    return #tags > 0 and table.concat(tags, " · ") or nil
+    tagsOf[id] = #tags > 0 and table.concat(tags, " · ") or false
+    return tagsOf[id] or nil
 end
 
 -- (une quête suivie : la liste de suivi du jeu)
@@ -294,9 +298,11 @@ local function OffersOf(out)
     end
     -- (les quêtes apprises en jouant, absentes de la base : leur donneur, là où on l'a vu)
     for _, o in ipairs(Learn and Learn.Offers() or {}) do
-        if not Offers.Hidden(o.id) then
+        if not Offers.Hidden(o.id) and not Learn.NotOffered(o.id, o.ref) then
             local e = Entry(out, "offer", o.ref, "offer")
-            e.spots = e.spots or o.spots
+            -- (un donneur que la base connaît garde ses points ; sinon, là où on l'a vu)
+            if #Db.Places(o.ref) == 0 then e.spots = e.spots or o.spots end
+
             e.label = e.label or (not Db.Name(o.ref) and o.name) or nil
 
             e.lines[#e.lines + 1] = { quest = o.id, learned = true }
@@ -584,9 +590,13 @@ ns.On("QUEST_SPOTLIGHT", function(id)
     if id == spot then return end
     spot = id
     if Settings.Get("questTracked") == true then
-        Changed()
+        -- (la manette qui passe de quête en quête : refait une fois qu'elle s'arrête)
+        local token = (spotToken or 0) + 1
+        spotToken = token
+        C_Timer.After(0.25, function() if spotToken == token then Changed() end end)
         return
     end
+
     for _, set in pairs(sets) do
         for _, pin in ipairs(set.pins) do Fade(pin) end
     end
@@ -628,7 +638,10 @@ local function QuestsOf(pin)
     end
 end
 
-function QM.CanHide(pin) return QuestsOf(pin) ~= nil end
+function QM.CanHide(pin)
+    local ids = QuestsOf(pin)
+    return ids ~= nil and #ids > 0
+end
 
 function QM.Hide(pin)
     local ids = QuestsOf(pin)

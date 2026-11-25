@@ -86,12 +86,16 @@ end
 
 -- Une quête du groupe de prérequis : faite, ou l'une de ses exclusives faite
 -- (id < 0 : faite, sans regarder ses exclusives)
+-- (faite ; pour « bientôt prête », une quête de ton journal compte comme faite : assume)
+local assume
+local function Done(id) return Log.Done(id) or (assume ~= nil and assume[id] ~= nil) end
+
 local function GroupDone(id)
-    if id < 0 then return Log.Done(-id) end
-    if Log.Done(id) then return true end
+    if id < 0 then return Done(-id) end
+    if Done(id) then return true end
     local q = Db.Quest(id)
     for _, other in ipairs(q and q.exclusive or {}) do
-        if Log.Done(other) then return true end
+        if Done(other) then return true end
     end
     return false
 end
@@ -102,7 +106,7 @@ local function Closed(q, inLog)
     if #q.preAny > 0 then
         local any = false
         for _, id in ipairs(q.preAny) do
-            if Log.Done(id) then
+            if Done(id) then
                 any = true
                 break
             end
@@ -160,7 +164,8 @@ local function Check(id, me)
         end
     end
     if not friendly then return "WHY_Q_FACTION" end
-    if Log.Done(id) then return "WHY_Q_DONE" end
+    -- (une quête répétable se reprend : faite ou non, elle reste proposée)
+    if not q.repeatable and Log.Done(id) then return "WHY_Q_DONE" end
     local key, arg = Closed(q, me.inLog)
     if key then return key, arg end
     if not SpellOK(q.spell) then return "WHY_Q_SPELL" end
@@ -204,26 +209,17 @@ function Offers.Soon()
             later.level = arg
             ok = Check(id, later) == nil
         elseif key == "WHY_Q_PRE" or key == "WHY_Q_PRE_ANY" then
-            local q = Db.Quest(id)
-            local list = key == "WHY_Q_PRE_ANY" and q.preAny or q.preAll
-            ok = #list > 0
-            for _, pre in ipairs(list) do
-                local inLog = me.inLog[math.abs(pre)]
-                if key == "WHY_Q_PRE_ANY" then
-                    if inLog then ok = true break end
-                    ok = false
-                elseif not (inLog or GroupDone(pre)) then
-                    ok = false
-                    break
-                end
-            end
+            -- (les prérequis de ton journal comptés comme faits : toutes les autres règles y passent encore)
+            assume = me.inLog
+            ok = Check(id, me) == nil
+            assume = nil
         end
         if ok then soon[#soon + 1] = { id = id } end
     end)
     return soon
 end
 
-ns.On("QUESTS_CHANGED", function() soon = nil end)
+-- (soon est refaite avec la liste : plus bas)
 
 -- Une quête grise pour toi
 function Offers.Trivial(id)
@@ -231,7 +227,26 @@ function Offers.Trivial(id)
     return q and Trivial(q.level, UnitLevel("player") or 1) or false
 end
 
-ns.On("QUESTS_CHANGED", function() list = nil end)
+-- Les listes ne dépendent que des quêtes du journal, des quêtes faites et de
+-- ton niveau, pas des compteurs d'un objectif : refaites seulement quand
+-- l'un d'eux change (un monstre tué ne relit pas les 6 000 quêtes)
+local signature
+ns.On("QUESTS_CHANGED", function()
+    local ids = {}
+    for id in pairs(Log.Quests()) do ids[#ids + 1] = id end
+    table.sort(ids)
+    -- (une quête rendue, prise, abandonnée change le journal : les quêtes faites suivent)
+    local sig = (UnitLevel("player") or 0) .. ":" .. table.concat(ids, ",")
+
+    if sig == signature then return end
+    signature = sig
+    list, soon = nil, nil
+end)
+-- (une réputation, un sort appris changent aussi ce qui est proposé)
+local refresh = CreateFrame("Frame")
+refresh:SetScript("OnEvent", function() signature = nil end)
+for _, e in ipairs({ "UPDATE_FACTION", "LEARNED_SPELL_IN_TAB", "SPELLS_CHANGED" }) do pcall(refresh.RegisterEvent, refresh, e) end
+
 
 ---------------------------------------------------------------------------
 -- Les quêtes cachées par le joueur (par personnage)

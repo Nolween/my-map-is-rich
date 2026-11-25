@@ -1051,8 +1051,6 @@ function UI.IconToggle(parent, size, texture, atlas)
     return b
 end
 
--- Une pastille de coordonnées : fond noir, liseré brun, un libellé doré puis
--- une valeur blanche. p:Set(libellé, valeur, précision grise) la redimensionne.
 -- Une case d'action : un bouton carré avec une icône d'objet ou de sort, sur
 -- le fond `dialog`, liseré `edgeLight`, survol en voile doré (les boutons de
 -- la quête choisie). name : son nom global (un raccourci CLICK le vise) ;
@@ -1064,6 +1062,9 @@ function UI.ActionSlot(parent, size, name, secure, cooldown)
     local b = CreateFrame("Button", name, parent, secure and "SecureActionButtonTemplate" or nil)
     b:SetSize(size, size)
     b:RegisterForClicks("AnyUp")
+    -- (protégé : il agit au relâchement, comme un clic ordinaire ; sans cela, avec
+    -- ActionButtonUseKeyDown du jeu, il n'agirait qu'à l'appui, et un clic AnyUp rien)
+    if secure then b:SetAttribute("useOnKeyDown", false) end
     local bg = b:CreateTexture(nil, "BACKGROUND")
     bg:SetAllPoints()
     UI.Fill(bg, "dialog", 0.9)
@@ -1083,7 +1084,10 @@ function UI.ActionSlot(parent, size, name, secure, cooldown)
     return b
 end
 
+-- Une pastille de coordonnées : fond noir, liseré brun, un libellé doré puis
+-- une valeur blanche. p:Set(libellé, valeur, précision grise) la redimensionne.
 function UI.Pill(parent)
+
     local p = CreateFrame("Frame", nil, parent)
     p:SetHeight(24)
     local bg = p:CreateTexture(nil, "BACKGROUND")

@@ -20,7 +20,7 @@ Depuis la 0.2.0, M (ou le bouton carte de la manette) ouvre la carte **en plein 
   - **aussi sur la minimap**, **aussi dans les info-bulles** (un monstre, un PNJ, un objet dit sa quête et où tu en es), **des icônes sur les plaques de nom** (une épée, un sac, « ! », « ? ») ;
   - **les boutons de la quête** : l'objet de quête à utiliser et le monstre à cibler, à l'écran (Maj+glisser pour les déplacer) et par deux raccourcis du jeu ;
 - un « ! » dit ce que sa quête a de particulier (de ta classe, de donjon, répétable : un « ! » bleu, « Chaîne 2/5 ») ; sa fiche (A, ou un clic) a **Cacher ce marqueur**, et l'onglet Carte de `/mmir` rend les quêtes cachées. Une quête que la base ne connaît pas est **apprise** quand tu la prends (son « ! » pour tes autres personnages), et un « ! » qu'un PNJ dément s'efface ;
-- à droite, **tes quêtes**, toujours affichées (à la manette, la croix du jeu y amène, et la manette passe alors dans la liste, où la croix va de quête en quête ; B, RT ou la croix gauche reviennent à la carte) : par zone ou les plus proches, la fiche d'une quête (A ou un clic : ses objectifs, son histoire, ses récompenses, comme dans le journal du jeu), l'itinéraire, la file, suivre, partager ; Y ou un clic droit sur une quête ouvre **son menu**, sans passer par la fiche : voir la quête, itinéraire, file, suivre, partager, lien dans la discussion, abandonner (après confirmation) ;
+- à droite, **tes quêtes**, toujours affichées (à la manette, la croix du jeu y amène, et la manette passe alors dans la liste, où la croix va de quête en quête ; B, RT ou la croix gauche reviennent à la carte) : par zone ou les plus proches, la fiche d'une quête (A ou un clic : ses objectifs, son histoire, ses récompenses, comme dans le journal du jeu), l'itinéraire, la file, suivre, partager ; Y ou un clic droit sur une quête ouvre **son menu**, sans passer par la fiche : voir la quête, itinéraire, file, suivre, partager, lien dans la discussion, abandonner (après confirmation), et toutes les quêtes grises d'un coup ; la fiche montre aussi **la chaîne** de la quête (les étapes faites, la suivante et qui la donne) ;
 - en bas à droite, tes coordonnées et celles du curseur ; au bord, « Toi » quand ta flèche sort de la vue ;
 - en bas, la barre d'aide : les boutons de la manette, ou les clics et les touches à la souris.
 
@@ -52,7 +52,8 @@ La carte du jeu reste ouverte dessous, invisible : c'est elle que M, Échap et B
 | Rail des calques | View | Les détails du calque choisi |
 | Champ de texte | A | Clavier virtuel |
 
-Pendant un itinéraire, en jeu (la carte plein écran le cache, la carte réduite le laisse), le **panneau de trajet** dit l'étape, le temps restant et l'heure d'arrivée (en vol : la barre de vol et l'alerte d'atterrissage), une **flèche GPS** dessous montre où aller, et la manette **vibre** à chaque étape. En fantôme, l'itinéraire mène au corps.
+Pendant un itinéraire, en jeu (la carte plein écran le cache, la carte réduite le laisse), le **panneau de trajet** dit l'étape, le temps restant et l'heure d'arrivée (en vol : la barre de vol et l'alerte d'atterrissage), une **flèche GPS** dessous montre où aller, et la manette **vibre** à chaque étape. En fantôme, l'itinéraire mène au corps. Ta **pierre de foyer**, prête, compte dans l'itinéraire quand son auberge fait gagner du temps (onglet Trajets : « Utiliser la pierre de foyer ») ; l'auberge s'apprend là où tu la lies.
+
 
 ## Commandes
 

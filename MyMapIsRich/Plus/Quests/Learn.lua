@@ -72,13 +72,22 @@ end
 ---------------------------------------------------------------------------
 -- Apprendre
 ---------------------------------------------------------------------------
-local talking                   -- { ref, name, map, x, y } : le dernier PNJ qui t'a parlé d'une quête
+local talking                   -- { ref, name, map, x, y, at } : le PNJ qui vient de te parler d'une quête
+local TALK_FRESH = 15           -- s : plus vieux, ce n'est plus lui (une quête d'objet, partagée par le groupe)
 
 local function Remember()
     local ref, name = TalkingTo()
-    if not ref then return end
+    if not ref then
+        -- (un joueur, un objet de tes sacs : pas de PNJ, et pas l'ancien non plus)
+        talking = nil
+        return
+    end
     local map, x, y = Here()
-    talking = { ref = ref, name = name, map = map, x = x, y = y }
+    talking = { ref = ref, name = name, map = map, x = x, y = y, at = GetTime() }
+end
+
+local function Talking()
+    if talking and GetTime() - talking.at <= TALK_FRESH then return talking end
 end
 
 local function Spot(t)
@@ -88,13 +97,18 @@ end
 -- Une quête prise, absente de la base : son donneur (celui qui vient de t'en parler)
 local function Accepted(questID)
     local all = Learned()
+    local talking = Talking()
     if not (all and questID and talking) or Db.Quest(questID) then return end
+    -- (vraiment dans ton journal : pas un index du journal pris pour une quête)
     local q = Log.Quests()[questID]
+    if not q then return end
     local e = all[questID] or { starts = {}, ends = {} }
     e.title = (q and q.title) or Db.Title(questID)
     e.level = (q and q.level) or e.level
     e.minLevel = math.min(e.minLevel or 999, UnitLevel("player") or 1)
     e.faction = UnitFactionGroup("player")
+    -- (qui l'a prise : une quête de classe ou de race se reconnaît à l'export)
+    e.learnedBy = select(2, UnitClass("player"))
     if talking.ref and talking.map then e.starts[talking.ref] = Spot(talking) end
     all[questID] = e
     ns.Fire("QUESTS_LEARNED")
@@ -104,6 +118,7 @@ end
 local function TurnedIn(questID)
     local all = Learned()
     local e = all and all[questID]
+    local talking = Talking()
     if not (e and talking and talking.ref and talking.map) then return end
     e.ends[talking.ref] = Spot(talking)
 end
@@ -119,7 +134,9 @@ local function Gossip()
     local offered = {}
     for _, info in ipairs(avail) do
         local id = Plain(info.questID)
-        if id then offered[id] = true end
+        -- (une quête sans numéro : le client ne dit pas tout, rien n'est conclu)
+        if type(id) ~= "number" or id <= 0 then return end
+        offered[id] = true
     end
     local t = NotOfferedTable()
     if not t then return end
@@ -171,7 +188,7 @@ function Learn.Offers()
 end
 
 local events = CreateFrame("Frame")
-events:SetScript("OnEvent", function(_, event, arg)
+events:SetScript("OnEvent", function(_, event, arg, ...)
     if ns.Conflict and ns.Conflict() or not Db.Has() then return end
     if event == "QUEST_DETAIL" or event == "QUEST_PROGRESS" or event == "QUEST_COMPLETE" or event == "QUEST_GREETING" then
         Remember()
@@ -179,8 +196,10 @@ events:SetScript("OnEvent", function(_, event, arg)
         Remember()
         pcall(Gossip)
     elseif event == "QUEST_ACCEPTED" then
-        -- (QUEST_ACCEPTED donne questID, parfois après l'index du journal)
-        local id = type(arg) == "number" and arg or nil
+        -- (QUEST_ACCEPTED donne questID ; sur les clients de Classic, après l'index du journal : le dernier nombre)
+        local id = select("#", ...) > 0 and select(select("#", ...), ...) or arg
+        id = type(id) == "number" and id or nil
+
         C_Timer.After(0.5, function() pcall(Accepted, id) end)
     elseif event == "QUEST_TURNED_IN" then
         pcall(TurnedIn, arg)
@@ -216,9 +235,10 @@ function Learn.Export()
             ends[#ends + 1] = tostring(ref)
             if ref > 0 and not Db.Npc(ref) then npcs[ref] = npcs[ref] or { s = s, faction = e.faction } end
         end
-        quests[#quests + 1] = ('    "%d": { "title": %s, "level": %d, "minLevel": %d, "starts": [%s], "ends": [%s], "faction": %s }')
+        quests[#quests + 1] = ('    "%d": { "title": %s, "level": %d, "minLevel": %d, "starts": [%s], "ends": [%s], "faction": %s, "learnedBy": %s }')
             :format(id, Json(e.title or "?"), e.level or 0, e.minLevel or 0, table.concat(starts, ", "),
-                table.concat(ends, ", "), Json(e.faction or ""))
+                table.concat(ends, ", "), Json(e.faction or ""), Json(e.learnedBy or ""))
+
     end
     local lines = { '"addQuests": {', table.concat(quests, ",\n"), '},', '"addNpcs": {' }
     local list = {}

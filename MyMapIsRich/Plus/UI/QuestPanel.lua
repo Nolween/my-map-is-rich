@@ -336,8 +336,12 @@ local function Read()
             if info.isHeader then
                 zone = info.title
             elseif info.questID then
+                -- (finie : ce que dit la ligne, sinon le journal relu par Quests/Log.lua, qui
+                -- demande à C_QuestLog.IsComplete quand l'API moderne ne le dit pas)
+                local lq = ns.Quests.Log.Quests()[info.questID]
                 local q = { index = i, questID = info.questID, title = info.title, level = info.level,
-                    complete = info.complete == true or info.complete == 1, zone = zone or "" }
+                    complete = info.complete == true or info.complete == 1 or (lq and lq.complete) or false,
+                    zone = zone or "" }
                 local point = QuestPoint(q.questID)
                 if point then
                     q.point = point
@@ -1125,8 +1129,11 @@ function ShowAbandonGreyMenu(q, row)
         { UI.Hex("bad") .. L.QUESTS_ABANDON_GREY_SURE:format(#grey) .. "|r", function()
             local n = 0
             for i, e in ipairs(grey) do
-                C_Timer.After(0.4 * (i - 1), function()
-                    if Fresh(e.questID) and Abandon(e) then
+                C_Timer.After(0.8 * (i - 1), function()
+                    -- (l'entrée relue : les lignes du journal ont bougé depuis le premier abandon)
+                    local cur = Fresh(e.questID)
+                    if cur and not cur.complete and Abandon(cur) then
+
                         readCache[e.questID] = nil
                         n = n + 1
                     end

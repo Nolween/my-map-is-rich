@@ -30,6 +30,8 @@ local RAIL_TOP = 66          -- px : sous le nom de la zone
 local TOGGLE = 44            -- px : un bouton du rail
 local GAP = 6
 local PANEL_W = 284
+local PANEL_W_WIDE = 540     -- px : un calque aux nombreux détails (Quêtes), sur deux colonnes
+local ONE_COLUMN = 8         -- détails au plus sur une seule colonne
 local ROW_H = 32
 
 local function Icon(name) return "Interface\\Icons\\" .. name end
@@ -377,27 +379,39 @@ local function FillDetails()
     local layer = chosen
     detailTitle:SetText(L.LAYERS_DETAILS:format(L[layer.label]))
     for _, cb in ipairs(detailChecks) do cb:Hide() end
-    local y = -26
-    local n = 0
+    local shownDetails = {}
     for _, d in ipairs(layer.details) do
-        if DetailAvailable(layer, d) then
-            n = n + 1
-            local cb = detailChecks[n]
-            if not cb then
-                cb = UI.Check(detailBox, "", "GameFontHighlightSmall", 22)
-                cb:SetScript("OnClick", function(self) SetDetail(self.detail, self:GetChecked() and true or false) end)
-                detailChecks[n] = cb
-            end
-            cb.detail = d
-            cb.text:SetText(L[d[1]])
-            cb:SetHitRectInsets(0, -(cb.text:GetStringWidth() + 8), 0, 0)
-            cb:SetChecked(DetailOn(d))
-            cb:ClearAllPoints()
-            cb:SetPoint("TOPLEFT", detailBox, "TOPLEFT", 6, y)
-            cb:Show()
-            y = y - 24
-        end
+        if DetailAvailable(layer, d) then shownDetails[#shownDetails + 1] = d end
     end
+    local n = #shownDetails
+    -- (beaucoup de détails : deux colonnes, le panneau plus large, pour qu'il tienne dans la hauteur de la carte)
+    local cols = n > ONE_COLUMN and 2 or 1
+    local w = cols == 2 and PANEL_W_WIDE or PANEL_W
+    panel:SetWidth(w)
+    for _, row in ipairs(rows) do row:SetWidth(w - 20) end
+    allSettings:SetWidth(w - 20)
+    local perCol = math.ceil(n / cols)
+    local colW = math.floor((w - 20 - 12) / cols)
+    for k, d in ipairs(shownDetails) do
+        local cb = detailChecks[k]
+        if not cb then
+            cb = UI.Check(detailBox, "", "GameFontHighlightSmall", 22)
+            cb:SetScript("OnClick", function(self) SetDetail(self.detail, self:GetChecked() and true or false) end)
+            cb.text:SetWordWrap(false)
+            detailChecks[k] = cb
+        end
+        cb.detail = d
+        cb.text:SetText(L[d[1]])
+        cb.text:SetWidth(colW - 34)
+        cb:SetHitRectInsets(0, -(math.min(cb.text:GetStringWidth(), colW - 34) + 8), 0, 0)
+        cb:SetChecked(DetailOn(d))
+        cb:ClearAllPoints()
+        local col, line = math.floor((k - 1) / perCol), (k - 1) % perCol
+        cb:SetPoint("TOPLEFT", detailBox, "TOPLEFT", 6 + col * colW, -26 - line * 24)
+        cb:Show()
+    end
+    local y = -26 - perCol * 24
+
     local why
     if not Available(layer) then why = L.LAYERS_NEEDS_QUESTIE
     elseif n == 0 then why = L.LAYERS_NO_DETAILS end

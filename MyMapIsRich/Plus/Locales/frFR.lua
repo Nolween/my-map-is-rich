@@ -191,7 +191,7 @@ ns.AddLocale("frFR", {
     HELP_DUNGEON_TITLE = "Carte d'un donjon",
     HELP_DUNGEON = "|cffffd100Curseur au bord|r  déplacer la carte\n|cffffd100Stick droit|r  zoomer autour du curseur\n|cffffd100LB / RB|r  étages\n|cffffd100LT / RT|r  onglets du panneau\n|cffffd100View|r  passer dans le panneau (B pour en sortir)\n|cffffd100X|r  retour au monde",
     HELP_COMMANDS_TITLE = "Commandes",
-    HELP_COMMANDS = "|cffffd100/mmir|r  cette fenêtre\n|cffffd100/mmir carte|r  les réglages de la carte\n|cffffd100/mmir etat|r  état (ce que l'addon attend)\n|cffffd100/mmir on|r, |cffffd100off|r  activer / désactiver\n|cffffd100/mmir lieux|r  navigateur de lieux\n|cffffd100/mmir news|r  les nouveautés des dernières versions\n|cffffd100/mmir camera|r  caméra au stick droit avec la carte réduite (|cffffd100camera inverse|r : axe vertical)\n|cffffd100/mmir trajet|r  l'itinéraire en cours (|cffffd100trajet stop|r : l'annuler)\n|cffffd100/mmir file|r  la file des destinations (|cffffd100file vider|r : la vider)\n|cffffd100/mmir panneau|r  remettre le panneau de trajet à sa place\n|cffffd100/mmir minimap|r  montrer / masquer le bouton de la minimap\n|cffffd100/mmir sonde|r, |cffffd100test|r, |cffffd100focus|r  diagnostic\n|cffffd100/mmir reset|r  réglages par défaut",
+    HELP_COMMANDS = "|cffffd100/mmir|r  cette fenêtre\n|cffffd100/mmir carte|r  les réglages de la carte\n|cffffd100/mmir etat|r  état (ce que l'addon attend)\n|cffffd100/mmir on|r, |cffffd100off|r  activer / désactiver\n|cffffd100/mmir lieux|r  navigateur de lieux\n|cffffd100/mmir news|r  les nouveautés des dernières versions\n|cffffd100/mmir pourquoi|r  pourquoi une quête n'a pas de « ! »\n|cffffd100/mmir quetes export|r  les quêtes apprises en jouant\n|cffffd100/mmir camera|r  caméra au stick droit avec la carte réduite (|cffffd100camera inverse|r : axe vertical)\n|cffffd100/mmir trajet|r  l'itinéraire en cours (|cffffd100trajet stop|r : l'annuler)\n|cffffd100/mmir file|r  la file des destinations (|cffffd100file vider|r : la vider)\n|cffffd100/mmir panneau|r  remettre le panneau de trajet à sa place\n|cffffd100/mmir minimap|r  montrer / masquer le bouton de la minimap\n|cffffd100/mmir sonde|r, |cffffd100test|r, |cffffd100focus|r  diagnostic\n|cffffd100/mmir reset|r  réglages par défaut",
 })
 
 -- Mes projets (UI/Projects.lua, onglet Découvrir) : les mêmes textes dans chaque addon
@@ -411,7 +411,7 @@ ns.AddLocale("frFR", {
     QUEUE_MOVE = "Monter / descendre",
     QUEUE_SORT = "Ordre le plus rapide",
     QUEUE_ADD_LOG = "Tout mon journal dans la file",
-    QUEUE_ADD_LOG_TIP = "Chaque quête de ton journal : son objectif, ou son donneur une fois finie. Dans l'ordre le plus court.",
+    QUEUE_ADD_LOG_TIP = "Chaque quête de ton journal : son objectif, ou à qui la rendre une fois finie. Dans l'ordre le plus court.",
 
     -- Le groupe (Travel/Share.lua)
     SHARE_TITLE = "Destination proposée",
@@ -718,7 +718,7 @@ ns.AddLocale("frFR", {
     OPT_MAP_ENTRANCE_JOURNAL_TIP = "Avec l'addon Dungeon Journal installé, l'entrée d'un donjon ouvre sa page dans Dungeon Journal plutôt que sa carte.",
     OPT_MAP_QUEST_SOURCE = "Quêtes des donjons",
     OPT_MAP_QUEST_SOURCE_TIP = "D'où viennent les quêtes de l'onglet Quêtes d'une carte de donjon. D'office, la base des quêtes de My Map Is Rich (ce que tu peux prendre, ce qui est dans ton journal, ce que tu as fait) ; sinon le premier installé : Questie, puis Dungeon Journal, puis NeedRoll.",
-    OPT_MAP_QUEST_SOURCE_AUTO = "Le premier installé",
+    OPT_MAP_QUEST_SOURCE_AUTO = "Automatique",
     SET_MAP_QUESTS = "Les quêtes",
     OPT_MAP_UNHIDE = "Rendre les quêtes cachées",
     OPT_MAP_UNHIDE_N = "Rendre les quêtes cachées (%d)",
@@ -934,7 +934,7 @@ ns.AddLocale("frFR", {
     DUNGEON_COMPLETED = "Terminée",
     DUNGEON_IN_QUEST_LOG = "Dans ton journal de quêtes",
     DUNGEON_NR_QUEST = "Clic : la voir dans NeedRoll",
-    DUNGEON_BASE_NONE = "La base des quêtes n'a pour ce donjon aucune quête que tu puisses prendre.",
+    DUNGEON_BASE_NONE = "La base des quêtes n'a aucune quête de ce donjon pour ton personnage.",
     DUNGEON_TO_TAKE = "à prendre",
     DUNGEON_NOT_YET = "pas encore",
     DUNGEON_CAN_TAKE = "Tu peux la prendre",

@@ -20,7 +20,7 @@ Après la mise à jour, **relance le jeu** (un `/reload` ne suffit pas : des fic
 - **Les lieux (LB)** ont deux onglets de plus :
   - **Près de moi** : l'aubergiste, le réparateur, le maître de vol, le maître de ta classe, le banquier, le maître des écuries et le commissaire-priseur les plus proches, avec le temps pour y aller ; Y ou A l'itinéraire ;
   - **Où aller** : les zones où tu as le plus de quêtes à prendre, avec leurs niveaux ; l'itinéraire mène au donneur qui en a le plus.
-  - Dans l'onglet File, en bas : **Tout mon journal dans la file** (chaque objectif, ou le donneur d'une quête finie, dans l'ordre le plus court).
+  - Dans l'onglet File, en bas : **Tout mon journal dans la file** (chaque objectif, ou à qui rendre une quête finie, dans l'ordre le plus court).
 - **La pierre de foyer** compte dans les itinéraires quand elle est prête et fait gagner du temps : « Utilise ta pierre de foyer » est alors la première étape. L'auberge s'apprend là où tu la lies, ou la première fois que la pierre t'y emmène (onglet Trajets : « Utiliser la pierre de foyer »).
 - **La fiche d'une quête** montre sa chaîne : les étapes faites cochées, celle-ci, la suivante et qui la donne. **Son menu** (Y ou clic droit) peut abandonner toutes les quêtes grises, après confirmation.
 - **L'onglet Quêtes de la carte d'un donjon** vient maintenant de la base des quêtes de l'addon : à prendre, dans ton journal, faites ; un clic, l'itinéraire jusqu'au donneur. L'entrée du donjon dit combien sont à prendre. Questie, Dungeon Journal et NeedRoll restent au choix (onglet Carte, « Quêtes des donjons »).

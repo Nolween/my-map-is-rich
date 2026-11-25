@@ -191,7 +191,7 @@ ns.AddLocale("enUS", {
     HELP_DUNGEON_TITLE = "Dungeon map",
     HELP_DUNGEON = "|cffffd100Cursor at the edge|r  move the map\n|cffffd100Right stick|r  zoom around the cursor\n|cffffd100LB / RB|r  floors\n|cffffd100LT / RT|r  side panel tabs\n|cffffd100View|r  go into the side panel (B to leave it)\n|cffffd100X|r  back to the world",
     HELP_COMMANDS_TITLE = "Commands",
-    HELP_COMMANDS = "|cffffd100/mmir|r  this window\n|cffffd100/mmir carte|r  the map's settings\n|cffffd100/mmir etat|r  status (what the addon waits for)\n|cffffd100/mmir on|r, |cffffd100off|r  turn it on / off\n|cffffd100/mmir lieux|r  place browser\n|cffffd100/mmir news|r  what's new in the last versions\n|cffffd100/mmir camera|r  camera on the right stick with the small map (|cffffd100camera inverse|r: vertical axis)\n|cffffd100/mmir trajet|r  the route in progress (|cffffd100trajet stop|r: cancel)\n|cffffd100/mmir file|r  the queue of destinations (|cffffd100file vider|r: clear it)\n|cffffd100/mmir panneau|r  put the route panel back in place\n|cffffd100/mmir minimap|r  show / hide the minimap button\n|cffffd100/mmir sonde|r, |cffffd100test|r, |cffffd100focus|r  diagnostics\n|cffffd100/mmir reset|r  default settings",
+    HELP_COMMANDS = "|cffffd100/mmir|r  this window\n|cffffd100/mmir carte|r  the map's settings\n|cffffd100/mmir etat|r  status (what the addon waits for)\n|cffffd100/mmir on|r, |cffffd100off|r  turn it on / off\n|cffffd100/mmir lieux|r  place browser\n|cffffd100/mmir news|r  what's new in the last versions\n|cffffd100/mmir pourquoi|r  why a quest has no \"!\"\n|cffffd100/mmir quetes export|r  the quests learned while playing\n|cffffd100/mmir camera|r  camera on the right stick with the small map (|cffffd100camera inverse|r: vertical axis)\n|cffffd100/mmir trajet|r  the route in progress (|cffffd100trajet stop|r: cancel)\n|cffffd100/mmir file|r  the queue of destinations (|cffffd100file vider|r: clear it)\n|cffffd100/mmir panneau|r  put the route panel back in place\n|cffffd100/mmir minimap|r  show / hide the minimap button\n|cffffd100/mmir sonde|r, |cffffd100test|r, |cffffd100focus|r  diagnostics\n|cffffd100/mmir reset|r  default settings",
 })
 
 -- Mes projets (UI/Projects.lua, onglet Découvrir) : les mêmes textes dans chaque addon
@@ -411,7 +411,7 @@ ns.AddLocale("enUS", {
     QUEUE_MOVE = "Move up / down",
     QUEUE_SORT = "Quickest order",
     QUEUE_ADD_LOG = "My whole quest log in the queue",
-    QUEUE_ADD_LOG_TIP = "Each quest in your log: its objective, or its giver once it's done. In the quickest order.",
+    QUEUE_ADD_LOG_TIP = "Each quest in your log: its objective, or where to turn it in once it's done. In the quickest order.",
 
     -- Le groupe (Travel/Share.lua)
     SHARE_TITLE = "Suggested destination",
@@ -718,7 +718,7 @@ ns.AddLocale("enUS", {
     OPT_MAP_ENTRANCE_JOURNAL_TIP = "With the Dungeon Journal addon installed, a dungeon entrance opens its page there instead of its map.",
     OPT_MAP_QUEST_SOURCE = "Dungeon quests from",
     OPT_MAP_QUEST_SOURCE_TIP = "Where a dungeon map's Quests tab comes from. By default, My Map Is Rich's own quest database (what you can pick up, what's in your log, what you've done); otherwise the first installed: Questie, then Dungeon Journal, then NeedRoll.",
-    OPT_MAP_QUEST_SOURCE_AUTO = "The first installed",
+    OPT_MAP_QUEST_SOURCE_AUTO = "Automatic",
     SET_MAP_QUESTS = "Quests",
     OPT_MAP_UNHIDE = "Show hidden quests again",
     OPT_MAP_UNHIDE_N = "Show hidden quests again (%d)",
@@ -934,7 +934,7 @@ ns.AddLocale("enUS", {
     DUNGEON_COMPLETED = "Completed",
     DUNGEON_IN_QUEST_LOG = "In your quest log",
     DUNGEON_NR_QUEST = "Click: see it in NeedRoll",
-    DUNGEON_BASE_NONE = "The quest database has no quest for this dungeon that you can take.",
+    DUNGEON_BASE_NONE = "The quest database has no quest of this dungeon for your character.",
     DUNGEON_TO_TAKE = "to pick up",
     DUNGEON_NOT_YET = "not yet",
     DUNGEON_CAN_TAKE = "You can pick it up",

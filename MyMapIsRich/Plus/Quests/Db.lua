@@ -99,8 +99,13 @@ function Db.IsDungeonQuest(id)
     if not (q and data) then return false end
     if not dungeonZones then
         dungeonZones = {}
-        for _, area in pairs(data.instances or NONE) do dungeonZones[area] = true end
+        -- (sans les champs de bataille : la vallée d'Alterac, le goulet des Chanteguerres, le bassin d'Arathi)
+        local battlegrounds = { [30] = true, [489] = true, [529] = true }
+        for mapID, area in pairs(data.instances or NONE) do
+            if not battlegrounds[mapID] then dungeonZones[area] = true end
+        end
     end
+
     return dungeonZones[q.zone] or false
 end
 

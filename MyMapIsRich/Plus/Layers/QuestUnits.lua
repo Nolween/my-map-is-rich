@@ -58,10 +58,12 @@ local function Index()
     if byRef then return byRef, byItem end
     byRef, byItem = {}, {}
     if not Ready() then return byRef, byItem end
+    -- (comme la carte : seulement les sortes que le calque Quêtes montre, les grises si elle les montre)
     local all = QM().Entries()
     for _, what in ipairs({ "end", "goal", "offer" }) do
-        for _, e in ipairs(all[what] or {}) do
-            if type(e.ref) == "number" and not (what == "offer" and e.trivial) then
+        for _, e in ipairs(QM().Want(what) and all[what] or {}) do
+            if type(e.ref) == "number" then
+
                 byRef[e.ref] = byRef[e.ref] or {}
                 table.insert(byRef[e.ref], e)
             end

@@ -123,26 +123,31 @@ local function Update()
     frame:Show()
     local reach = viewer.radius * 1.5
     local px, py = viewer.here.x, viewer.here.y
-    local n = 0
+    -- (ceux dans la vue, les plus proches d'abord : MAX_ICONS au plus)
+    local inView = {}
     for _, p in ipairs(points) do
-        if n >= MAX_ICONS then break end
         local dx, dy = p[1] - px, p[2] - py
         if math.abs(dx) < reach and math.abs(dy) < reach then
             local sx, sy = viewer.View(p[1], p[2])
-            if viewer.Inside(sx, sy) then
-                n = n + 1
-                local b = Icon(n)
-                local size = (p[3].size or 16) * SIZE
-                b:SetSize(size, size)
-                ns.Map.Pins.Look(b.Icon, p[3])
-                b.Icon:SetDesaturated(p[4].trivial and true or false)
-                b.Icon:SetAlpha(QM().Alpha(p[4]))
-                b.data, b.inside, b.camp = p[4], p.inside, p.camp
-                b:ClearAllPoints()
-                b:SetPoint("CENTER", frame, "CENTER", sx * viewer.scale, sy * viewer.scale)
-                b:Show()
-            end
+            if viewer.Inside(sx, sy) then inView[#inView + 1] = { p, sx, sy, dx * dx + dy * dy } end
         end
+    end
+    table.sort(inView, function(a, b) return a[4] < b[4] end)
+    local n = 0
+    for _, it in ipairs(inView) do
+        if n >= MAX_ICONS then break end
+        local p, sx, sy = it[1], it[2], it[3]
+        n = n + 1
+        local b = Icon(n)
+        local size = (p[3].size or 16) * SIZE
+        b:SetSize(size, size)
+        ns.Map.Pins.Look(b.Icon, p[3])
+        b.Icon:SetDesaturated((p[4].trivial or p[4].soon) and true or false)
+        b.Icon:SetAlpha(QM().Alpha(p[4]))
+        b.data, b.inside, b.camp = p[4], p.inside, p.camp
+        b:ClearAllPoints()
+        b:SetPoint("CENTER", frame, "CENTER", sx * viewer.scale, sy * viewer.scale)
+        b:Show()
     end
     HideFrom(n + 1)
 end
