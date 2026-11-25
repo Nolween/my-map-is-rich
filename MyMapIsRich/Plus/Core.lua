@@ -104,6 +104,16 @@ end
 -- remplacé par un autre)
 ---------------------------------------------------------------------------
 local listeners = {}
+local Clock = debugprofilestop   -- (ms ; peut manquer : rien n'est alors mesuré)
+
+-- Le temps pris par chaque événement : le dernier, le pire, combien de fois,
+-- et en combien d'images (ns.FireSpread) ; /mmir carte status les montre
+ns.fireTimes = {}
+local function Took(name, ms, frames)
+    local t = ns.fireTimes[name] or { worst = 0, n = 0 }
+    t.last, t.worst, t.n, t.frames = ms, math.max(t.worst, ms), t.n + 1, frames
+    ns.fireTimes[name] = t
+end
 
 function ns.On(name, fn)
     listeners[name] = listeners[name] or {}
@@ -111,10 +121,119 @@ function ns.On(name, fn)
 end
 
 function ns.Fire(name, ...)
+    local t0 = Clock and Clock()
     for _, fn in ipairs(listeners[name] or {}) do
         local ok, err = pcall(fn, ...)
         if not ok and geterrorhandler then geterrorhandler()(err) end
     end
+    if t0 then Took(name, Clock() - t0) end
+end
+
+-- Le même, un écouteur par image, pour ne pas tout faire d'un coup (la carte
+-- dessinée en arrière-plan : MAP_BUILT). Rien pendant un combat : on attend
+-- qu'il finisse. done() une fois tous passés. Rend une fonction qui fait
+-- tout le reste maintenant (la carte ouverte avant la fin)
+function ns.FireSpread(name, done)
+    local list = listeners[name] or {}
+    local at, finished, ms, frames = 0, false, 0, 0
+    local function One()
+        at = at + 1
+        local fn = list[at]
+        if not fn then return end
+        local t0 = Clock and Clock()
+        local ok, err = pcall(fn)
+        if not ok and geterrorhandler then geterrorhandler()(err) end
+        if t0 then ms = ms + Clock() - t0 end
+    end
+    local function Finish()
+        if finished then return end
+        finished = true
+        if done then
+            local ok, err = pcall(done)
+            if not ok and geterrorhandler then geterrorhandler()(err) end
+        end
+        if Clock then Took(name, ms, frames) end
+    end
+    local function Step()
+        if finished then return end
+        if InCombatLockdown() then
+            C_Timer.After(1, Step)
+            return
+        end
+        frames = frames + 1
+        One()
+        if at >= #list then Finish() else C_Timer.After(0, Step) end
+    end
+    C_Timer.After(0, Step)
+    return function()
+        if finished then return end
+        frames = frames + 1
+        while at < #list do One() end
+        Finish()
+    end
+end
+
+---------------------------------------------------------------------------
+-- Les longs travaux, quelques ms par image (les marqueurs de quêtes : les
+-- 6 000 quêtes de la base passées en revue). ns.Job(fn, done) lance fn dans
+-- une coroutine, done(son résultat) une fois finie ; fn appelle ns.Slice()
+-- là où elle peut s'arrêter, jamais sous un pcall (Lua 5.1 ne cède pas à
+-- travers). job.Rush() finit tout maintenant (quelqu'un attend la réponse),
+-- job.Cancel() l'abandonne (ce qu'il calculait a changé). Un à la fois, dans
+-- l'ordre où ils sont lancés ; ns.Slice() hors d'un travail ne fait rien.
+---------------------------------------------------------------------------
+local JOB_MS = 3
+local jobs, jobOf = {}, {}      -- les travaux en attente ; coroutine -> travail
+local runner = CreateFrame("Frame")
+runner:Hide()
+
+local function Resume(job)
+    job.t0 = Clock and Clock() or 0
+    local ok, result = coroutine.resume(job.co)
+    if not ok then
+        job.dead = true
+        if geterrorhandler then geterrorhandler()(result) end
+    elseif coroutine.status(job.co) == "dead" then
+        job.dead = true
+        if job.done and not job.cancelled then
+            local okD, err = pcall(job.done, result)
+            if not okD and geterrorhandler then geterrorhandler()(err) end
+        end
+    end
+    if job.dead then jobOf[job.co] = nil end
+end
+
+runner:SetScript("OnUpdate", function(self)
+    while jobs[1] and jobs[1].dead do table.remove(jobs, 1) end
+    local job = jobs[1]
+    if not job then
+        self:Hide()
+        return
+    end
+    Resume(job)
+end)
+
+function ns.Slice()
+    local job = jobOf[coroutine.running() or 0]
+    if job and not job.rush and Clock and Clock() - job.t0 > JOB_MS then coroutine.yield() end
+end
+
+function ns.Job(fn, done)
+    local job = { co = coroutine.create(fn), done = done }
+    jobOf[job.co] = job
+    jobs[#jobs + 1] = job
+    runner:Show()
+    function job.Rush()
+        -- (pas depuis lui-même, ni depuis ce qu'il a lancé : il attend déjà)
+        if job.dead or coroutine.status(job.co) ~= "suspended" then return end
+        job.rush = true
+        while not job.dead do Resume(job) end
+    end
+    function job.Cancel()
+        job.cancelled, job.dead = true, true
+        jobOf[job.co] = nil
+    end
+    return job
 end
 
 ---------------------------------------------------------------------------

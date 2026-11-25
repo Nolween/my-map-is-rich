@@ -693,6 +693,7 @@ local function PlaceOverlays(mapID)
     local territory = not core and ZoneMask(parent, p, TERRITORY) or nil
     local n = 0
     ForEachPiece(mapID, function(files, x, y, w, h, sub, piece)
+        S.Pace()                                   -- (une grande zone : des centaines de textures, rendues par tranches)
         n = n + PlaceTiles(parent, p, files, x, y, w, h, "ARTWORK", sub, true, mask, graded, piece, band, territory)
         if core then
             PlaceTiles(coreRoot, p, files, x, y, w, h, "ARTWORK", sub, true, coreThin, graded, piece, nil, core)
@@ -846,15 +847,17 @@ function S.PaceStep()
     p.t0 = debugprofilestop()
     local ok, err = coroutine.resume(p.co)
     p.ms = p.ms + debugprofilestop() - p.t0
+    p.frames = p.frames + 1
     if ok and coroutine.status(p.co) ~= "dead" then return true end
-    S.pace, S.paceMs = nil, p.ms
+    -- (pour /mmir carte status : le temps de toute la construction, en combien d'images, et si l'ouverture l'a pressée)
+    S.pace, S.paceMs, S.paceFrames, S.paceRushed = nil, p.ms, p.frames, p.rush or false
     if not ok then geterrorhandler()(err) elseif p.done then p.done() end
     return false
 end
 
 function S.BuildSoon(parent, artLevel, range, iconLevel, done)
     if root or S.pace then return end
-    S.pace = { ms = 0, done = done, co = coroutine.create(function() S.BuildNow(parent, artLevel, range, iconLevel) end) }
+    S.pace = { ms = 0, frames = 0, done = done, co = coroutine.create(function() S.BuildNow(parent, artLevel, range, iconLevel) end) }
     if not S.paceFrame then
         S.paceFrame = CreateFrame("Frame")
         S.paceFrame:SetScript("OnUpdate", function(self)
@@ -984,6 +987,7 @@ function S.BuildNow(parent, artLevel, range, iconLevel)
         S.Pace()
         if S.Stitched(info.mapID) then
             PlaceBackdrop(contRoot, info.mapID, "ARTWORK", FEATHER_WIDE)
+            S.Pace()
             if seaOn then PlaceLand(info.mapID) end   -- (sa terre gardée comme terre sur notre mer)
         end
     end

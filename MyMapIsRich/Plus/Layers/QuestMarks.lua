@@ -282,6 +282,7 @@ local function OffersOf(out)
     local side = UnitFactionGroup("player") == "Horde" and 2 or 1
     local Learn = ns.Quests.Learn
     for _, o in ipairs(Offers.List()) do
+        ns.Slice()                              -- (un long travail, QM.EntriesSoon : par tranches)
         if (grey or not o.trivial) and not Offers.Hidden(o.id) then
             local base = Db.Quest(o.id)
             for _, ref in ipairs(base and base.starts or {}) do
@@ -457,17 +458,57 @@ local function Fade(pin) pin.Icon:SetAlpha(QM.Alpha(pin.data)) end
 -- gardé jusqu'au prochain changement (le journal, un réglage, une quête cachée
 -- ou choisie) ; la minimap, les info-bulles et les barres de nom s'en servent
 -- aussi (« QUEST_MARKS » quand il change)
+-- Les faire passe en revue les 6 000 quêtes de la base : QM.Entries() les fait
+-- maintenant (la carte ouverte, un PNJ qui parle), QM.EntriesSoon() quelques ms
+-- par image (la minimap, les barres de nom, les info-bulles : rien jusque-là,
+-- puis « QUEST_MARKS »). Celui-ci en cours, QM.Entries() le finit d'un coup
 local entries
+local entriesJob, entriesGen = nil, 0
+local waitEntries = false       -- (la carte fermée, ses icônes attendent les marqueurs : QM.Refresh)
+
+local function BuildEntries()
+    local out = { goal = {}, ["end"] = {}, offer = {} }
+    if not Db.Has() then return out end
+    for what, fill in pairs({ goal = Goals, ["end"] = Ends, offer = OffersOf }) do
+        local into = { byRef = {}, list = {} }
+        fill(into)
+        out[what] = into.list
+        ns.Slice()
+    end
+    return out
+end
+
 function QM.Entries()
     if entries then return entries end
-    entries = { goal = {}, ["end"] = {}, offer = {} }
-    if not Db.Has() then return entries end
-    for what, fill in pairs({ goal = Goals, ["end"] = Ends, offer = OffersOf }) do
-        local out = { byRef = {}, list = {} }
-        fill(out)
-        entries[what] = out.list
-    end
+    if entriesJob then entriesJob.Rush() end
+    if not entries then entries = BuildEntries() end
     return entries
+end
+
+function QM.EntriesSoon()
+    if entries then return entries end
+    if not entriesJob then
+        local mine = entriesGen
+        entriesJob = ns.Job(BuildEntries, function(result)
+            entriesJob = nil
+            if mine ~= entriesGen or entries then return end
+            entries = result
+            ns.Fire("QUEST_MARKS")
+            if waitEntries then
+                waitEntries = false
+                if ns.Map.IsBuilt() then QM.Refresh() end
+            end
+        end)
+    end
+end
+
+-- (ce qu'il faut marquer a changé : à refaire, le travail en cours abandonné)
+local function Forget()
+    entries, entriesGen = nil, entriesGen + 1
+    if entriesJob then
+        entriesJob.Cancel()
+        entriesJob = nil
+    end
 end
 
 -- Un jeu montré : le calque Quêtes allumé, et le détail de ce jeu
@@ -546,6 +587,14 @@ end
 
 function QM.Refresh()
     if not Sets() then return end
+    -- (la carte fermée, la carte dessinée en arrière-plan : ses icônes attendent les
+    -- marqueurs faits par tranches, sans les presser ; ouverte d'ici là, MAP_SHOW)
+    if On() and not entries and not ns.MapShown() then
+        waitEntries, dirty = true, true
+        QM.EntriesSoon()
+        return
+    end
+    waitEntries = false
     building = building + 1
     dirty = false
     for _, set in pairs(sets) do Pins.Clear(set) end
@@ -567,8 +616,9 @@ end
 
 -- Ce qu'il faut marquer a changé : à refaire, la carte (ouverte) aussi
 local function Changed()
-    entries = nil
+    Forget()
     if ns.Map.IsBuilt() and ns.MapShown() then QM.Refresh() else dirty = true end
+    if waitEntries then QM.EntriesSoon() end   -- (les icônes de la carte attendent toujours : refaits)
     ns.Fire("QUEST_MARKS")
 end
 
@@ -576,7 +626,7 @@ ns.On("MAP_BUILT", function() QM.Refresh() end)
 ns.On("MAP_SHOW", function() if dirty and ns.Map.IsBuilt() then QM.Refresh() end end)
 -- (un réglage changé : les quêtes suivies, les grises, les camps...)
 ns.On("MAP_REFRESH", function()
-    entries = nil
+    Forget()
     if ns.Map.IsBuilt() then QM.Refresh() end
     ns.Fire("QUEST_MARKS")
 end)

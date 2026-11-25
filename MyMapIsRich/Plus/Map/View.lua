@@ -49,10 +49,18 @@ local WHEEL_EVERY = 0.12        -- secondes entre deux crans de molette du stick
 local ARROW_ABOVE = 8500        -- ta flèche : tant de niveaux au-dessus de la vue (au-dessus des icônes de Questie)
 local POINTER_LEVEL = 9990      -- le curseur de la manette, au-dessus de tout
 local SMALL_W, SMALL_H = 0.66, 0.72   -- la carte réduite, la carte du jeu en plein écran quand même
+local PREPARE_AFTER = 3         -- secondes après la connexion : le dessin se bâtit en arrière-plan (l'écran de chargement passé)
+local Clock = debugprofilestop  -- (ms ; peut manquer : rien n'est alors mesuré)
 
 local map, sc, view, canvas
 local pointer                   -- le curseur de la manette, redessiné sur l'art (celui du jeu est dessous)
 local built, failed = false, false
+local prepared, finished = false, false   -- les niveaux posés et le dessin lancé (Prepare) ; la vue finie (Finish)
+local artBase                   -- le niveau de la vue, que le dessin prend au-dessus (Prepare)
+local rushIcons                 -- MAP_BUILT en cours, un calque par image : « tout le reste maintenant »
+local covered = false           -- les niveaux revus à la première ouverture (Recover)
+local warmed = false            -- la vue posée carte fermée (Warm) : pas celle où ouvrir
+local openAt                    -- la première ouverture : quand elle a commencé (Clock)
 local u, v, zoom                -- la vue : son centre (le monde, 0..1) et son zoom (1 : le monde entier)
 local glide                     -- la glissade de A ou X en cours
 local lastX, lastY              -- le curseur de la manette à l'image d'avant (px de l'écran)
@@ -585,6 +593,11 @@ local function OnUpdate(_, elapsed)
         UpdatePlayer()
     end
     if dirty then Apply() end
+    -- (la première ouverture : de son début à sa première image posée, pour /mmir carte status)
+    if openAt then
+        diag.openMs = Clock() - openAt
+        openAt = nil
+    end
     Pointer(x, y)
     hbdWait = hbdWait - elapsed
     if hbdWait <= 0 then
@@ -657,8 +670,28 @@ local function Fail(why, detail)
     return false
 end
 
-local function Build()
-    if built or failed then return built end
+-- Le dessin se bâtit en arrière-plan, quelques ms par image, peu après la
+-- connexion (Prepare, puis Finish), pour que la première ouverture de la
+-- carte n'ait plus à le porter : il fait des milliers de textures, et le
+-- jeu se figeait. La carte ouverte avant la fin : Build finit le reste d'un coup.
+local Finish, Warm
+
+-- (Finish une fois le dessin bâti en arrière-plan : à l'image suivante, après un combat)
+local function FinishLater()
+    if finished or failed then return end
+    if InCombatLockdown() then
+        C_Timer.After(1, FinishLater)
+        return
+    end
+    local ok, err = pcall(Finish)
+    if not ok then Fail("VIEW_WHY_ART", err) end
+end
+
+-- Les niveaux de la vue, au-dessus de toute la carte du jeu (Cover), puis le
+-- dessin lancé par tranches (Map/Art.lua : S.BuildSoon), une fois
+local function Prepare()
+    if prepared or failed then return end
+    prepared = true
     if A.IsBuilt() then return Fail("VIEW_WHY_TWICE") end
     local base = sc.Child:GetFrameLevel() + 2
     local ok, strata, top = pcall(Cover)
@@ -670,25 +703,73 @@ local function Build()
     end
     view:SetFrameLevel(base)
     canvas:SetFrameLevel(base)
-    local okB, err = pcall(A.Build, canvas, base + 1, ART_RANGE, base + ART_RANGE + 4)
-    if not okB then return Fail("VIEW_WHY_ART", err) end
+    artBase = base
+    diag.why = "VIEW_WHY_BUILDING"
+    local okS, err = pcall(A.BuildSoon, canvas, base + 1, ART_RANGE, base + ART_RANGE + 4, function()
+        C_Timer.After(0, FinishLater)
+    end)
+    if not okS then return Fail("VIEW_WHY_ART", err) end
+end
+
+-- Le dessin bâti : sa mise en place, les icônes, puis les calques de Plus
+-- (MAP_BUILT), un par image ; la carte fermée, sa première vue préparée (Warm)
+function Finish()
+    if finished or failed then return built end
+    if not A.IsBuilt() then return Fail("VIEW_WHY_ART", (A.Size())) end
+    finished = true
     local W, H = A.Size()
-    if not A.IsBuilt() then return Fail("VIEW_WHY_ART", W) end
     local okL, laid = pcall(A.Layout, K.World())
     if not okL or not laid then return Fail("VIEW_WHY_LAYOUT", laid) end
     canvas:SetSize(W, H)
     -- (les icônes de la carte et ta flèche, au-dessus du dessin : Map/PinSets.lua)
-    P.Setup(view, base + ART_RANGE + 4)
-    P.RaiseArrow(math.min(9900, base + ARROW_ABOVE))
+    P.Setup(view, artBase + ART_RANGE + 4)
+    P.RaiseArrow(math.min(9900, artBase + ARROW_ABOVE))
     MakePointer(strataUsed)
-    HB.Setup(view, base + ART_RANGE + 10)
+    HB.Setup(view, artBase + ART_RANGE + 10)
     A.SetShown(true)
     built = true
     diag.why = "VIEW_WHY_BUILT"
     -- (les calques de Plus posent leurs jeux d'icônes, puis l'aspect les allume ou les éteint)
-    ns.Fire("MAP_BUILT")
-    LK.Apply()
+    rushIcons = ns.FireSpread("MAP_BUILT", function()
+        rushIcons = nil
+        LK.Apply()
+        if not map:IsShown() then Warm() end
+    end)
     return true
+end
+
+-- À l'ouverture : ce qui reste du dessin et des calques, maintenant
+local function Build()
+    if failed then return false end
+    if not built then
+        Prepare()
+        if failed then return false end
+        local okB, err = pcall(A.Build, canvas, artBase + 1, ART_RANGE, artBase + ART_RANGE + 4)
+        if not okB then return Fail("VIEW_WHY_ART", err) end
+        local okF, errF = pcall(Finish)
+        if not okF then return Fail("VIEW_WHY_ART", errF) end
+        if not built then return false end
+    end
+    if rushIcons then rushIcons() end
+    return true
+end
+
+-- À la première ouverture, les niveaux revus : un cadre de la carte du jeu
+-- monté depuis Prepare (la carte elle-même, remontée en s'ouvrant) passerait
+-- par-dessus la vue. Elle est remontée au-dessus, et ses enfants avec elle
+local function Recover()
+    local ok, strata, top = pcall(Cover)
+    if not (ok and strata) then return end
+    local rank, was = STRATA[strata] or 3, STRATA[strataUsed or ""] or 0
+    local level = view:GetFrameLevel()
+    if rank < was or (rank == was and top + 2 <= level) then return end
+    if rank > was then
+        view:SetFrameStrata(strata)
+        if pointer then pointer:SetFrameStrata(strata) end
+        strataUsed = strata
+    end
+    view:SetFrameLevel(math.max(level, top + 2))
+    diag.cover = (diag.cover or "-") .. " > " .. strata .. " " .. tostring(top)
 end
 
 -- La vue où ouvrir, rien d'autre ne le disant : autour de toi, ta zone pleine vue
@@ -708,15 +789,10 @@ local function FirstView()
     end
 end
 
-local function Show()
-    diag.shows = diag.shows + 1
-    if not Build() then
-        view:Hide()
-        if built then sc.Child:SetAlpha(1) end
-        return
-    end
-    -- (la vue où rouvrir : Layers/Locate.lua ; rien à suivre (dans une
-    -- instance, rien de gardé) : là où elle était, sinon autour de toi)
+-- (la vue où rouvrir : Layers/Locate.lua ; rien à suivre (dans une
+-- instance, rien de gardé) : là où elle était, sinon autour de toi. Celle
+-- posée carte fermée (Warm) ne compte pas : tu as pu bouger depuis)
+local function Target()
     local su, sv, sz
     if V.SavedView then
         local ok, a, b, c = pcall(V.SavedView)
@@ -724,9 +800,37 @@ local function Show()
     end
     if su and sv and sz and sz > 0 and K.Finite(su, sv, sz) then
         u, v, zoom = su, sv, Clamp(sz, 1, MostAt(su, sv))
-    elseif not u then
+    elseif not u or warmed then
         FirstView()
     end
+    warmed = false
+end
+
+-- La carte encore fermée, sa première vue posée : les zones autour de toi
+-- placées, l'ombre de l'inexploré bâtie pour elles, leurs images demandées au
+-- chargeur (Map/Art.lua). L'ouverture n'a plus qu'à les montrer
+function Warm()
+    if not built or map:IsShown() or view:IsShown() then return end
+    pcall(function()
+        Target()
+        Apply()
+    end)
+    warmed = true
+end
+
+local function Show()
+    diag.shows = diag.shows + 1
+    if diag.shows == 1 and Clock then openAt = Clock() end
+    if not Build() then
+        view:Hide()
+        if built then sc.Child:SetAlpha(1) end
+        return
+    end
+    if not covered then
+        covered = true
+        Recover()
+    end
+    Target()
     HB.Show()
     glide = nil
     sc.Child:SetAlpha(0)      -- (la carte du jeu dessous : là, invisible ; rien d'elle n'est écrit)
@@ -896,7 +1000,14 @@ local function Setup()
         hooksecurefunc(map, "NavigateToParentMap", function() if view:IsShown() then Step(false, true) end end)
     end
     if map.GamepadTryPlaceWaypoint then hooksecurefunc(map, "GamepadTryPlaceWaypoint", PadPressed) end
-    if map:IsShown() then Show() end
+    if map:IsShown() then
+        Show()
+    else
+        -- (le dessin en arrière-plan, l'écran de chargement passé ; rien pendant un combat : Map/Art.lua attend)
+        C_Timer.After(PREPARE_AFTER, function()
+            if not map:IsShown() then Prepare() end
+        end)
+    end
 end
 
 ---------------------------------------------------------------------------
@@ -1023,4 +1134,11 @@ function V.Diag()
     if diag.detail then why = why .. " (" .. diag.detail .. ")" end
     ns.Print(L.VIEW_DIAG, L[diag.setup] or diag.setup, diag.shows, why,
         tostring(view and view:IsShown() or false), size, diag.cover or "-", tostring(small))
+    -- (le temps du dessin, de ses icônes et de la première ouverture)
+    local function Ms(n) return n and ("%.0f"):format(n) or "-" end
+    local how = A.paceMs and (A.paceRushed and L.VIEW_BUILT_ON_OPEN or L.VIEW_BUILT_EARLY) or L.VIEW_BUILT_NOT_YET
+    local icons, shown = ns.fireTimes.MAP_BUILT, ns.fireTimes.MAP_SHOW
+    ns.Print(L.VIEW_DIAG_BUILD, how, Ms(A.paceMs), tostring(A.paceFrames or "-"),
+        Ms(icons and icons.last), tostring(icons and icons.frames or "-"),
+        Ms(diag.openMs), Ms(shown and shown.worst))
 end

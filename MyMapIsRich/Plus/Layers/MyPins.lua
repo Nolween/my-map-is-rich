@@ -465,7 +465,7 @@ ns.On("MAP_ATTACHED", function()
     Migrate()
 end)
 
--- (la carte dessinée à sa première ouverture : les épingles posées dès qu'elle l'est)
+-- (la carte dessinée, en arrière-plan ou à sa première ouverture : les épingles posées dès qu'elle l'est)
 ns.On("MAP_BUILT", function() E.Refresh() end)
 ns.On("MAP_SHOW", function() if ns.Map.IsBuilt() then E.Refresh() end end)
 

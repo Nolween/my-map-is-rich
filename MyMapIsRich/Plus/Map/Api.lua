@@ -67,7 +67,7 @@ function M.Why() return why end
 -- Le dessin de la carte est trouvé
 function M.Ready() return ready or false end
 
--- La vue est bâtie (à la première ouverture de la carte) et tourne
+-- La vue est bâtie (en arrière-plan après la connexion, sinon à la première ouverture) et tourne
 function M.ViewReady() return M.View.Built and M.View.Built() or false end
 function M.Built() return M.ViewReady() end
 
@@ -85,7 +85,7 @@ function M.PadUI()
     return InputUtil and InputUtil.IsGamepadUIEnabled and InputUtil.IsGamepadUIEnabled() and true or false
 end
 
--- Mettre la vue en place (une fois : elle se bâtit à la première ouverture de la carte)
+-- Mettre la vue en place (une fois : elle se bâtit en arrière-plan peu après, ou à la première ouverture)
 function M.Start()
     if not ready then return false end
     return Run(M.View.Start)
@@ -227,6 +227,6 @@ function M.Windows()
     return out
 end
 
--- « MAP_BUILT » : la carte est dessinée (à sa première ouverture), une fois ;
+-- « MAP_BUILT » : la carte est dessinée (en arrière-plan, ou à sa première ouverture), une fois ;
 -- les modules de Plus y posent leurs jeux d'icônes (Map/View.lua le lance)
 function M.IsBuilt() return M.ViewReady() end

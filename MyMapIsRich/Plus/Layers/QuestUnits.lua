@@ -53,13 +53,19 @@ end
 -- et chaque objet à trouver : gardé jusqu'au prochain changement des marqueurs
 ---------------------------------------------------------------------------
 local byRef, byItem
+local NONE = {}
 
 local function Index()
     if byRef then return byRef, byItem end
+    if not Ready() then
+        byRef, byItem = {}, {}
+        return byRef, byItem
+    end
+    -- (comme la carte : seulement les sortes que le calque Quêtes montre, les grises si elle les montre ;
+    -- les marqueurs se font quelques ms par image : rien d'ici là, puis « QUEST_MARKS » les ramène)
+    local all = QM().EntriesSoon()
+    if not all then return NONE, NONE end
     byRef, byItem = {}, {}
-    if not Ready() then return byRef, byItem end
-    -- (comme la carte : seulement les sortes que le calque Quêtes montre, les grises si elle les montre)
-    local all = QM().Entries()
     for _, what in ipairs({ "end", "goal", "offer" }) do
         for _, e in ipairs(QM().Want(what) and all[what] or {}) do
             if type(e.ref) == "number" then

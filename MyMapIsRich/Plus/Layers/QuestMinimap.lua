@@ -28,6 +28,8 @@ local frame
 local icons = {}
 local points                    -- { { x, y, look, e, inside, camp }, ... } sur le continent cont
 local pointsCont
+local stale = true              -- les marqueurs ont changé depuis : à relire
+local reading, readGen = nil, 0 -- la relecture en cours (ns.Job : quelques ms par image)
 
 local function QM() return ns.Quests and ns.Quests.Marks end
 
@@ -52,12 +54,11 @@ local function Projector(cont)
     end
 end
 
-local function Read(cont)
-    points, pointsCont = {}, cont
-    local qm = QM()
+-- (dans un long travail, ns.Job : les camps de chaque marqueur, par tranches)
+local function Read(qm, all, cont)
+    local out = {}
     local To = Projector(cont)
-    if not (qm and To) then return end
-    local all = qm.Entries()
+    if not To then return out end
     for _, what in ipairs({ "goal", "end", "offer" }) do
         if qm.Want(what) then
             for _, e in ipairs(all[what] or {}) do
@@ -65,12 +66,35 @@ local function Read(cont)
                 for _, p in ipairs(spots) do
                     local x, y = To(p[1], p[2])
                     if x then
-                        points[#points + 1] = { x, y, look, e, inside = p.inside, camp = p.camp }
+                        out[#out + 1] = { x, y, look, e, inside = p.inside, camp = p.camp }
                     end
                 end
+                ns.Slice()
             end
         end
     end
+    return out
+end
+
+-- Les points relus sans figer le jeu : les marqueurs d'abord (QM.EntriesSoon),
+-- puis leurs points ; ceux d'avant restent montrés d'ici là (sur le même continent)
+local function StartRead(cont)
+    if reading then
+        if reading.cont == cont then return end
+        reading.Cancel()            -- (un autre continent : celui d'avant ne sert plus)
+        reading = nil
+    end
+    local qm = QM()
+    local all = qm and qm.EntriesSoon()
+    if not all then return end     -- (« QUEST_MARKS » une fois les marqueurs prêts : relus alors)
+    stale = false
+    local mine = readGen
+    reading = ns.Job(function() return Read(qm, all, cont) end, function(out)
+        reading = nil
+        if mine ~= readGen then return end
+        points, pointsCont = out, cont
+    end)
+    reading.cont = cont
 end
 
 local function Build()
@@ -117,7 +141,11 @@ local function Update()
         return
     end
     local cont = viewer.here.cont
-    if not points or pointsCont ~= cont then Read(cont) end
+    if stale or not points or pointsCont ~= cont then StartRead(cont) end
+    if not points or pointsCont ~= cont then
+        frame:Hide()
+        return
+    end
     frame:SetFrameStrata(mm:GetFrameStrata())
     frame:SetFrameLevel(mm:GetFrameLevel() + 6)
     frame:Show()
@@ -168,4 +196,12 @@ end)
 
 -- (les marqueurs ont changé : relus à la prochaine mise à jour ; seulement
 -- l'alpha, la quête choisie : rien à relire)
-ns.On("QUEST_MARKS", function(alphaOnly) if not alphaOnly then points = nil end end)
+-- (ceux d'avant restent montrés jusqu'à la relecture : StartRead)
+ns.On("QUEST_MARKS", function(alphaOnly)
+    if alphaOnly then return end
+    stale, readGen = true, readGen + 1
+    if reading then
+        reading.Cancel()
+        reading = nil
+    end
+end)

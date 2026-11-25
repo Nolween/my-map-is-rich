@@ -18,7 +18,8 @@
 --     qu'elle demande de connaître (ou d'ignorer), la réputation qu'elle
 --     demande ; pas une quête de métier.
 --   Offers.List()      -> { { id, trivial = vrai : grise }, ... }, gardée jusqu'au
---                         prochain changement du journal (QUESTS_CHANGED)
+--                         prochain changement du journal (QUESTS_CHANGED) ; dans
+--                         un long travail (ns.Job), elle se fait par tranches
 --   Offers.Check(id)   -> nil si tu peux la prendre, sinon la règle qui s'y
 --                         oppose (une clé WHY_Q_ des Locales) et ce qu'elle vise
 --   Offers.Why(id)     -> la même raison, en toutes lettres (/mmir pourquoi)
@@ -172,18 +173,27 @@ local function Check(id, me)
     if not RepOK(q.rep, q.maxRep) then return "WHY_Q_REP" end
 end
 
+-- (les listes se font à part et ne sont gardées qu'entières : faites par un
+-- long travail, ns.Job, elles peuvent s'arrêter en route, ns.Slice ; refaites
+-- d'ici là, gen a changé, elles ne sont pas gardées)
+local gen = 0
+local SLICE_EVERY = 25          -- quêtes passées en revue entre deux ns.Slice
+
 function Offers.List()
     if list then return list end
-    list = {}
-    if not Db.Has() then return list end
+    local out, mine, n = {}, gen, 0
+    if not Db.Has() then return out end
     local me = Me()
     Db.EachQuest(function(id)
         if not Check(id, me) then
             local q = Db.Quest(id)
-            list[#list + 1] = { id = id, trivial = Trivial(q.level, me.level) }
+            out[#out + 1] = { id = id, trivial = Trivial(q.level, me.level) }
         end
+        n = n + 1
+        if n % SLICE_EVERY == 0 then ns.Slice() end
     end)
-    return list
+    if mine == gen then list = out end
+    return out
 end
 
 function Offers.Check(id)
@@ -198,11 +208,13 @@ local SOON = 2
 local soon
 function Offers.Soon()
     if soon then return soon end
-    soon = {}
-    if not Db.Has() then return soon end
+    local out, mine, n = {}, gen, 0
+    if not Db.Has() then return out end
     local me = Me()
     local later = Me()
     Db.EachQuest(function(id)
+        n = n + 1
+        if n % SLICE_EVERY == 0 then ns.Slice() end
         local key, arg = Check(id, me)
         local ok = false
         if key == "WHY_Q_LEVEL_LOW" and arg <= me.level + SOON then
@@ -214,9 +226,10 @@ function Offers.Soon()
             ok = Check(id, me) == nil
             assume = nil
         end
-        if ok then soon[#soon + 1] = { id = id } end
+        if ok then out[#out + 1] = { id = id } end
     end)
-    return soon
+    if mine == gen then soon = out end
+    return out
 end
 
 -- (soon est refaite avec la liste : plus bas)
@@ -240,7 +253,7 @@ ns.On("QUESTS_CHANGED", function()
 
     if sig == signature then return end
     signature = sig
-    list, soon = nil, nil
+    list, soon, gen = nil, nil, gen + 1
 end)
 -- (une réputation, un sort appris changent aussi ce qui est proposé)
 local refresh = CreateFrame("Frame")
