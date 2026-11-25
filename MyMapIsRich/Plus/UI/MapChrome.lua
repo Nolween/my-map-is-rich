@@ -536,6 +536,60 @@ local function BindKeys()
     end
 end
 
+---------------------------------------------------------------------------
+-- La touche qui ouvre la carte la referme : carte ouverte, hors combat, un
+-- cadre à nous lit chaque touche du clavier avant ses liaisons ; liée à
+-- « Ouvrir la carte » (TOGGLEWORLDMAP), celle du jeu (M) comme celle qu'un
+-- autre addon pose (un bouton en plus de la manette dans My Gamepad Is Rich,
+-- envoyé comme une touche du clavier), elle s'arrête là et la carte se ferme.
+-- Sur cette carte, la commande du jeu ne la fermait pas. Les autres touches
+-- passent, comme si rien n'était là.
+---------------------------------------------------------------------------
+local MODIFIER_KEYS = { LSHIFT = true, RSHIFT = true, LCTRL = true, RCTRL = true, LALT = true, RALT = true }
+
+local function CloseMap()
+    local map = _G.WorldMapFrame
+    if not (map and map:IsShown()) then return end
+    if HideUIPanel then pcall(HideUIPanel, map) end
+    if map:IsShown() then pcall(map.Hide, map) end
+end
+
+local keyCatcher = CreateFrame("Frame", nil, UIParent)
+keyCatcher:SetFrameStrata("FULLSCREEN_DIALOG")      -- (au-dessus : il lit les touches le premier)
+keyCatcher:Hide()
+keyCatcher:SetScript("OnKeyDown", function(self, key)
+    if InCombatLockdown() then return end
+    local swallow = false
+    if not MODIFIER_KEYS[key] then
+        local full = (IsAltKeyDown() and "ALT-" or "") .. (IsControlKeyDown() and "CTRL-" or "")
+            .. (IsShiftKeyDown() and "SHIFT-" or "") .. key
+        local ok, action = pcall(GetBindingAction, full, true)
+        swallow = ok and action == "TOGGLEWORLDMAP"
+    end
+    self:SetPropagateKeyboardInput(not swallow)
+    if swallow then CloseMap() end
+end)
+
+local function CatchKeys(on)
+    if InCombatLockdown() then return end
+    keyCatcher:SetShown(on and true or false)
+    keyCatcher:EnableKeyboard(on and true or false)
+    if on then keyCatcher:SetPropagateKeyboardInput(true) end
+end
+ns.On("MAP_SHOW", function() CatchKeys(true) end)
+ns.On("MAP_HIDE", function() CatchKeys(false) end)
+local keyEvents = CreateFrame("Frame")
+keyEvents:RegisterEvent("PLAYER_REGEN_DISABLED")
+keyEvents:RegisterEvent("PLAYER_REGEN_ENABLED")
+keyEvents:SetScript("OnEvent", function(_, event)
+    -- (en combat, le cadre ne choisit plus ce qu'il laisse passer : écarté)
+    if event == "PLAYER_REGEN_DISABLED" then
+        keyCatcher:EnableKeyboard(false)
+    else
+        CatchKeys(ns.MapShown())
+    end
+end)
+
 local function UnbindKeys()
     wipe(held)
     if not InCombatLockdown() then ClearOverrideBindings(keyOwner) end

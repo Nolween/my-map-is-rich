@@ -27,6 +27,7 @@ Après la mise à jour, **relance le jeu** (un `/reload` ne suffit pas : des fic
 - **Ce que la base ne sait pas** : une quête de Forever absente de la base est apprise quand tu la prends (ses autres personnages de ta faction voient son « ! »), et un « ! » qu'un PNJ dément s'efface jusqu'à ton prochain niveau.
 - **Deux commandes** : `/mmir pourquoi <quête>` (son numéro ou son nom) dit pourquoi une quête n'a pas de « ! » ; `/mmir quetes export` donne les quêtes apprises, à copier.
 - Les traductions de l'itinéraire, de la file et des lieux sont complétées dans les 8 autres langues.
+- **Corrigé** : la touche qui ouvre la carte la referme aussi, carte ouverte, même quand un autre addon la pose (un bouton en plus de la manette lié à « Ouvrir la carte » dans My Gamepad Is Rich).
 
 ## 1.0.0
 
