@@ -287,7 +287,7 @@ local function ShowInvite()
     local here = Pl.PlayerPoint()
     local text = ""
     if here then
-        local plan = Pl.Find(here, ns.Travel.Copy(invite.goal))
+        local plan = Pl.Best(here, ns.Travel.Copy(invite.goal), { hint = false })
         if plan and plan.secs then text = L.SHARE_TIME:format(ns.RouteHud.Duration(plan.secs)) end
     end
     frame.time:SetText(text)

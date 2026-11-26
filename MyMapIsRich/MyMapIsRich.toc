@@ -1,25 +1,25 @@
 ## Interface: 16001, 16002, 16003, 16100, 16101, 16200
 ## Title: My Map Is Rich
-## Notes: One seamless full-screen world map, every zone stitched together, with the mouse or a controller: layers for what it shows, quest markers (what to slay or loot, where to turn in and pick up quests; also on the minimap, in tooltips and over name plates), a quest tracker with the nearest first, quickest routes (roads, flights, boats), a route panel and GPS arrow, multi-stop routes, a place browser with search and the nearest services, destinations shared with your group. /mmir
-## Notes-frFR: Une carte du monde d'un seul tenant, en plein écran, toutes les zones assemblées, à la souris ou à la manette : des calques pour ce qu'elle montre, marqueurs de quêtes (qui tuer, quoi ramasser, où rendre et prendre les quêtes ; aussi sur la minimap, dans les info-bulles et sur les plaques de nom), suivi des quêtes avec la plus proche d'abord, itinéraires les plus rapides (routes, vols, bateaux), panneau de trajet et flèche GPS, trajets en plusieurs étapes, navigateur de lieux avec recherche et services les plus proches, destinations partagées avec le groupe. /mmir
-## Notes-deDE: Eine nahtlose Weltkarte im Vollbild, alle Gebiete zusammengefügt, mit Maus oder Controller: Ebenen für das, was sie zeigt, Quest-Markierungen (was zu töten oder zu sammeln ist, wo Quests abgegeben und angenommen werden; auch auf der Minikarte, in Tooltips und über Namensplaketten), Quest-Tracker mit der nächsten zuerst, schnellste Routen (Straßen, Flüge, Schiffe), Routenanzeige und GPS-Pfeil, Routen mit mehreren Zielen, Ortsbrowser mit Suche und den nächsten Diensten, Ziele für die Gruppe. /mmir
-## Notes-esES: Un único mapa del mundo sin cortes, a pantalla completa, todas las zonas unidas, con ratón o mando: capas para lo que muestra, marcadores de misiones (qué matar o recoger, dónde entregar y aceptar misiones; también en el minimapa, las descripciones y las placas de nombre), seguimiento de misiones con la más cercana primero, rutas más rápidas (caminos, vuelos, barcos), panel de ruta y flecha GPS, rutas con varias paradas, explorador de lugares con búsqueda y servicios más cercanos, destinos compartidos con el grupo. /mmir
-## Notes-esMX: Un solo mapa del mundo continuo, en pantalla completa, todas las zonas unidas, con mouse o control: capas para lo que muestra, marcadores de misiones (qué matar o recoger, dónde entregar y aceptar misiones; también en el minimapa, las descripciones y las placas de nombre), seguimiento de misiones con la más cercana primero, rutas más rápidas (caminos, vuelos, barcos), panel de ruta y flecha GPS, rutas con varias paradas, explorador de lugares con búsqueda y servicios más cercanos, destinos compartidos con el grupo. /mmir
-## Notes-itIT: Un'unica mappa del mondo continua, a schermo intero, tutte le zone unite, con mouse o controller: livelli per ciò che mostra, indicatori delle missioni (cosa uccidere o raccogliere, dove consegnare e accettare missioni; anche sulla minimappa, nei suggerimenti e sulle targhette dei nomi), tracciamento delle missioni con la più vicina prima, percorsi più rapidi (strade, voli, navi), pannello del percorso e freccia GPS, percorsi a più tappe, esploratore di luoghi con ricerca e servizi più vicini, destinazioni condivise con il gruppo. /mmir
-## Notes-ptBR: Um só mapa-múndi contínuo, em tela cheia, todas as zonas unidas, com mouse ou controle: camadas para o que ele mostra, marcadores de missões (o que matar ou coletar, onde entregar e pegar missões; também no minimapa, nas dicas e nas placas de nome), rastreador de missões com a mais próxima primeiro, rotas mais rápidas (estradas, voos, navios), painel da rota e seta GPS, rotas com várias paradas, navegador de lugares com busca e serviços mais próximos, destinos compartilhados com o grupo. /mmir
-## Notes-ruRU: Бесшовная полноэкранная карта мира, все зоны сшиты воедино, с мышью или геймпадом: слои для того, что она показывает, метки заданий (кого убить, что собрать, где сдать и взять задания; также на миникарте, в подсказках и над полосами имён), список заданий с ближайшими сначала, быстрейшие маршруты (дороги, полёты, корабли), панель маршрута и GPS-стрелка, маршруты с несколькими целями, обзор мест с поиском и ближайшими службами, цели для группы. /mmir
-## Notes-koKR: 모든 지역을 이어 붙인 하나의 전체 화면 세계 지도, 마우스나 컨트롤러로: 보여줄 것을 고르는 레이어, 퀘스트 표시(처치·수집 대상, 퀘스트 완료 및 수락 장소, 미니맵·툴팁·이름표에도), 가까운 순서의 퀘스트 추적기, 가장 빠른 경로(도로, 비행, 배), 경로 패널과 GPS 화살표, 여러 목적지 경로, 검색 가능한 장소 탐색기와 가까운 편의 시설, 파티와 목적지 공유. /mmir
-## Notes-zhCN: 一张无缝的全屏世界地图，所有区域拼接在一起，鼠标或手柄皆可：图层决定显示内容、任务标记（要击杀或拾取什么、在哪里交接任务；也显示在小地图、鼠标提示和姓名板上）、由近到远的任务追踪、最快路线（道路、飞行、船只）、路线面板与 GPS 箭头、多目的地路线、可搜索的地点浏览器与最近的服务、与队伍共享目的地。/mmir
-## Notes-zhTW: 一張無縫的全螢幕世界地圖，所有區域拼接成一體，滑鼠或手把皆可：圖層決定顯示內容、任務標記（要擊殺或拾取什麼、在哪裡交接任務；也顯示在小地圖、滑鼠提示和名條上）、由近到遠的任務追蹤、最快路線（道路、飛行、船隻）、路線面板與 GPS 箭頭、多目的地路線、可搜尋的地點瀏覽器與最近的服務、與隊伍分享目的地。/mmir
+## Notes: One seamless full-screen world map, every zone stitched together, with the mouse or a controller: layers for what it shows, quest markers (what to slay or loot, where to turn in and pick up quests; also on the minimap, in tooltips and over name plates), a quest tracker with the nearest first, quickest routes (three walking styles, flights, boats, teleports), a route panel and GPS arrow, multi-stop routes, a place browser with search and the nearest services, destinations shared with your group. /mmir
+## Notes-frFR: Une carte du monde d'un seul tenant, en plein écran, toutes les zones assemblées, à la souris ou à la manette : des calques pour ce qu'elle montre, marqueurs de quêtes (qui tuer, quoi ramasser, où rendre et prendre les quêtes ; aussi sur la minimap, dans les info-bulles et sur les plaques de nom), suivi des quêtes avec la plus proche d'abord, itinéraires les plus rapides (trois styles de marche, vols, bateaux, téléportations), panneau de trajet et flèche GPS, trajets en plusieurs étapes, navigateur de lieux avec recherche et services les plus proches, destinations partagées avec le groupe. /mmir
+## Notes-deDE: Eine nahtlose Weltkarte im Vollbild, alle Gebiete zusammengefügt, mit Maus oder Controller: Ebenen für das, was sie zeigt, Quest-Markierungen (was zu töten oder zu sammeln ist, wo Quests abgegeben und angenommen werden; auch auf der Minikarte, in Tooltips und über Namensplaketten), Quest-Tracker mit der nächsten zuerst, schnellste Routen (drei Gehstile, Flüge, Schiffe, Teleports), Routenanzeige und GPS-Pfeil, Routen mit mehreren Zielen, Ortsbrowser mit Suche und den nächsten Diensten, Ziele für die Gruppe. /mmir
+## Notes-esES: Un único mapa del mundo sin cortes, a pantalla completa, todas las zonas unidas, con ratón o mando: capas para lo que muestra, marcadores de misiones (qué matar o recoger, dónde entregar y aceptar misiones; también en el minimapa, las descripciones y las placas de nombre), seguimiento de misiones con la más cercana primero, rutas más rápidas (tres estilos de marcha, vuelos, barcos, teletransportes), panel de ruta y flecha GPS, rutas con varias paradas, explorador de lugares con búsqueda y servicios más cercanos, destinos compartidos con el grupo. /mmir
+## Notes-esMX: Un solo mapa del mundo continuo, en pantalla completa, todas las zonas unidas, con mouse o control: capas para lo que muestra, marcadores de misiones (qué matar o recoger, dónde entregar y aceptar misiones; también en el minimapa, las descripciones y las placas de nombre), seguimiento de misiones con la más cercana primero, rutas más rápidas (tres estilos de marcha, vuelos, barcos, teletransportes), panel de ruta y flecha GPS, rutas con varias paradas, explorador de lugares con búsqueda y servicios más cercanos, destinos compartidos con el grupo. /mmir
+## Notes-itIT: Un'unica mappa del mondo continua, a schermo intero, tutte le zone unite, con mouse o controller: livelli per ciò che mostra, indicatori delle missioni (cosa uccidere o raccogliere, dove consegnare e accettare missioni; anche sulla minimappa, nei suggerimenti e sulle targhette dei nomi), tracciamento delle missioni con la più vicina prima, percorsi più rapidi (tre stili di marcia, voli, navi, teletrasporti), pannello del percorso e freccia GPS, percorsi a più tappe, esploratore di luoghi con ricerca e servizi più vicini, destinazioni condivise con il gruppo. /mmir
+## Notes-ptBR: Um só mapa-múndi contínuo, em tela cheia, todas as zonas unidas, com mouse ou controle: camadas para o que ele mostra, marcadores de missões (o que matar ou coletar, onde entregar e pegar missões; também no minimapa, nas dicas e nas placas de nome), rastreador de missões com a mais próxima primeiro, rotas mais rápidas (três estilos de caminhada, voos, navios, teleportes), painel da rota e seta GPS, rotas com várias paradas, navegador de lugares com busca e serviços mais próximos, destinos compartilhados com o grupo. /mmir
+## Notes-ruRU: Бесшовная полноэкранная карта мира, все зоны сшиты воедино, с мышью или геймпадом: слои для того, что она показывает, метки заданий (кого убить, что собрать, где сдать и взять задания; также на миникарте, в подсказках и над полосами имён), список заданий с ближайшими сначала, быстрейшие маршруты (три стиля ходьбы, полёты, корабли, телепорты), панель маршрута и GPS-стрелка, маршруты с несколькими целями, обзор мест с поиском и ближайшими службами, цели для группы. /mmir
+## Notes-koKR: 모든 지역을 이어 붙인 하나의 전체 화면 세계 지도, 마우스나 컨트롤러로: 보여줄 것을 고르는 레이어, 퀘스트 표시(처치·수집 대상, 퀘스트 완료 및 수락 장소, 미니맵·툴팁·이름표에도), 가까운 순서의 퀘스트 추적기, 가장 빠른 경로(세 가지 걷기 방식, 비행, 배, 순간이동), 경로 패널과 GPS 화살표, 여러 목적지 경로, 검색 가능한 장소 탐색기와 가까운 편의 시설, 파티와 목적지 공유. /mmir
+## Notes-zhCN: 一张无缝的全屏世界地图，所有区域拼接在一起，鼠标或手柄皆可：图层决定显示内容、任务标记（要击杀或拾取什么、在哪里交接任务；也显示在小地图、鼠标提示和姓名板上）、由近到远的任务追踪、最快路线（三种步行方式、飞行、船只、传送）、路线面板与 GPS 箭头、多目的地路线、可搜索的地点浏览器与最近的服务、与队伍共享目的地。/mmir
+## Notes-zhTW: 一張無縫的全螢幕世界地圖，所有區域拼接成一體，滑鼠或手把皆可：圖層決定顯示內容、任務標記（要擊殺或拾取什麼、在哪裡交接任務；也顯示在小地圖、滑鼠提示和名條上）、由近到遠的任務追蹤、最快路線（三種步行方式、飛行、船隻、傳送）、路線面板與 GPS 箭頭、多目的地路線、可搜尋的地點瀏覽器與最近的服務、與隊伍分享目的地。/mmir
 ## Author: nolwe
-## Version: 1.3.2
+## Version: 1.4.0
 ## IconTexture: Interface\AddOns\MyMapIsRich\Media\Icon
 ## AddonCompartmentFunc: MyMapIsRich_OnAddonCompartmentClick
 ## AddonCompartmentFuncOnEnter: MyMapIsRich_OnAddonCompartmentEnter
 ## AddonCompartmentFuncOnLeave: MyMapIsRich_OnAddonCompartmentLeave
 ## SavedVariables: MyMapIsRichDB, MyMapIsRichPlusDB
 ## SavedVariablesPerCharacter: MyMapIsRichCharDB, MyMapIsRichPlusCharDB
-## OptionalDeps: Questie, MyGamepadIsRich, Leatrix_Maps, BetterMaps, HighFidelityWorldMap, HiddenMaps, Mapster, Magnify
+## OptionalDeps: Questie, MyGamepadIsRich, Spoken, Leatrix_Maps, BetterMaps, HighFidelityWorldMap, HiddenMaps, Mapster, Magnify
 ## Category: Map
 ## X-Category: Map
 ## X-License: GPL-3.0-or-later (the map's drawing and data come from OpenMap, MIT: LICENSES\OpenMap.txt); map art is Blizzard's
@@ -92,6 +92,8 @@ Plus\Data\Nav0.lua
 Plus\Data\Nav1.lua
 Plus\Data\Passages.lua
 Plus\Data\Hazards.lua
+Plus\Data\Teleports.lua
+Plus\Data\Transit.lua
 Plus\Data\Quests.lua
 Plus\Quests\Db.lua
 Plus\Quests\Log.lua
@@ -100,6 +102,7 @@ Plus\Quests\Learn.lua
 Plus\Quests\Where.lua
 Plus\Quests\Party.lua
 Plus\Travel\Graph.lua
+Plus\Travel\Transit.lua
 Plus\Travel\Roads.lua
 Plus\Travel\Nav.lua
 Plus\Travel\Planner.lua
@@ -136,6 +139,7 @@ Plus\UI\Layers.lua
 Plus\UI\PointCard.lua
 Plus\UI\QuestPanel.lua
 Plus\UI\QuestButtons.lua
+Plus\UI\TravelButton.lua
 Plus\UI\Tracker.lua
 Plus\UI\Projects.lua
 Plus\UI\DonateTab.lua

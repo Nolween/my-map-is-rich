@@ -27,6 +27,8 @@
 -- partager, lien dans la discussion, abandonner après confirmation).
 -- À la souris : clic la fiche, Maj+clic l'itinéraire tout de suite, clic
 -- droit le menu.
+-- Avec Spoken (facultatif), une quête qu'il double se lit à voix haute : le
+-- haut-parleur de sa ligne, Écouter dans sa fiche, ou son menu (la manette).
 local _, root = ...
 local ns = root.Plus
 local L = ns.L
@@ -146,6 +148,72 @@ local function ToggleWatch(q)
         Call(_G.RemoveQuestWatch, q.index)
     else
         Call(_G.AddQuestWatch, q.index)
+    end
+end
+
+---------------------------------------------------------------------------
+-- La voix de Spoken : la quête lue à voix haute, comme le bouton de lecture
+-- de son journal (caché sous notre liste). Par sa porte publique
+-- (Spoken/API.lua, « Stories ») : seulement s'il est là, compatible, et que
+-- la quête a une voix (son module Quêtes allumé, un paquet de voix qui la
+-- double). Spoken_Quests ne déclare ses quêtes qu'à l'entrée dans le monde :
+-- tout se demande au moment de s'en servir.
+---------------------------------------------------------------------------
+local function Spoken()
+    local S = _G.Spoken
+    if type(S) ~= "table" or type(S.IsCompatible) ~= "function" or type(S.PlayStory) ~= "function"
+        or type(S.HasStory) ~= "function" then return nil end
+    if not Call(S.IsCompatible, S, 1) then return nil end
+    return S
+end
+
+-- Pour savoir si une quête a une voix, et pour la lire, Spoken prépare sa
+-- lecture : il choisit un instant la quête dans le journal du jeu pour en lire
+-- le texte, puis rend celle d'avant. Un geste noté, comme les nôtres
+-- (ns.Risky, Plus/Core.lua), et la réponse gardée par quête (questID → vrai /
+-- faux) jusqu'à ce que Spoken change ses voix (ListenSpoken, plus bas) : il
+-- n'est pas refait à chaque remplissage de la liste
+local voiced = {}
+
+local function HasVoice(q)
+    local id = q and q.questID
+    local S = id and Spoken()
+    if not S then return false end
+    if voiced[id] == nil then
+        if not ns.Risky("SelectQuest") then return false end
+        voiced[id] = Call(S.HasStory, S, "quest", id) and true or false
+    end
+    return voiced[id]
+end
+
+-- Spoken installé, son module Quêtes allumé, mais pas de voix pour la quête
+-- (le plus souvent : aucun paquet de voix) : la phrase grise de sa fiche. Rien
+-- si le joueur a coupé le module lui-même, ou si la réponse n'est pas connue
+-- (le geste coupé par la garde)
+local function VoiceNote(q)
+    if not (q and q.questID and voiced[q.questID] == false) then return nil end
+    local S = Spoken()
+    if not S then return nil end
+    if type(S.IsPartOn) == "function" and not Call(S.IsPartOn, S, "quests") then return nil end
+    return L.QUESTS_LISTEN_NONE
+end
+
+-- (elle parle : ni en attente derrière une autre ligne, ni en pause ; Spoken
+-- le lit dans sa file, sans rien préparer)
+local function VoicePlaying(q)
+    local S = q and q.questID and Spoken()
+    return S and type(S.IsPlayingStory) == "function" and Call(S.IsPlayingStory, S, "quest", q.questID) and true or false
+end
+
+-- Lue si elle se tait (tout de suite, ou après la ligne en cours), arrêtée si
+-- elle parle
+local function ToggleVoice(q)
+    local S = q and q.questID and Spoken()
+    if not S then return end
+    if VoicePlaying(q) and type(S.StopStory) == "function" then
+        Call(S.StopStory, S, "quest", q.questID)
+    elseif ns.Risky("SelectQuest") then
+        Call(S.PlayStory, S, "quest", q.questID)
     end
 end
 
@@ -413,6 +481,17 @@ local function CloseQuestMenu()
 end
 
 local FillPage           -- (plus bas)
+
+-- (l'icône de la voix d'une ligne : grise, dorée pendant la lecture)
+local function PaintRowVoice(row)
+    local q = row.item and row.item.quest
+    if q and VoicePlaying(q) then
+        row.voice.icon:SetVertexColor(1, 0.82, 0, 1)
+    else
+        row.voice.icon:SetVertexColor(UI.RGBA("textDim", 0.9))
+    end
+end
+
 local function FillRow(row, it)
     row.item = it
     if it.head then
@@ -420,6 +499,7 @@ local function FillRow(row, it)
         row:EnableMouse(false)
         row.selected:Hide()
         row.watch:Hide()
+        row.voice:Hide()
         row.level:SetText("")
         row.title:SetText("")
         row.prog:SetText("")
@@ -454,6 +534,15 @@ local function FillRow(row, it)
         row.prog:SetText(prog)
         if done then row.prog:SetTextColor(UI.RGB("good")) else row.prog:SetTextColor(1, 1, 1) end
         row.dist:SetText(q.dist and Yards(q.dist) or "")
+        -- (la voix de Spoken, si la quête en a une : le titre s'arrête avant elle)
+        local talks = HasVoice(q)
+        row.voice:SetShown(talks)
+        if talks then
+            row.title:SetPoint("RIGHT", row.voice, "LEFT", -4, 0)
+            PaintRowVoice(row)
+        else
+            row.title:SetPoint("RIGHT", row.prog, "LEFT", -6, 0)
+        end
         row:Show()
     end
 end
@@ -476,6 +565,40 @@ local function FillList()
     list.empty:SetText(#entries == 0 and L.QUESTS_NONE or L.QUESTS_NONE_FOUND)
 end
 
+-- La lecture de Spoken a changé (lancée, finie, arrêtée de ses sous-titres) :
+-- les icônes des lignes et le bouton de la fiche suivent, sans relire le journal
+local function PaintVoice()
+    if not (panel and panel:IsShown() and list) then return end
+    for _, row in ipairs(list.rows) do
+        if row:IsShown() and row.voice:IsShown() then PaintRowVoice(row) end
+    end
+    if view == "quest" and page and page.voice:IsShown() then
+        page.voice:SetText(VoicePlaying(Selected()) and L.QUESTS_LISTEN_STOP or L.QUESTS_LISTEN)
+    end
+end
+
+-- Les avis de Spoken écoutés une fois, dès qu'il est prêt (demandé à chaque
+-- remplissage de la liste tant qu'il ne l'est pas) ; rien si la veille de
+-- Plus/Core.lua a vu OpenMap
+local listening = false
+local function ListenSpoken()
+    if listening or (ns.Conflict and ns.Conflict()) then return end
+    local S = Spoken()
+    if not (S and type(S.RegisterCallback) == "function") then return end
+    listening = true
+    Call(S.RegisterCallback, S, "AUDIO_CHANGED", PaintVoice)
+    -- (son module Quêtes allumé ou coupé, ses paquets de voix chargés : ce
+    -- qu'on savait des voix est oublié, les icônes paraissent ou disparaissent)
+    local function Again()
+        wipe(voiced)
+        if not (panel and panel:IsShown()) then return end
+        FillList()
+        if view == "quest" then FillPage(false) end
+    end
+    Call(S.RegisterCallback, S, "PART_SWITCHED", Again)
+    Call(S.RegisterCallback, S, "VOICE_PACKS_LOADED", Again)
+end
+
 local function FillHead()
     local n = #entries
     local max = MaxQuests()
@@ -492,6 +615,7 @@ local ShowView               -- (plus bas)
 
 function QP.Refresh()
     if not (panel and panel:IsShown()) then return end
+    ListenSpoken()
     Read()
     -- (la quête du menu rendue ou abandonnée : le menu se ferme)
     if menuQuest and not Fresh(menuQuest) then CloseQuestMenu() end
@@ -557,7 +681,7 @@ local function FromText(q)
         local p = T().Preview(q.point)
         if not p then return L.TRAVEL_ALREADY end
         local kinds = {}
-        local K = { walk = "KIND_WALK", flight = "KIND_FLIGHT", boat = "KIND_BOAT", zeppelin = "KIND_ZEPPELIN", portal = "KIND_PORTAL", tram = "KIND_TRAM", hearth = "KIND_HEARTH" }
+        local K = { walk = "KIND_WALK", flight = "KIND_FLIGHT", boat = "KIND_BOAT", zeppelin = "KIND_ZEPPELIN", portal = "KIND_PORTAL", tram = "KIND_TRAM", teleport = "KIND_TELEPORT" }
         for i, leg in ipairs(p.legs) do kinds[i] = L[K[leg.kind] or "KIND_WALK"] end
         return L.FICHE_ABOUT:format(Duration(p.secs)) .. " · " .. table.concat(kinds, ", ")
     end
@@ -734,6 +858,10 @@ function FillPage(fresh)
     page.route:SetEnabled(canGo)
     page.queue:SetEnabled(canGo)
     page.track:SetText(Watched(q) and L.QUESTS_UNTRACK or L.QUESTS_TRACK)
+    -- (Écouter, si Spoken a une voix pour la quête : Arrêter pendant la lecture)
+    local talks = HasVoice(q)
+    page.voice:SetShown(talks)
+    if talks then page.voice:SetText(VoicePlaying(q) and L.QUESTS_LISTEN_STOP or L.QUESTS_LISTEN) end
     -- (une autre quête : l'abandon demandé pour la précédente est oublié)
     if armed ~= q.questID then armed = nil end
     page.abandon:SetText(armed and (UI.Hex("bad") .. L.QUESTS_ABANDON_SURE .. "|r") or L.QUESTS_ABANDON)
@@ -746,8 +874,10 @@ function FillPage(fresh)
         b.data = nil
         b:Hide()
     end
+    -- (Spoken là, sans voix pour la quête : une ligne grise le dit, en tête)
+    local y = Para(page.voiceNote, VoiceNote(q), 0, 10)
     -- (les objectifs : le résumé du jeu, puis chacun, fait ou non)
-    local y = Head(1, GameText("QUEST_OBJECTIVES", "QUESTS_OBJECTIVES_HEAD"), 0)
+    y = Head(1, GameText("QUEST_OBJECTIVES", "QUESTS_OBJECTIVES_HEAD"), y)
     y = Para(page.summary, d.summary, y, 8)
     local lines = {}
     for _, o in ipairs(Objectives(q)) do
@@ -1095,6 +1225,11 @@ function ShowQuestMenu(q, row)
         OpenQuest(cur)
         if ns.PadUI() and not focused then QP.Focus() end
     end), key = pad and "A" or nil }
+    -- (la quête lue à voix haute par Spoken, s'il en a la voix : à la manette,
+    -- c'est le seul chemin, aucun bouton ne lui est donné)
+    if HasVoice(q) then
+        items[#items + 1] = { VoicePlaying(q) and L.QUESTS_LISTEN_STOP or L.QUESTS_LISTEN, OnQuest(id, ToggleVoice) }
+    end
     -- (l'itinéraire tout de suite, comme R3 et Maj+clic : sur la quête du
     -- trajet en cours, il l'annule)
     if travel and (q.point or going) then
@@ -1164,6 +1299,14 @@ end
 function QP.Link(questID)
     local q = ById(questID)
     if q then LinkInChat(q) end
+end
+
+-- (la voix de Spoken, plus haut)
+function QP.HasVoice(questID) return HasVoice(ById(questID)) end
+
+function QP.ToggleVoice(questID)
+    local q = ById(questID)
+    if q then ToggleVoice(q) end
 end
 
 -- La fiche d'une quête sur la carte : la carte ouverte (hors combat), puis sa
@@ -1334,6 +1477,33 @@ local function Row(i)
     row.dist:SetJustifyH("RIGHT")
     row.prog = UI.Text(row, "GameFontHighlightSmall")
     row.prog:SetPoint("RIGHT", row.dist, "LEFT", -6, 0)
+    -- (la voix de Spoken : un haut-parleur avant la progression, sur les quêtes
+    -- qu'il double ; un clic la lit ou l'arrête, sans ouvrir la fiche. La croix
+    -- de la manette ne s'y arrête pas : Y, le menu de la quête, a « Écouter »)
+    local voice = CreateFrame("Button", nil, row)
+    voice:SetSize(14, 14)
+    voice:SetPoint("RIGHT", row.prog, "LEFT", -4, 0)
+    voice.noGamepad = true
+    voice.icon = voice:CreateTexture(nil, "ARTWORK")
+    voice.icon:SetAllPoints()
+    UI.SetIcon(voice.icon, "Interface\\Common\\VoiceChat-Speaker", "voicechat-icon-speaker")
+    local vhl = voice:CreateTexture(nil, "HIGHLIGHT")
+    vhl:SetPoint("TOPLEFT", -2, 2)
+    vhl:SetPoint("BOTTOMRIGHT", 2, -2)
+    vhl:SetColorTexture(1, 0.82, 0, 0.2)
+    voice:SetScript("OnClick", function()
+        local it = row.item
+        if not (it and it.quest) then return end
+        ToggleVoice(it.quest)
+        GameTooltip:Hide()
+        PaintRowVoice(row)
+    end)
+    UI.Tip(voice, function()
+        local it = row.item
+        return it and it.quest and VoicePlaying(it.quest) and L.QUESTS_LISTEN_STOP or L.QUESTS_LISTEN
+    end, L.QUESTS_LISTEN_TIP)
+    voice:Hide()
+    row.voice = voice
     row.title = UI.Text(row, "GameFontHighlightSmall")
     row.title:SetPoint("LEFT", row.level, "RIGHT", 4, 0)
     row.title:SetPoint("RIGHT", row.prog, "LEFT", -6, 0)
@@ -1459,6 +1629,19 @@ local function Build(chrome)
     page.abandon = Button(page, L.QUESTS_ABANDON, 160, 22, "grey", "PADBACK")
     page.abandon:SetPoint("TOPRIGHT", -12, -10)
     page.abandon:SetScript("OnClick", function() AbandonPress() end)
+    -- (Écouter, entre les deux, si Spoken a la voix de la quête : à la souris ;
+    -- à la manette, B puis Y, le menu de la quête)
+    page.voice = Button(page, L.QUESTS_LISTEN, 96, 22, "grey")
+    page.voice:SetPoint("LEFT", page.back, "RIGHT", 6, 0)
+    page.voice.noGamepad = true
+    page.voice:SetScript("OnClick", function()
+        local q = Selected()
+        if not q then return end
+        ToggleVoice(q)
+        page.voice:SetText(VoicePlaying(q) and L.QUESTS_LISTEN_STOP or L.QUESTS_LISTEN)
+    end)
+    UI.Tip(page.voice, L.QUESTS_LISTEN_TIP)
+    page.voice:Hide()
     page.level = UI.Text(page, "GameFontHighlightSmall")
     page.level:SetPoint("TOPRIGHT", -12, -44)
     page.title = UI.Text(page, "GameFontNormalLarge")
@@ -1497,6 +1680,9 @@ local function Build(chrome)
         if fs.SetSpacing then fs:SetSpacing(2) end
         return fs
     end
+    -- (la phrase grise de la voix de Spoken absente, au-dessus des objectifs)
+    page.voiceNote = Paragraph("GameFontHighlightSmall")
+    UI.OnTheme(page.voiceNote, function() page.voiceNote:SetTextColor(UI.RGB("textDim")) end)
     page.summary = Paragraph("GameFontHighlight")
     page.objs = Paragraph("GameFontHighlightSmall")
     page.story = Paragraph("GameFontHighlight")

@@ -3,19 +3,24 @@ et les passages (MyMapIsRich/Plus/Data/Passages.lua).
 
 Les cases (environ 8 yards) viennent du maillage de marche de Shortest Path
 Forever (cjber, GPL-3.0-or-later ; Nav/NavN*.lua, extrait du terrain du client
-avec les outils de TrinityCore). Une case a une surface de base (le sol, en
-général) et parfois des étages au-dessus ou au-dessous : un pont, la rue d'une
-ville bâtie sur ses caves, les étages d'un bâtiment, les anneaux de Fossoyeuse.
-Ce script calcule hors du jeu les pas permis, avec les règles de SPF
-(Routing/PathGrid.lua) :
-  - un pas fermé par les données (une falaise, un mur) ne passe pas ;
-  - une montée de plus de 50 degrés ne passe pas ;
-  - une pente raide (entre 50 et 61,6 degrés) ne se prend qu'en descendant ;
-  - d'une tuile à l'autre (les données n'y ferment rien), une chute de plus
-    de 14,57 yards ne passe pas non plus (entre deux surfaces de base).
-Les étages (format 3 de SPF) : chaque pas d'un étage nomme la couche où il
-arrive ; s'y ajoutent les pas à sens unique et les chutes. Les hauteurs ne
-sont pas livrées : le jeu ne lit que les pas permis.
+avec les outils de TrinityCore), dans son format 4. Une case a une surface de
+base (le sol, en général) et parfois des étages au-dessus ou au-dessous : un
+pont, la rue d'une ville bâtie sur ses caves, les étages d'un bâtiment, les
+anneaux de Fossoyeuse.
+Les pas permis sont ceux de SPF : son maillage de marche a décidé, case par
+case, où le joueur passe (les falaises, les murs, les pentes trop raides, les
+rebords qu'on ne prend qu'en descendant), dans les huit directions et d'une
+tuile à l'autre. Les étages : chaque pas d'un étage nomme la couche où il
+arrive ; s'y ajoutent les chutes. Les hauteurs ne sont pas livrées : le jeu ne
+lit que les pas permis et le terrain de chaque surface.
+Le terrain d'une surface (pour le prix d'un pas, Travel/Nav.lua, d'après les
+styles de marche de Polestar) :
+  - pente douce ou raide : la pente du sol autour de la case, les hauteurs
+    lissées sur trois cases (elles sont arrondies à zstep yards) ;
+  - intérieur : sous un plafond (un toit, une voûte de grotte) à moins de
+    INDOOR_GAP yards, sur un morceau d'au moins INDOOR_MIN cases (un pont ou une
+    arche au-dessus d'une route ne compte pas) ;
+  - intérieur de cité : le même, dans une capitale (Data/Hazards.lua).
 S'y ajoutent :
   - la couverture des routes (Data/RoadCells.lua de SPF), pour que les
     chemins les préfèrent ;
@@ -31,6 +36,12 @@ La surface de base : un octet par case, 48 + type (0 bloquée, 1 sol, 2 eau)
 + 64 * route. Chaque tuile (67 x 67 cases, x d'abord) est compressée (zlib)
 puis codée en base64 : le jeu la décode à la demande (C_EncodingUtil).
 
+Le terrain et les diagonales de la base (terrain), un octet par case de même :
+terrain (0 normal, 2 pente douce, 3 pente raide, 4 intérieur, 5 intérieur de
+cité ; 1, la route, est dit par l'octet de base) + 8 * diagonales à inverser
+(1 +x+y, 2 +x-y, 4 -x+y, 8 -x-y) : un pas en diagonale de base à base passe
+si l'un des deux chemins en L passe, sauf si son bit le dit à l'inverse.
+
 Les étages d'une tuile (floors), compressés de même : des groupes par case,
 dans l'ordre des cases. Un groupe : l'écart à la case du groupe d'avant
 (un octet, ou 255 puis deux octets), la couche du sol (255 : inconnue), la
@@ -38,9 +49,10 @@ couche la plus basse, le nombre de nœuds, puis chaque nœud : sa couche (0 la
 base, i le i-ème étage depuis le bas), son type (1 sol, 2 eau, + 4 * route),
 le masque de ses pas d'une case (1 +x, 2 -x, 4 +y, 8 -y, 16 +x+y, 32 +x-y,
 64 -x+y, 128 -x-y), la couche d'arrivée de chacun dans l'ordre des bits,
-puis ses autres pas : leur nombre et, pour chacun, dx + 64, dy + 64, couche.
+son terrain (comme cls, sans diagonales), puis ses autres pas : leur nombre
+et, pour chacun, dx + 64, dy + 64, couche.
 Un nœud de couche 0 n'y a que les pas que l'octet de base ne dit pas (vers un
-étage, une chute, un sens unique).
+étage, une chute).
 
     python build_nav.py [dossier de ShortestPathForever]
 """
@@ -54,6 +66,7 @@ import sys
 import zlib
 
 import numpy as np
+from scipy import ndimage
 from scipy.sparse import coo_matrix
 from scipy.sparse.csgraph import connected_components
 
@@ -65,20 +78,26 @@ import build_roads  # noqa: E402  (la lecture des routes et de l'en-tête des ca
 DEFAULT_SPF = build_roads.DEFAULT_SPF
 OUT = os.path.join(REPO, "MyMapIsRich", "Plus", "Data", "Nav%d.lua")
 OUT_PASSAGES = os.path.join(REPO, "MyMapIsRich", "Plus", "Data", "Passages.lua")
+HAZARDS = os.path.join(REPO, "MyMapIsRich", "Plus", "Data", "Hazards.lua")
 CONTINENTS = {0: "Royaumes de l'Est", 1: "Kalimdor"}
 TILE = 1600 / 3
-TAN50 = math.tan(math.radians(50))
-FALL = 14.57                 # yd : la plus haute chute permise (Player::HandleFall)
 ROAD_MIN = 1                 # couverture minimale d'une case de route (sur 63)
 LIFT_SECS = 22               # s : l'attente moyenne et la montée d'un ascenseur
 LIFT_REACH = 3               # cases : la plateforme d'un ascenseur est cherchée jusque-là
 PASSAGE_REACH = 4            # cases : de même pour le bout d'un passage
 ISLAND = 30                  # étages : un îlot plus petit, au-dessus d'un sol sec, est élagué
+# Le terrain (à régler en jeu : /mmir sonde terrain)
+GENTLE_DEG = 22              # degrés : une pente douce à partir de là...
+STEEP_DEG = 35               # ... raide à partir de là
+SMOOTH = 5                   # cases : le côté du carré où les hauteurs sont lissées
+INDOOR_GAP = 15              # yd : un plafond plus bas que ça au-dessus de la surface, c'est l'intérieur...
+INDOOR_MIN = 12              # cases : ... sur un morceau d'au moins autant de cases (la base)
+CAP_CELL = 64                # yd : les carrés des capitales (Data/Hazards.lua)
+NORMAL, GENTLE, STEEP, INDOOR, CITY = 0, 2, 3, 4, 5
 
 DX = [1, -1, 0, 0, 1, 1, -1, -1]
 DY = [0, 0, 1, -1, 1, -1, 1, -1]
 DIRECTION = {(DX[d], DY[d]): d for d in range(8)}
-BIT = {1: 1, -1: 2}          # (le pas +x / -x de l'octet de base ; y : * 4)
 
 B64 = {c: i for i, c in enumerate("ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/")}
 
@@ -109,34 +128,44 @@ def num(s, i, width):
 
 
 def packed(files, name):
-    """{ k: chaîne décompressée } d'un champ des fichiers NavN_*.lua"""
+    """{ k: chaîne décompressée } d'un champ des fichiers NavN_*.lua (latin-1 : les étages finissent
+    par des octets bruts, les plans de dégagement de SPF, qu'on ne lit pas)"""
     out = {}
     for f in files:
         text = open(f, encoding="utf-8").read()
         for m in re.finditer(r"data\.packed\.%s\[(\d+)\] = \{([^}]*)\}" % name, text):
             blocks = re.findall(r'"([^"]*)"', m.group(2))
-            out[int(m.group(1)) - 1] = b"".join(zlib.decompress(base64.b64decode(b)) for b in blocks).decode("ascii")
+            out[int(m.group(1)) - 1] = b"".join(zlib.decompress(base64.b64decode(b)) for b in blocks).decode("latin-1")
     return out
 
 
-def decode_grid(s, C, steep_map):
-    """type (0 bloquée, 1 sol, 2 eau, 3 pente raide) et drapeaux (1 : pas +x fermé, 2 : pas +y fermé)"""
+def decode_grid(s, C):
+    """La grille du format 4 (PathGrid.lua : decodeDirectedGrid) : type (0 bloquée, 1 sol, 2 eau) et
+    masque des pas de base à base (bit d : vers DX[d], DY[d], d'une tuile à l'autre compris)"""
+    count = B64[s[0]]
+    palette = [num(s, 1 + e * 2, 2) for e in range(count)]
     val = np.zeros(C * C, dtype=np.int8)
-    flags = np.zeros(C * C, dtype=np.uint8)
-    n, v, f = 0, 0, 0
-    for ch in s:
-        sym = B64[ch]
-        if sym < 48:
-            v, f = sym // 16, sym % 16
-            if steep_map and v == 1 and f >= 8:
-                v, f = 3, f - 8
-            reps = 1
-        else:
+    mask = np.zeros(C * C, dtype=np.uint8)
+    n, i, v, m = 0, 1 + count * 2, 0, 0
+    while i < len(s):
+        sym = B64[s[i]]
+        i += 1
+        if sym >= 48:
             reps = sym - 47
+        else:
+            if sym == 47:
+                code = num(s, i, 2)
+                i += 2
+            else:
+                code = palette[sym]
+            v, m = code // 256, code % 256
+            reps = 1
         val[n:n + reps] = v
-        flags[n:n + reps] = f
+        mask[n:n + reps] = m
         n += reps
-    return val, flags
+    if n != C * C:
+        raise SystemExit("grille : %d cases au lieu de %d" % (n, C * C))
+    return val, mask
 
 
 def decode_heights(s, val, C, zstep):
@@ -147,7 +176,6 @@ def decode_heights(s, val, C, zstep):
     for i in range(C * C):
         if val[i] == 0:
             continue
-        pred = None
         if i % C > 0 and zu[i - 1] is not None:
             pred = zu[i - 1]
         elif i >= C and zu[i - C] is not None:
@@ -175,16 +203,17 @@ def decode_heights(s, val, C, zstep):
     return z
 
 
-def decode_floors(s, C):
-    """Les étages d'une tuile (format 3, PathGrid.lua : decodeFloors, decodeLinks) :
-    leurs cases, types, hauteurs (yd), couches, et les pas bruts
-    (nœud, dx, dy, couche d'arrivée, dans les deux sens ?) ; un nœud < C * C est
-    la surface de base de cette case, sinon le (nœud - C * C)-ième étage."""
+def decode_floors(s, C, val, implicit):
+    """Les étages d'une tuile (format 4, PathGrid.lua : decodeFloors, decodeLinks) : leurs cases, types,
+    hauteurs (yd), couches, et les pas (nœud, dx, dy, couche d'arrivée), tous à sens unique ; un nœud
+    < C * C est la surface de base de cette case, sinon le (nœud - C * C)-ième étage. implicit : le
+    floorFormat 1 de SPF (la couche d'arrivée d'un pas qui n'a qu'un choix n'est pas écrite)."""
     N = C * C
     n = num(s, 0, 3)
     pos = 3
-    cells, vals, zs, masks, lpos = [], [], [], [], []
-    lc = 0
+    cells, vals, zs = [], [], []
+    at, first, masks = {}, {}, {}
+    lc, node = 0, N
     for _ in range(n):
         sym = B64[s[pos]]
         pos += 1
@@ -196,41 +225,112 @@ def decode_floors(s, C):
         cells.append(lc)
         vals.append(B64[s[pos]])
         zs.append(num(s, pos + 1, 2) - 2048)
-        mask = num(s, pos + 3, 2)
-        masks.append(mask)
-        lpos.append(pos + 5)
-        pos += 5 + bin(mask).count("1")
-    first = {}
-    for i, c in enumerate(cells):
-        first.setdefault(c, i)
-    layers = [i - first[c] + 1 for i, c in enumerate(cells)]
+        masks[node] = num(s, pos + 3, 2)
+        at[node] = lc
+        first.setdefault(lc, node)
+        pos += 5
+        node += 1
+    last = node
+    layers = [node - first[at[node]] + 1 for node in range(N, last)]
     links = []
-    for i in range(n):
-        p, bits = lpos[i], masks[i]
-        for d in range(8):
-            if bits >> d & 1:
-                links.append((N + i, DX[d], DY[d], B64[s[p]], True))
+
+    # (les nœuds de la base qui ont des pas vers un étage, ou d'une couche à préciser)
+    count = num(s, pos, 3)
+    pos += 3
+    base, bnode = [], 0
+    for _ in range(count):
+        delta = B64[s[pos]]
+        pos += 1
+        if delta == 63:
+            delta = 63 + num(s, pos, 3)
+            pos += 3
+        bnode += delta
+        base.append(bnode)
+        masks[bnode] = num(s, pos, 2)
+        pos += 2
+
+    # (les couches d'arrivée : implicites quand il n'y a qu'un choix, sauf dérogation)
+    state = {"override": pos + 3, "end": pos, "ordinal": 0, "next": 0, "pos": pos}
+    if implicit:
+        state["end"] = state["override"] + num(s, pos, 3)
+        state["pos"] = state["end"]
+
+    def advance():
+        if state["override"] >= state["end"]:
+            state["next"] = math.inf
+            return
+        delta = B64[s[state["override"]]]
+        state["override"] += 1
+        if delta == 63:
+            delta = 63 + num(s, state["override"], 3)
+            state["override"] += 3
+        state["next"] += delta
+
+    if implicit:
+        advance()
+
+    def landing(frm, dx, dy, p):
+        layers_set = B64[s[p]]
+        p += 1
+        if layers_set == 0:
+            k = num(s, p, 2)
+            p += 2
+            for _ in range(k):
+                links.append((frm, dx, dy, B64[s[p]]))
                 p += 1
-    steps = num(s, pos, 3)
-    at = pos + 3
-    record = 0
-    for _ in range(steps):
-        sym = B64[s[at]]
-        at += 1
-        if sym < 63:
-            record += sym
         else:
-            record += 63 + num(s, at, 3)
-            at += 3
-        kind = B64[s[at]]
-        links.append((record, DX[kind % 8], DY[kind % 8], B64[s[at + 1]], kind < 8))
-        at += 2
-    drops = num(s, at, 3)
-    at += 3
+            layer = 0
+            while layers_set > 0:
+                if layers_set & 1:
+                    links.append((frm, dx, dy, layer))
+                layer += 1
+                layers_set >>= 1
+        return p
+
+    def directed(frm):
+        bits = masks.get(frm, 0)
+        if not bits:
+            return
+        cell = frm if frm < N else at[frm]
+        x, y = cell // C, cell % C
+        for d in range(8):
+            if not bits >> d & 1:
+                continue
+            dx, dy = DX[d], DY[d]
+            layer = None
+            if implicit:
+                tx, ty = x + dx, y + dy
+                if 0 <= tx < C and 0 <= ty < C:
+                    target = tx * C + ty
+                    f = first.get(target)
+                    if frm < N:
+                        if f is not None and at.get(f + 1) != target:
+                            layer = 1
+                    elif f is None:
+                        layer = 0
+            if layer is None:
+                state["pos"] = landing(frm, dx, dy, state["pos"])
+            else:
+                state["ordinal"] += 1
+                if state["ordinal"] == state["next"]:
+                    state["override"] = landing(frm, dx, dy, state["override"])
+                    advance()
+                else:
+                    links.append((frm, dx, dy, layer))
+
+    for frm in range(N, last):
+        directed(frm)
+    for frm in base:
+        directed(frm)
+    pos = state["pos"]
+
+    # (les chutes : d'un nœud, sur dx, dy cases, vers une couche)
+    drops = num(s, pos, 3)
+    pos += 3
     for _ in range(drops):
-        node = num(s, at, 3)
-        links.append((node, B64[s[at + 3]] - 8, B64[s[at + 4]] - 8, B64[s[at + 5]], False))
-        at += 8
+        frm = num(s, pos, 3)
+        links.append((frm, B64[s[pos + 3]] - 8, B64[s[pos + 4]] - 8, B64[s[pos + 5]]))
+        pos += 8
     return cells, vals, zs, layers, links
 
 
@@ -249,6 +349,44 @@ def decode_terrain(s):
         pos += 1
         out[cell] = None if sym == 63 else sym + 1
     return out
+
+
+def decode_ceiling(s):
+    """{ case * 64 + couche : hauteur (yd) du plus bas plafond } (PathCeiling.lua : relief ou structure)"""
+    out, key, pos = {}, -1, 0
+
+    def unsigned(p):
+        value, place = 0, 1
+        while True:
+            digit = B64[s[p]]
+            p += 1
+            value += (digit % 32) * place
+            if digit < 32:
+                return value, p
+            place *= 32
+
+    while pos < len(s):
+        delta, pos = unsigned(pos)
+        value, pos = unsigned(pos)
+        key += delta
+        h = value // 2
+        yd = (h / 2 if h % 2 == 0 else -(h + 1) / 2) / 8
+        out[key] = min(out.get(key, yd), yd)
+    return out
+
+
+def capitals(cont):
+    """Les carrés de 64 yards des capitales d'un continent (Data/Hazards.lua), les deux factions"""
+    text = open(HAZARDS, encoding="utf-8").read()
+    squares = set()
+    for m in re.finditer(r'\[\d+\] = \{ "\w+", (\d+), "([-\d ]+)" \}', text):
+        if int(m.group(1)) != cont:
+            continue
+        values = [int(v) for v in m.group(2).split()]
+        for i, j, n in zip(values[0::3], values[1::3], values[2::3]):
+            for q in range(n):
+                squares.add((i, j + q))
+    return squares
 
 
 def lift_pairs(spf, cont):
@@ -277,73 +415,52 @@ def lift_pairs(spf, cont):
 
 def build(spf, cont, roads):
     files = sorted(glob.glob(os.path.join(spf, "Nav", "Nav%d_*.lua" % cont)))
-    main = open(os.path.join(spf, "Nav", "Nav%d.lua" % cont), encoding="utf-8").read()[:20000]
+    main = open(os.path.join(spf, "Nav", "Nav%d.lua" % cont), encoding="utf-8").read()
+    main = main[main.find("ShortestPathForeverPathData[%d] = {" % cont):]
     head = build_roads.nav_header(spf, cont)
     C, nx, ny = head["cells"], head["nx"], head["ny"]
-    if not re.search(r"\bformat = 3,", main):
-        raise SystemExit("Nav%d.lua : le format 3 de SPF est attendu" % cont)
+    if not re.search(r"\bformat = 4,", main):
+        raise SystemExit("Nav%d.lua : le format 4 de SPF est attendu" % cont)
     zstep = float(re.search(r"\bzstep = ([\d.]+),", main).group(1))
-    steep_map = re.search(r"\bsteep = true,", main) is not None
+    implicit = re.search(r"\bfloorFormat = 1,", main) is not None
     cs = TILE / C
     N = C * C
     grids, heights = packed(files, "grid"), packed(files, "height")
     floor_data, terrain_data = packed(files, "floor"), packed(files, "terrain")
+    ceiling_data = packed(files, "ceiling")
     GX, GY = nx * C, ny * C
     V = np.zeros((GX, GY), dtype=np.int8)
-    CLX = np.zeros((GX, GY), dtype=bool)
-    CLY = np.zeros((GX, GY), dtype=bool)
+    M = np.zeros((GX, GY), dtype=np.uint8)
     Z = np.full((GX, GY), np.nan, dtype=np.float32)
     for k, s in grids.items():
-        val, flags = decode_grid(s, C, steep_map)
-        z = decode_heights(heights.get(k, ""), val, C, zstep) if k in heights else np.full(C * C, np.nan, np.float32)
+        val, mask = decode_grid(s, C)
+        z = decode_heights(heights[k], val, C, zstep) if k in heights else np.full(N, np.nan, np.float32)
         kx, ky = k // ny, k % ny
         sl = (slice(kx * C, (kx + 1) * C), slice(ky * C, (ky + 1) * C))
         V[sl] = val.reshape(C, C)
-        CLX[sl] = (flags & 1).astype(bool).reshape(C, C)
-        CLY[sl] = (flags & 2).astype(bool).reshape(C, C)
+        M[sl] = mask.reshape(C, C)
         Z[sl] = z.reshape(C, C)
-    walk = V != 0
-    steep = V == 3
     # (un cas sans hauteur : on ne sait rien, on n'y passe pas)
-    walk &= ~np.isnan(Z)
+    walk = (V != 0) & ~np.isnan(Z)
 
-    def moves(axis):
-        """pas permis vers +axe et vers -axe (deux grilles booléennes)"""
-        a = [slice(None), slice(None)]
-        b = [slice(None), slice(None)]
-        a[axis] = slice(0, -1)
-        b[axis] = slice(1, None)
-        a, b = tuple(a), tuple(b)
-        both = walk[a] & walk[b]
-        rise = Z[b] - Z[a]
-        idx = np.arange(V.shape[axis] - 1)
-        border = (idx % C) == C - 1                      # (le pas passe d'une tuile à l'autre)
-        border = border[:, None] if axis == 0 else border[None, :]
-        closed = (CLX if axis == 0 else CLY)[a] & ~border
-        anysteep = steep[a] | steep[b]
-        ok = both & ~closed
-        up = ok & (rise <= TAN50 * cs) & (~anysteep | (rise <= 0)) & ~(border & (rise < -FALL))
-        down = ok & (-rise <= TAN50 * cs) & (~anysteep | (-rise <= 0)) & ~(border & (-rise < -FALL))
-        plus = np.zeros(V.shape, dtype=bool)
-        minus = np.zeros(V.shape, dtype=bool)
-        plus[a] = up                                      # de a vers b (+axe)
-        minus[b] = down                                   # de b vers a (-axe)
-        return plus, minus
+    def target_walk(d):
+        """la case voisine dans la direction d est-elle praticable ? (grille booléenne)"""
+        t = np.zeros((GX, GY), dtype=bool)
+        dx, dy = DX[d], DY[d]
+        sx = slice(max(0, -dx), GX - max(0, dx))
+        sy = slice(max(0, -dy), GY - max(0, dy))
+        tx = slice(max(0, dx), GX - max(0, -dx))
+        ty = slice(max(0, dy), GY - max(0, -dy))
+        t[sx, sy] = walk[tx, ty]
+        return t
 
-    px, mx = moves(0)
-    py, my = moves(1)
-    kind = np.where(walk, np.where(V == 2, 2, 1), 0).astype(np.uint8)
-    roadcov = build_roads.coverage_grid(head, roads) >= ROAD_MIN
-    road = roadcov & walk
-    stepbits = (px.astype(np.uint8) + 2 * mx + 4 * py + 8 * my).astype(np.uint8)
-    code = (48 + kind + 4 * stepbits + 64 * road).astype(np.uint8)
-
-    # --- Les étages : leurs nœuds, puis leurs pas résolus -------------------
+    # --- Les étages : leurs nœuds, puis leurs pas ----------------------------
     # un nœud : (gx * GY + gy) * 64 + couche ; fz, fval : hauteur et type d'un étage
     fz, fval = {}, {}
     raw = []                                              # (k, cells, layers, links)
     for k, s in floor_data.items():
-        cells, vals, zs, layers, links = decode_floors(s, C)
+        val = V[(k // ny) * C:(k // ny + 1) * C, (k % ny) * C:(k % ny + 1) * C].reshape(-1)
+        cells, vals, zs, layers, links = decode_floors(s, C, val, implicit)
         kx, ky = k // ny, k % ny
         for c, v, z, layer in zip(cells, vals, zs, layers):
             gx, gy = kx * C + c // C, ky * C + c % C
@@ -372,62 +489,119 @@ def build(spf, cont, roads):
         cell = nid // 64
         return int(V[cell // GY, cell % GY])
 
-    def allowed(a, b, dx, dy):
-        """la règle de pente de SPF (neighbour) : montée de 50° au plus, pente raide en descente seulement"""
-        rise = height(b) - height(a)
-        if rise > TAN50 * math.hypot(dx, dy) * cs:
-            return False
-        if value(a) == 3 or value(b) == 3:
-            return rise <= 0
-        return True
-
     out = {}                                              # nœud -> { (dx, dy, couche) }
     linked = set()                                        # les nœuds touchés par un pas
-
-    def add(a, dx, dy, layer):
-        cell = a // 64
-        gx, gy = cell // GY + dx, cell % GY + dy
-        if not exists(gx, gy, layer):
-            return False
-        b = (gx * GY + gy) * 64 + layer
-        if a == b or not allowed(a, b, dx, dy):
-            return False
-        out.setdefault(a, set()).add((dx, dy, layer))
-        linked.add(a)
-        linked.add(b)
-        return True
-
-    rejected = 0
+    rejected, folded = 0, 0
     for k, cells, layers, links in raw:
         kx, ky = k // ny, k % ny
-        for node, dx, dy, layer, both in links:
+        for node, dx, dy, layer in links:
             if node < N:
                 c, own = node, 0
             else:
                 c, own = cells[node - N], layers[node - N]
             gx, gy = kx * C + c // C, ky * C + c % C
-            if not exists(gx, gy, own):
+            if not exists(gx, gy, own) or not exists(gx + dx, gy + dy, layer) or (dx == 0 and dy == 0 and layer == own):
                 rejected += 1
                 continue
+            if own == 0 and layer == 0 and (dx, dy) in DIRECTION:
+                # (un pas de base à base d'une case : dans le masque de la base)
+                M[gx, gy] |= 1 << DIRECTION[(dx, dy)]
+                folded += 1
+                continue
             a = (gx * GY + gy) * 64 + own
-            ok = add(a, dx, dy, layer)
-            if both and exists(gx + dx, gy + dy, layer):
-                b = ((gx + dx) * GY + gy + dy) * 64 + layer
-                ok = add(b, -dx, -dy, own) or ok
-            if not ok:
-                rejected += 1
+            b = ((gx + dx) * GY + gy + dy) * 64 + layer
+            out.setdefault(a, set()).add((dx, dy, layer))
+            linked.add(a)
+            linked.add(b)
 
-    # (les pas de base à base que l'octet de base dit déjà ne sont pas répétés)
-    def base_can(gx, gy, bit):
-        if gx < 0 or gy < 0 or gx >= GX or gy >= GY:
-            return False
-        return bool(stepbits[gx, gy] & bit)
+    # --- Les pas de la base : le masque de SPF, vers une case praticable ------
+    step = [((M >> d) & 1).astype(bool) & walk & target_walk(d) for d in range(8)]
+    px, mx, py, my = step[0], step[1], step[2], step[3]
+    stepbits = (px.astype(np.uint8) + 2 * mx + 4 * py + 8 * my).astype(np.uint8)
+    # (les diagonales : là où le maillage de SPF dit autre chose que la règle du jeu, un des deux
+    # chemins en L de base à base, Travel/Nav.lua : Step ; ailleurs rien, la compression y gagne)
+    def shifted(a, dx, dy):
+        t = np.zeros_like(a)
+        t[max(0, -dx):GX - max(0, dx), max(0, -dy):GY - max(0, dy)] = a[max(0, dx):GX - max(0, -dx), max(0, dy):GY - max(0, -dy)]
+        return t
 
-    def covered(gx, gy, dx, dy):
-        if dx == 0 or dy == 0:
-            return base_can(gx, gy, BIT[dx] if dx else 4 * BIT[dy])
-        bx, by = BIT[dx], 4 * BIT[dy]
-        return (base_can(gx, gy, bx) and base_can(gx + dx, gy, by)) or (base_can(gx, gy, by) and base_can(gx, gy + dy, bx))
+    diagbits = np.zeros((GX, GY), dtype=np.uint8)
+    lonly = 0
+    for bit, d in enumerate(range(4, 8)):
+        dx, dy = DX[d], DY[d]
+        bx = px if dx == 1 else mx
+        by = py if dy == 1 else my
+        lshape = (bx & shifted(by, dx, 0)) | (by & shifted(bx, 0, dy))
+        diagbits |= ((step[d] ^ lshape).astype(np.uint8) << bit)
+        lonly += int((step[d] & ~lshape).sum())
+    anydiag = step[4] | step[5] | step[6] | step[7]
+    kind = np.where(walk, np.where(V == 2, 2, 1), 0).astype(np.uint8)
+    roadcov = build_roads.coverage_grid(head, roads) >= ROAD_MIN
+    road = roadcov & walk
+    code = (48 + kind + 4 * stepbits + 64 * road).astype(np.uint8)
+
+    # --- Le terrain ----------------------------------------------------------
+    # (la pente : les hauteurs du sol sec lissées sur SMOOTH x SMOOTH cases, puis leur pente)
+    dry = walk & (V == 1)
+    zf = np.where(dry, Z, 0).astype(np.float64)
+    wsum = ndimage.uniform_filter(dry.astype(np.float64), size=SMOOTH, mode="constant")
+    zsum = ndimage.uniform_filter(zf, size=SMOOTH, mode="constant")
+    zs_ = np.where(wsum > 0, zsum / np.maximum(wsum, 1e-9), np.nan)
+    gx_, gy_ = np.gradient(zs_, cs)
+    slope = np.degrees(np.arctan(np.hypot(gx_, gy_)))
+    slope = np.where(np.isnan(slope), 0, slope)
+    cls = np.zeros((GX, GY), dtype=np.uint8)
+    cls[dry & (slope >= GENTLE_DEG)] = GENTLE
+    cls[dry & (slope >= STEEP_DEG)] = STEEP
+    # (l'intérieur : un plafond bas au-dessus de la surface ; la base sur un morceau assez grand)
+    ceilings = {}                                          # nœud -> hauteur du plafond
+    for k, s in ceiling_data.items():
+        kx, ky = k // ny, k % ny
+        for key, h in decode_ceiling(s).items():
+            c, layer = key // 64, key % 64
+            gx, gy = kx * C + c // C, ky * C + c % C
+            ceilings[(gx * GY + gy) * 64 + layer] = h
+    under = np.zeros((GX, GY), dtype=bool)
+    floor_inside = set()
+    for nid, h in ceilings.items():
+        layer = nid % 64
+        cell = nid // 64
+        gx, gy = cell // GY, cell % GY
+        if layer == 0:
+            if walk[gx, gy] and 0 < h - Z[gx, gy] <= INDOOR_GAP:
+                under[gx, gy] = True
+        elif nid in fz and 0 < h - fz[nid] <= INDOOR_GAP:
+            floor_inside.add(nid)
+    labels, count = ndimage.label(under, structure=np.ones((3, 3)))
+    sizes = ndimage.sum(under, labels, index=np.arange(1, count + 1))
+    big = np.zeros(count + 1, dtype=bool)
+    big[1:] = sizes >= INDOOR_MIN
+    indoor = big[labels] & under
+    city = np.zeros((GX, GY), dtype=bool)
+    caps = capitals(cont)
+    if caps:
+        xs = head["cx0"] * TILE + (np.arange(GX) + 0.5) * cs
+        ys = head["cy0"] * TILE + (np.arange(GY) + 0.5) * cs
+        ci, cj = np.floor(xs / CAP_CELL).astype(int), np.floor(ys / CAP_CELL).astype(int)
+        for i, j in caps:
+            xi = np.nonzero(ci == i)[0]
+            yj = np.nonzero(cj == j)[0]
+            if len(xi) and len(yj):
+                city[xi[0]:xi[-1] + 1, yj[0]:yj[-1] + 1] = True
+    cls[indoor] = INDOOR
+    cls[indoor & city] = CITY
+
+    def in_city(nid):
+        cell = nid // 64
+        return bool(city[cell // GY, cell % GY])
+
+    def node_class(nid):
+        if nid % 64 == 0:
+            cell = nid // 64
+            return int(cls[cell // GY, cell % GY])
+        if nid in floor_inside:
+            return CITY if in_city(nid) else INDOOR
+        return NORMAL
 
     # --- La couche du sol et la plus basse, par case à étages ---------------
     ground = {}                                           # (gx, gy) -> couche
@@ -452,7 +626,7 @@ def build(spf, cont, roads):
                 for layer in range(64):
                     nid = (gx * GY + gy) * 64 + layer
                     if layer == 0:
-                        if not (walk[gx, gy] and (stepbits[gx, gy] or nid in linked)):
+                        if not (walk[gx, gy] and (stepbits[gx, gy] or anydiag[gx, gy] or nid in linked)):
                             continue
                     elif nid not in fz:
                         break                             # (les étages d'une case se suivent)
@@ -479,8 +653,8 @@ def build(spf, cont, roads):
     # --- Les tuiles d'étages -------------------------------------------------
     # Seuls les étages sont listés. Les pas d'une base vers un étage voisin sont
     # écrits sur l'étage, comme pas entrants (le jeu les retrouve en regardant
-    # les étages des huit cases voisines). Les pas de base à base que l'octet de
-    # base ne dit pas (sens uniques, chutes) sont laissés de côté, comme avant.
+    # les étages des huit cases voisines). Les pas de la base de plus d'une case
+    # (des chutes) sont laissés de côté, comme avant.
     inward = {}                                           # étage -> { (dx, dy) : depuis la base de la case à (dx, dy) }
     dropped = 0
     for nid, es in out.items():
@@ -490,6 +664,7 @@ def build(spf, cont, roads):
         gx, gy = cell // GY, cell % GY
         for dx, dy, to in es:
             if to == 0:
+                dropped += 1
                 continue
             if (dx, dy) not in DIRECTION:
                 dropped += 1
@@ -563,10 +738,12 @@ def build(spf, cont, roads):
         by_tile.setdefault(k, {}).setdefault(lc, []).append(nid)
     tiles = {}
     kept_floors = 0
+    floor_classes = {}
+    columns = ("delta", "ground", "low", "count", "layer", "base", "same", "inmask", "nextra", "cls", "extra")
     for k in sorted(by_tile):
         kx, ky = k // ny, k % ny
         # (en colonnes : la compression y gagne beaucoup)
-        cols = {name: bytearray() for name in ("delta", "ground", "low", "count", "layer", "base", "same", "inmask", "nextra", "extra")}
+        cols = {name: bytearray() for name in columns}
         prev = -1
         cells = sorted(by_tile[k])
         for lc in cells:
@@ -603,46 +780,60 @@ def build(spf, cont, roads):
                 inmask = 0
                 for dx, dy in inward.get(nid, ()):
                     inmask |= 1 << DIRECTION[(dx, dy)]
+                c = node_class(nid)
+                floor_classes[c] = floor_classes.get(c, 0) + 1
                 cols["base"].append(base)
                 cols["same"].append(same)
                 cols["inmask"].append(inmask)
                 cols["nextra"].append(len(extra))
+                cols["cls"].append(c)
                 for dx, dy, to in extra:
                     cols["extra"] += bytes((dx + 64, dy + 64, to))
                 kept_floors += 1
         n = len(cells)
-        buf = bytes((n >> 8, n & 255)) + b"".join(bytes(cols[name]) for name in
-                                                  ("delta", "ground", "low", "count", "layer", "base", "same", "inmask", "nextra", "extra"))
+        buf = bytes((n >> 8, n & 255)) + b"".join(bytes(cols[name]) for name in columns)
         tiles[k] = base64.b64encode(zlib.compress(buf, 9)).decode("ascii")
 
-    clusters, raw_total = {}, 0
+    clusters, terrain = {}, {}
+    clsbyte = (cls + 8 * diagbits).astype(np.uint8)
     for k in grids:
         kx, ky = k // ny, k % ny
-        tile = code[kx * C:(kx + 1) * C, ky * C:(ky + 1) * C].reshape(-1).tobytes()
-        if not (kind[kx * C:(kx + 1) * C, ky * C:(ky + 1) * C].any()):
+        sl = (slice(kx * C, (kx + 1) * C), slice(ky * C, (ky + 1) * C))
+        if not kind[sl].any():
             continue
-        raw_total += len(tile)
-        clusters[k] = base64.b64encode(zlib.compress(tile, 9)).decode("ascii")
+        clusters[k] = base64.b64encode(zlib.compress(code[sl].reshape(-1).tobytes(), 9)).decode("ascii")
+        terrain[k] = base64.b64encode(zlib.compress(clsbyte[sl].reshape(-1).tobytes(), 9)).decode("ascii")
 
     def endpoint(x, y, z):
         nid, cost = nearest_node(x, y, z, PASSAGE_REACH)
         return None if nid is None else nid % 64
 
+    dry_n = int(dry.sum())
     stats = {
         "tuiles": len(clusters),
         "cases franchissables": int(walk.sum()),
         "routes": int(road.sum()),
+        "pentes douces": int((cls == GENTLE).sum()),
+        "pentes raides": int((cls == STEEP).sum()),
+        "intérieur": int((cls == INDOOR).sum()),
+        "intérieur de cité": int((cls == CITY).sum()),
         "étages": len(fz),
         "étages gardés": kept_floors,
+        "étages à l'intérieur": floor_classes.get(INDOOR, 0) + floor_classes.get(CITY, 0),
         "pas refusés": rejected,
-        "sauts de la base vers un étage ignorés": dropped,
+        "pas de base repliés dans le masque": folded,
+        "pas de la base laissés de côté": dropped,
+        "diagonales sans chemin en L": lonly,
+        "diagonales différentes de la règle": int(np.unpackbits(diagbits[..., None], axis=-1).sum()),
         "ascenseurs": len(lifts),
     }
+    print("  sol sec %d cases : %.1f %% en pente douce, %.1f %% raide" % (
+        dry_n, 100 * stats["pentes douces"] / max(1, dry_n), 100 * stats["pentes raides"] / max(1, dry_n)))
     lift_rows = []
     for top, bot, secs in lifts:
         a, b = top // 64, bot // 64
         lift_rows.append((a // GY, a % GY, top % 64, b // GY, b % GY, bot % 64, secs))
-    return head, clusters, tiles, lift_rows, endpoint, stats
+    return head, clusters, terrain, tiles, lift_rows, endpoint, stats
 
 
 def main():
@@ -652,7 +843,7 @@ def main():
     endpoints = {}
     for cont, name in CONTINENTS.items():
         print(name)
-        head, clusters, tiles, lifts, endpoint, stats = build(spf, cont, roads.get(cont, {}))
+        head, clusters, terrain, tiles, lifts, endpoint, stats = build(spf, cont, roads.get(cont, {}))
         for p in PASSAGES:
             for side in ("a", "b"):
                 c, x, y, z = p[side]
@@ -662,12 +853,15 @@ def main():
             "-- Généré par tools/nav/build_nav.py : ne pas modifier à la main.",
             "-- La grille de marche des itinéraires (Travel/Nav.lua) : %s." % name,
             "-- Source : Shortest Path Forever %s de cjber (https://github.com/cjber/shortest-path-forever)," % version,
-            "-- son maillage de marche (Nav/Nav%d*.lua, extrait du terrain du client avec les outils de TrinityCore)," % cont,
-            "-- ses ascenseurs (Data/Transports.lua) et la couverture de ses routes (Data/RoadCells.lua). Données",
-            "-- dérivées, sous licence GPL-3.0-or-later (voir LICENSE).",
+            "-- son maillage de marche (Nav/Nav%d*.lua, format 4, extrait du terrain du client avec les outils de" % cont,
+            "-- TrinityCore), ses ascenseurs (Data/Transports.lua) et la couverture de ses routes (Data/RoadCells.lua).",
+            "-- Données dérivées, sous licence GPL-3.0-or-later (voir LICENSE).",
             "-- Une tuile k (0 d'abord) couvre x dans [(cx0 + k // ny) T, +T), y dans [(cy0 + k %% ny) T, +T),",
             "-- T = 1600 / 3 yards, en cells x cells cases, x d'abord. tiles : la surface de base, un octet par case,",
             "-- 48 + type (0 bloquée, 1 sol, 2 eau) + 4 * pas permis (1 +x, 2 -x, 4 +y, 8 -y) + 64 * route.",
+            "-- terrain : un octet par case, terrain (0 normal, 2 pente douce, 3 pente raide, 4 intérieur,",
+            "-- 5 intérieur de cité) + 8 * diagonales à inverser (1 +x+y, 2 +x-y, 4 -x+y, 8 -x-y) : un pas en",
+            "-- diagonale de base à base passe si l'un des deux chemins en L passe, sauf si son bit dit l'inverse.",
             "-- floors : les étages et les pas de plus (le format est décrit dans tools/nav/build_nav.py).",
             "-- lifts : { gx, gy, couche du haut, gx, gy, couche du bas, secondes } (cases de la grille).",
             "-- Chaque tuile est compressée (zlib) puis en base64. x vers le nord, y vers l'ouest (UnitPosition).",
@@ -675,7 +869,8 @@ def main():
             "",
             "ns.Nav = ns.Nav or {}",
             "ns.Nav[%d] = {" % cont,
-            "\tcx0 = %d, cy0 = %d, nx = %d, ny = %d, cells = %d," % (head["cx0"], head["cy0"], head["nx"], head["ny"], head["cells"]),
+            "\tcx0 = %d, cy0 = %d, nx = %d, ny = %d, cells = %d, diag = true," % (
+                head["cx0"], head["cy0"], head["nx"], head["ny"], head["cells"]),
             "\tlifts = {",
         ]
         for row in lifts:
@@ -683,6 +878,9 @@ def main():
         lines += ["\t},", "\ttiles = {"]
         for k in sorted(clusters):
             lines.append('\t\t[%d] = "%s",' % (k + 1, clusters[k]))
+        lines += ["\t},", "\tterrain = {"]
+        for k in sorted(terrain):
+            lines.append('\t\t[%d] = "%s",' % (k + 1, terrain[k]))
         lines += ["\t},", "\tfloors = {"]
         for k in sorted(tiles):
             lines.append('\t\t[%d] = "%s",' % (k + 1, tiles[k]))
@@ -691,8 +889,10 @@ def main():
         with open(path, "w", encoding="utf-8", newline="\n") as f:
             f.write("\n".join(lines))
         floors_kb = sum(len(s) for s in tiles.values()) / 1024
-        print("  %s ; étages : %.0f Ko ; %s : %.0f Ko" % (", ".join("%s %s" % (v, k) for k, v in stats.items()),
-                                                         floors_kb, path, os.path.getsize(path) / 1024))
+        terrain_kb = sum(len(s) for s in terrain.values()) / 1024
+        print("  %s ; étages : %.0f Ko ; terrain : %.0f Ko ; %s : %.0f Ko" % (
+            ", ".join("%s %s" % (v, k) for k, v in stats.items()), floors_kb, terrain_kb, path,
+            os.path.getsize(path) / 1024))
 
     lines = [
         "-- Généré par tools/nav/build_nav.py : ne pas modifier à la main.",

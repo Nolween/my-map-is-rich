@@ -17,9 +17,14 @@
 -- une épingle, Alt+clic le menu des actions.
 --
 -- L'aperçu : le trajet calculé sans être lancé (Travel/Guide.lua :
--- T.Preview) : le temps, l'heure d'arrivée, une barre par étape, la liste des
--- étapes ; Partir (A), Ajouter à la file (X), Annuler (B : retour à la fiche).
--- R3 et Maj+clic, eux, partent tout de suite.
+-- T.Preview) : le temps, l'heure d'arrivée, une barre par étape, les trois
+-- styles de marche avec leur durée (Le plus rapide, Équilibré, Routes ; celui
+-- du réglage en tête et choisi ; deux styles qui donnent le même chemin n'en
+-- font qu'une ligne), la liste des étapes ; Partir (A), Ajouter à la file
+-- (X), Annuler (B : retour à la fiche). Les durées viennent d'abord de
+-- l'estimation, puis de la grille de marche quand ses recherches finissent
+-- (T.Measure). Un style choisi ici reste celui de l'itinéraire lancé.
+-- R3 et Maj+clic, eux, partent tout de suite, au style du réglage.
 --
 -- La fiche d'une quête à prendre (un « ! ») : ce qu'en sait la base des quêtes
 -- (Quests/Db.lua), le jeu ne donnant son texte et ses récompenses qu'une fois
@@ -51,7 +56,11 @@ local OFFER_SOON = { 0.78, 0.55, 1 }   -- (le violet des « ! » bientôt prêts
 
 local card, preview, offer, ring
 local current                -- { point, pin, pinU, pinV, title, lines, action, isPin, icon }
-local plan                   -- le plan de l'aperçu
+local plan                   -- le plan de l'aperçu (celui du style choisi)
+local plans, chosen          -- les plans de l'aperçu, par style ; le style choisi
+local stopMeasure            -- arrête les recherches de l'aperçu (T.Measure)
+local measuring = false
+local STYLE_ROW_H = 26
 local backTo                 -- le panneau d'où vient l'aperçu (Annuler y revient) : la fiche, ou celle d'une quête à prendre
 local offerQuest             -- la quête à prendre montrée : { id, title, soon, giver } (Layers/QuestMarks.lua : QM.SeeQuests)
 local ShowOffer              -- (plus bas)
@@ -67,7 +76,7 @@ end
 
 local KINDS = {
     walk = "KIND_WALK", flight = "KIND_FLIGHT", boat = "KIND_BOAT",
-    zeppelin = "KIND_ZEPPELIN", portal = "KIND_PORTAL", tram = "KIND_TRAM", hearth = "KIND_HEARTH",
+    zeppelin = "KIND_ZEPPELIN", portal = "KIND_PORTAL", tram = "KIND_TRAM", teleport = "KIND_TELEPORT",
 }
 
 local function KindColor(kind)
@@ -347,12 +356,20 @@ local function Layout()
     card:SetHeight(-y + 8)
 end
 
+local measureGen = 0         -- (une série de recherches arrêtée ne reprend pas)
+local function StopMeasure()
+    measureGen = measureGen + 1
+    if stopMeasure then stopMeasure() end
+    stopMeasure, measuring = nil, false
+end
+
 function PC.Close()
+    StopMeasure()
     if card then card:Hide() end
     if preview then preview:Hide() end
     if offer then offer:Hide() end
     if ring then ring:Hide() end
-    current, plan, offerQuest, backTo = nil, nil, nil, nil
+    current, plan, plans, chosen, offerQuest, backTo = nil, nil, nil, nil, nil, nil
     P.Dirty()
 end
 Close = PC.Close
@@ -441,6 +458,17 @@ local function BuildPreview(chrome)
     preview.bar:SetPoint("TOPLEFT", 14, -62)
     preview.bar:SetPoint("RIGHT", preview, "RIGHT", -14, 0)
     preview.segs, preview.rows = {}, {}
+    -- (les styles de marche : une ligne par chemin différent, le style choisi en or)
+    preview.styleRows = {}
+    for i = 1, 3 do
+        local b = UI.NavButton(preview, STYLE_ROW_H)
+        b.count:SetFontObject("GameFontHighlightSmall")
+        b:SetScript("OnClick", function(self) PC.PickStyle(self.group) end)
+        preview.styleRows[i] = b
+    end
+    preview.styleDesc = UI.DimText(preview, nil, "GameFontHighlightSmall")
+    preview.styleDesc:SetJustifyH("LEFT")
+    preview.styleDesc:SetWordWrap(true)
     preview.go = Button(preview, L.PREVIEW_GO, nil, "PAD1")
     preview.go:SetWidth((PREVIEW_W - 34) / 2)
     preview.go:SetScript("OnClick", function() PC.Go() end)
@@ -455,6 +483,8 @@ local function BuildPreview(chrome)
     preview.note:SetPoint("RIGHT", preview, "RIGHT", -14, 0)
     preview.note:SetJustifyH("LEFT")
     preview.buttons = { preview.go, preview.queue, preview.cancel }
+    -- (l'aperçu fermé, d'où que ce soit : ses recherches s'arrêtent)
+    preview:SetScript("OnHide", StopMeasure)
     preview:Hide()
     Roots(preview)
     F.RegisterWindow(preview, { onBack = function() PC.Back() end, first = function() return preview.go end })
@@ -479,6 +509,83 @@ local function PreviewRow(i)
     row.secs:SetPoint("RIGHT", -10, 0)
     preview.rows[i] = row
     return row
+end
+
+-- Les styles de marche, dans l'ordre de l'aperçu : celui du réglage, puis les autres
+local STYLE_KEYS = { fastest = "TRAVEL_STYLE_FASTEST", balanced = "TRAVEL_STYLE_BALANCED", roads = "TRAVEL_STYLE_ROADS" }
+local function StyleOrder()
+    local Nav = ns.TravelNav
+    local first = Pl().Style()
+    local out = { first }
+    for _, s in ipairs(Nav and Nav.STYLE_ORDER or {}) do
+        if s ~= first then out[#out + 1] = s end
+    end
+    return out
+end
+
+-- Deux plans qui font le même chemin : les mêmes étapes, à quelques secondes près
+local function Same(a, b)
+    if not (a and b) or #a.legs ~= #b.legs then return false end
+    for i, la in ipairs(a.legs) do
+        local lb = b.legs[i]
+        if la.kind ~= lb.kind or (la.to and la.to.id) ~= (lb.to and lb.to.id) then return false end
+        if math.abs(la.secs - lb.secs) > math.max(5, 0.03 * math.max(la.secs, lb.secs)) then return false end
+    end
+    return true
+end
+
+-- Les lignes des styles : { { style, ... }, ... }, les styles au même chemin ensemble
+local function StyleGroups()
+    local groups = {}
+    for _, s in ipairs(StyleOrder()) do
+        local p = plans and plans[s]
+        if p then
+            local into
+            for _, g in ipairs(groups) do
+                if Same(plans[g[1]], p) then into = g break end
+            end
+            if into then into[#into + 1] = s else groups[#groups + 1] = { s } end
+        end
+    end
+    return groups
+end
+
+local function GroupHas(g, s)
+    for _, x in ipairs(g) do if x == s then return true end end
+    return false
+end
+
+-- Les lignes des styles et la description du style choisi, à partir de y ; rend le nouveau y
+local function FillStyles(y)
+    local groups = StyleGroups()
+    for i, b in ipairs(preview.styleRows) do
+        local g = groups[i]
+        b.group = g
+        if g then
+            local names = {}
+            for k, s in ipairs(g) do names[k] = L[STYLE_KEYS[s]] end
+            b.text:SetText(table.concat(names, " · "))
+            b.count:SetText(Duration(plans[g[1]].secs))
+            b:SetSelected(GroupHas(g, chosen))
+            b:ClearAllPoints()
+            b:SetPoint("TOPLEFT", preview, "TOPLEFT", 14, y)
+            b:SetPoint("RIGHT", preview, "RIGHT", -14, 0)
+            b:Show()
+            y = y - STYLE_ROW_H - 4
+        else
+            b:Hide()
+        end
+    end
+    local desc = L[(STYLE_KEYS[chosen] or "TRAVEL_STYLE_BALANCED") .. "_DESC"]
+    if measuring then desc = desc .. "  |cff808080" .. L.TRAVEL_STYLE_COMPUTING .. "|r" end
+    -- (« plus rapide si tu avais le vol de… » : Planner.Best, pour le style du réglage)
+    local hint = plans and plans[Pl().Style()] and plans[Pl().Style()].hint
+    if hint then desc = desc .. "\n|cff808080" .. L.TRAVEL_HINT_FLIGHT:format(Duration(hint.saves), hint.name) .. "|r" end
+    preview.styleDesc:SetText(desc)
+    preview.styleDesc:ClearAllPoints()
+    preview.styleDesc:SetPoint("TOPLEFT", preview, "TOPLEFT", 16, y - 2)
+    preview.styleDesc:SetPoint("RIGHT", preview, "RIGHT", -14, 0)
+    return y - 2 - preview.styleDesc:GetStringHeight() - 10
 end
 
 local function FillPreview()
@@ -506,9 +613,9 @@ local function FillPreview()
         s:Show()
         x = x + w + 3
     end
-    -- (les étapes)
+    -- (les styles de marche, puis les étapes)
     for _, row in ipairs(preview.rows) do row:Hide() end
-    local y = -80
+    local y = FillStyles(-80)
     for i, leg in ipairs(p.legs) do
         local row = PreviewRow(i)
         row.dot:SetColorTexture(KindColor(leg.kind))
@@ -530,7 +637,9 @@ local function FillPreview()
     preview.cancel:ClearAllPoints()
     preview.cancel:SetPoint("TOPLEFT", preview, "TOPLEFT", 14, y)
     y = y - 26 - 10
-    preview.note:SetText(ns.PadUI() and L.PREVIEW_HURRY_PAD or L.PREVIEW_HURRY_MOUSE)
+    local pad = ns.PadUI()
+    preview.note:SetText((pad and L.PREVIEW_STYLE_PAD or L.PREVIEW_STYLE_MOUSE) .. "\n"
+        .. (pad and L.PREVIEW_HURRY_PAD or L.PREVIEW_HURRY_MOUSE))
     preview.note:ClearAllPoints()
     preview.note:SetPoint("TOPLEFT", preview, "TOPLEFT", 14, y)
     preview.note:SetPoint("RIGHT", preview, "RIGHT", -14, 0)
@@ -538,26 +647,70 @@ local function FillPreview()
     preview:SetHeight(-y)
 end
 
--- L'aperçu du trajet jusqu'au point de la fiche
+-- Les marches des plans de l'aperçu précisées par la grille, un style après
+-- l'autre (le choisi d'abord) ; l'aperçu refait à chaque marche
+local function Measure()
+    StopMeasure()
+    local order, gen = StyleOrder(), measureGen
+    measuring = true
+    local function Step(i)
+        if gen ~= measureGen then return end
+        local s = order[i]
+        if not s then
+            stopMeasure, measuring = nil, false
+            if preview:IsShown() then FillPreview() end
+            return
+        end
+        local p = plans and plans[s]
+        if not p then return Step(i + 1) end
+        -- (le style suivant à l'image d'après : une fin tout de suite ne double pas la série)
+        stopMeasure = T().Measure(p, function()
+            if gen == measureGen and preview:IsShown() then FillPreview() end
+        end, function()
+            C_Timer.After(0, function() Step(i + 1) end)
+        end)
+    end
+    Step(1)
+end
+
+-- L'aperçu du trajet jusqu'au point de la fiche : un plan par style de marche
 function Route()
     if not current then return end
-    local p, why = T().Preview(current.point)
+    StopMeasure()
+    local first = Pl().Style()
+    local p, why = T().Preview(current.point, first)
     if not p then
         ns.Print(why == "here" and L.TRAVEL_ALREADY or why == "nohere" and L.TRAVEL_NO_HERE or L.TRAVEL_NO_ROUTE)
         return
+    end
+    plans, chosen = { [first] = p }, first
+    for _, s in ipairs(StyleOrder()) do
+        if s ~= first then plans[s] = T().Preview(current.point, s, false) end
     end
     plan = p
     backTo = (card:IsShown() and card) or (offer and offer:IsShown() and offer) or nil
     card:Hide()
     if offer then offer:Hide() end
+    measuring = true
     FillPreview()
     ShowGlyphs(preview)
     Place(preview)
     preview:Show()
     PlaceRing()
     P.Dirty()
+    Measure()
 end
 PC.Route = Route
+
+-- Une ligne de style pressée : son style choisi ; déjà choisi, on part
+function PC.PickStyle(group)
+    if not (group and plans and preview and preview:IsShown()) then return end
+    if GroupHas(group, chosen) then return PC.Go() end
+    chosen = group[1]
+    plan = plans[chosen] or plan
+    FillPreview()
+    P.Dirty()
+end
 
 function Queue()
     if not current then return end
@@ -566,12 +719,14 @@ function Queue()
     if T() then T().Enqueue(point) end
 end
 
--- Partir : le trajet est calculé de nouveau, depuis où tu es maintenant
+-- Partir : le trajet est calculé de nouveau, depuis où tu es maintenant, au
+-- style choisi dans l'aperçu (gardé par l'itinéraire s'il n'est pas celui du réglage)
 function PC.Go()
     if not current then return end
     local point = current.point
+    local style = preview and preview:IsShown() and chosen ~= Pl().Style() and chosen or nil
     PC.Close()
-    if T() then T().Go(point) end
+    if T() then T().Go(point, nil, style) end
 end
 
 -- Annuler : retour à la fiche (celle du point, ou d'une quête à prendre), ou fermé
@@ -581,7 +736,7 @@ function PC.Back()
         return
     end
     preview:Hide()
-    plan = nil
+    plan, plans, chosen = nil, nil, nil
     if backTo and current then
         Place(backTo)
         backTo:Show()

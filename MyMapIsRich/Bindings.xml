@@ -9,4 +9,6 @@
 	<!-- Les boutons protégés de la quête choisie (Plus/UI/QuestButtons.lua) : un clic sur eux -->
 	<Binding name="CLICK MyMapIsRichQuestItem:LeftButton" category="My Map Is Rich"/>
 	<Binding name="CLICK MyMapIsRichQuestTarget:LeftButton" category="My Map Is Rich"/>
+	<!-- Le bouton de voyage (Plus/UI/TravelButton.lua) : la téléportation de l'étape, ou le vol chez le maître de vol -->
+	<Binding name="CLICK MyMapIsRichTravelButton:LeftButton" category="My Map Is Rich"/>
 </Bindings>

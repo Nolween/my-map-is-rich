@@ -63,7 +63,10 @@ local DEFAULTS = {
     theme = "brown",
     travel = true,         -- R3 sur la carte : un itinéraire jusqu'au curseur
     travelSpeed = "auto",  -- la vitesse de marche : auto, walk, slow, fast
-    travelPath = "mixed",  -- le chemin à pied : roads (routes au maximum), mixed (routes si possible), fields (à travers champs)
+    travelPath = "balanced",  -- le style de marche (Travel/Nav.lua : Nav.STYLES) : fastest (le plus rapide),
+                              -- balanced (équilibré, recommandé), roads (les routes)
+    travelAlerts = true,   -- les alertes des bateaux et des zeppelins (Travel/Transit.lua)
+    travelButton = true,   -- le bouton de voyage : la téléportation ou le vol de l'étape (UI/TravelButton.lua)
     travelTerrain = true,  -- les chemins à pied contournent les obstacles (Travel/Nav.lua)
     travelMinimap = true,  -- l'itinéraire aussi sur la minimap
     travelHud = true,      -- le panneau de trajet (UI/RouteHud.lua)
@@ -72,7 +75,6 @@ local DEFAULTS = {
     travelRumble = true,   -- la manette vibre à chaque étape (Pad/Rumble.lua)
     travelSound = true,    -- un son à chaque étape et à l'arrivée
     travelCorpse = true,   -- en fantôme : l'itinéraire jusqu'au corps
-    travelHearth = true,   -- la pierre de foyer prête compte dans un itinéraire (Travel/Planner.lua)
     travelShare = true,    -- les destinations envoyées par le groupe (Travel/Share.lua)
     travelShareChat = true, -- envoyer au groupe : aussi une ligne dans la discussion
     tracker = true,        -- le suivi des quêtes à droite de l'écran, à la place de celui du jeu (UI/Tracker.lua)
@@ -404,6 +406,12 @@ events:SetScript("OnEvent", function(_, event, arg)
             if ns.db.options.travelRoads == false and ns.db.options.travelPath == nil then ns.db.options.travelPath = "fields" end
             ns.db.options.travelRoads = nil
         end
+        -- (1.4.0 : les styles de marche de Polestar ; à travers champs devient le
+        -- plus rapide, routes si possible l'équilibré, routes au maximum les routes)
+        local PATHS = { fields = "fastest", mixed = "balanced" }
+        if PATHS[ns.db.options.travelPath] then ns.db.options.travelPath = PATHS[ns.db.options.travelPath] end
+        -- (1.4.0 : la pierre de foyer n'est plus dans les itinéraires, son réglage s'en va)
+        ns.db.options.travelHearth = nil
         -- (0.5.0 : plus de carte classique, la carte plein écran est la seule)
         ns.db.options.classicMap, ns.db.options.padView = nil, nil
         Fill(ns.db.options, DEFAULTS)
@@ -411,6 +419,8 @@ events:SetScript("OnEvent", function(_, event, arg)
         -- (ce qui est propre au personnage : ses vols appris, son point de destination...)
         MyMapIsRichPlusCharDB = MyMapIsRichPlusCharDB or {}
         ns.char = MyMapIsRichPlusCharDB
+        -- (1.4.0 : l'auberge de la pierre de foyer ne sert plus aux itinéraires)
+        ns.char.hearth = nil
         ns.Map.InitDB()
         if ns.UI and ns.UI.SetTheme then ns.UI.SetTheme(ns.db.options.theme, true) end
         ns.Map.Attach()
@@ -494,6 +504,9 @@ SlashCmdList.MYMAPISRICH = function(msg)
         if ns.Diag then ns.Diag.Status() end
     elseif cmd == "sonde carte" or cmd == "probe map" then
         if ns.Diag then ns.Diag.ProbeCoords() end
+    elseif cmd == "sonde terrain" or cmd == "probe ground" then
+        -- (le terrain de la grille de marche là où tu es : Travel/Nav.lua)
+        if ns.Diag then ns.Diag.ProbeTerrain() end
     elseif cmd == "sonde quetes" or cmd == "sonde quêtes" or cmd == "probe quests" then
         -- (tes quêtes du journal dans la base des quêtes : Layers/QuestMarks.lua)
         if ns.Quests and ns.Quests.Marks then ns.Quests.Marks.Probe() end
@@ -569,6 +582,11 @@ SlashCmdList.MYMAPISRICH = function(msg)
         if ns.WhatsNew then ns.WhatsNew.Open() end
     elseif cmd == "trajet" or cmd == "route" then
         if ns.Travel then ns.Travel.Report() end
+    elseif cmd == "trajet passer" or cmd == "route skip" then
+        -- (passer l'étape en cours : le vol, le bateau, la téléportation ; Travel/Guide.lua)
+        if ns.Travel then
+            if ns.Travel.Active() then ns.Travel.SkipLeg() else ns.Print(L.TRAVEL_NONE) end
+        end
     elseif cmd == "trajet stop" or cmd == "route stop" then
         if ns.Travel then
             if ns.Travel.Active() then ns.Travel.Cancel(true) else ns.Print(L.TRAVEL_NONE) end

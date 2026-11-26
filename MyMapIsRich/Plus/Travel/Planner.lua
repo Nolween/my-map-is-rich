@@ -1,16 +1,20 @@
 -- Le calcul d'un itinéraire : le trajet le plus rapide d'un point à un
 -- autre, en marchant, en vol (les vols appris), en bateau, en zeppelin, par
--- le portail de Darnassus et le tram des profondeurs.
---   Planner.Find(from, to)  from, to : { cont, x, y } (yards du monde)
---                           -> { legs = { étape, ... }, secs } ou nil
---   Une étape : { kind = "walk" | "flight" | "boat" | "zeppelin" | "portal" | "tram" | "hearth", from, to
+-- le portail de Darnassus, le tram des profondeurs et les téléportations de
+-- classe.
+--   Planner.Find(from, to, opts)  from, to : { cont, x, y } (yards du monde)
+--                                 -> { legs = { étape, ... }, secs } ou nil
+--   Planner.Best(from, to, opts)  le même, avec les règles qui demandent un
+--                                 second calcul (téléportations, indice d'un vol)
+--   Une étape : { kind = "walk" | "flight" | "boat" | "zeppelin" | "portal" | "tram" | "teleport", from, to
+--   (un bateau : transit, sa ligne ; timed, son horaire est appris ; wait, l'attente au quai)
 --   (des nœuds : { cont, x, y, name }), secs, paths (les sauts d'un vol),
 --   route (le nom d'une ligne de bateau), points (le tracé d'une marche :
 --   { {x, y}, ... }) }
 -- La marche peut suivre les routes du jeu (Travel/Roads.lua) et va en ligne
 -- droite, avec un détour, entre une route et un point qui n'est pas dessus.
--- Le réglage « Chemin à pied » (Pl.PathProfile) dit combien un yard hors
--- route compte : à travers champs, autant qu'un yard de route.
+-- Le style de marche (Pl.Style, Travel/Nav.lua : Nav.STYLES) dit combien un
+-- yard de route compte, à côté d'un yard de ligne droite (WALK_DETOUR).
 -- Elle ne relie que deux points d'un même continent.
 -- Dijkstra sur le temps, sur les nœuds du réseau (Travel/Graph.lua), le
 -- départ, l'arrivée et les carrefours des routes.
@@ -25,7 +29,8 @@ local G = ns.TravelGraph
 local Pl = {}
 ns.TravelPlanner = Pl
 
-local DETOUR = 1.3           -- la marche réelle par rapport à la ligne droite
+local DETOUR = 1.3           -- la marche réelle par rapport à la ligne droite (le temps annoncé)
+local WALK_DETOUR = 1.25     -- ... et ce qu'elle compte pour choisir le chemin (comme Polestar)
 local RUN = 7                -- yd/s à pied
 local SPEEDS = { walk = RUN, slow = RUN * 1.6, fast = RUN * 2 }
 Pl.GHOST_SPEED = RUN * 1.25  -- yd/s : un fantôme court plus vite, sans monture
@@ -170,99 +175,94 @@ function Pl.Speed()
 end
 
 ---------------------------------------------------------------------------
--- Le réglage « Chemin à pied » (travelPath) : ce que compte un yard hors
--- route pour choisir le chemin (un yard de route compte 1), et ce que coûte
--- le fait de monter sur une route (yd), pour qu'un chemin ne fasse pas un
--- crochet vers un petit bout de route. Lu aussi par la grille (Travel/Nav.lua).
--- Le temps annoncé reste le temps réel.
+-- Le style de marche (réglage « Chemin à pied », travelPath) : fastest (le
+-- plus rapide), balanced (équilibré, le défaut), roads (les routes) ; leurs
+-- prix sont dans Travel/Nav.lua (Nav.STYLES). name : un style demandé (celui
+-- d'un itinéraire, de l'aperçu) ; sinon celui du réglage. Le temps annoncé
+-- reste le temps réel.
 ---------------------------------------------------------------------------
-local PROFILES = {
-    roads = { off = 2.0, join = 24 },    -- routes au maximum
-    mixed = { off = 1.3, join = 16 },    -- routes si possible
-    fields = { off = 1.0, join = 0 },    -- à travers champs : au plus court
-}
-
-function Pl.PathProfile()
+function Pl.Style(name)
+    local Nav = ns.TravelNav
+    local styles = Nav and Nav.STYLES or {}
+    if name and styles[name] then return name end
     local mode = ns.db and ns.db.options.travelPath
-    return PROFILES[mode] or PROFILES.mixed, PROFILES[mode] and mode or "mixed"
+    if styles[mode] then return mode end
+    return "balanced"
 end
 
 ---------------------------------------------------------------------------
--- La pierre de foyer (réglage travelHearth) : son auberge, apprise là où tu
--- la lies (HEARTHSTONE_BOUND, chez l'aubergiste) ou là où elle te pose (son
--- sort réussi), par personnage (ns.char.hearth) ; elle compte dans un
--- itinéraire si elle est dans tes sacs et prête, comme un départ de plus.
+-- Les téléportations de classe (Data/Teleports.lua : celles du mage vers les
+-- capitales, avec une rune de téléportation ; Reflet-de-Lune du druide) : un
+-- sort que tu connais, qui ne pose pas dans la zone où tu es. Son temps : ce
+-- qu'il reste de sa recharge, puis l'incantation. Les règles de Polestar :
+-- pour choisir le chemin, il compte TELEPORT_MARGIN de plus (l'écran de
+-- chargement, une incantation coupée), et il n'est gardé que s'il fait gagner
+-- TELEPORT_SHARE du trajet sans lui (Pl.Best).
 ---------------------------------------------------------------------------
-local HEARTHSTONE = 6948      -- l'objet
-local HEARTH_SPELL = 8690     -- son sort
-local HEARTH_SECS = 15        -- s : l'incantation (10 s), puis l'arrivée
-Pl.HEARTH_SECS = HEARTH_SECS
+local TELEPORT_MARGIN = 60   -- s
+local TELEPORT_SHARE = 0.2
 
-local function BindName()
-    if not GetBindLocation then return end
-    local ok, name = pcall(GetBindLocation)
-    name = ok and Plain(name) or nil
-    return type(name) == "string" and name ~= "" and name or nil
-end
-
--- L'auberge de ta pierre, si on sait où elle est : { cont, x, y, name }
-function Pl.Inn()
-    local inn = ns.char and ns.char.hearth
-    local name = BindName()
-    if type(inn) == "table" and name and inn.name == name and inn.cont then return inn end
-end
-
--- La pierre dans tes sacs, et prête
-local function HearthReady()
-    local count = C_Item and C_Item.GetItemCount or _G.GetItemCount
-    local okN, n = pcall(count, HEARTHSTONE)
-    n = okN and Plain(n) or nil
-    if type(n) ~= "number" or n <= 0 then return false end
-    local cooldown = C_Container and C_Container.GetItemCooldown or _G.GetItemCooldown
-    if not cooldown then return true end
-    local ok, start, duration = pcall(cooldown, HEARTHSTONE)
-    start, duration = ok and Plain(start) or nil, ok and Plain(duration) or nil
-    if type(start) ~= "number" or start <= 0 then return true end
-    return start + (duration or 0) <= GetTime()
-end
-
--- L'auberge où la pierre peut t'emmener maintenant (nil : pas de pierre prête, ou l'auberge inconnue)
-function Pl.Hearth()
-    if not (ns.db and ns.db.options.travelHearth ~= false) then return end
-    local inn = Pl.Inn()
-    if inn and HearthReady() then return inn end
-end
-
-local function LearnInn()
-    local here, name = Pl.PlayerPoint(), BindName()
-    if here and name and ns.char then
-        -- (sa carte aussi : une auberge sous terre, Fossoyeuse, part de son étage : Travel/Nav.lua)
-        ns.char.hearth = { cont = here.cont, x = here.x, y = here.y, map = here.map, name = name }
+function Pl.SpellName(id)
+    if C_Spell and C_Spell.GetSpellName then
+        local ok, name = pcall(C_Spell.GetSpellName, id)
+        if ok and type(Plain(name)) == "string" then return name end
+    end
+    if GetSpellInfo then
+        local ok, name = pcall(GetSpellInfo, id)
+        if ok and type(Plain(name)) == "string" then return name end
     end
 end
 
-local hearthAt = -100         -- (le sort de la pierre réussi : l'arrivée à apprendre)
-local hearth = CreateFrame("Frame")
-hearth:SetScript("OnEvent", function(_, event, unit, _, spellID)
-    if ns.Conflict and ns.Conflict() then return end
-    if event == "HEARTHSTONE_BOUND" then
-        C_Timer.After(0.5, LearnInn)
-    elseif event == "UNIT_SPELLCAST_SUCCEEDED" then
-        if unit == "player" and Plain(spellID) == HEARTH_SPELL then
-            hearthAt = GetTime()
-            C_Timer.After(3, LearnInn)
+local function Knows(id)
+    for _, name in ipairs({ "IsPlayerSpell", "IsSpellKnown" }) do
+        local fn = _G[name]
+        if fn then
+            local ok, known = pcall(fn, id)
+            if ok and Plain(known) then return true end
         end
-    elseif event == "PLAYER_ENTERING_WORLD" and GetTime() - hearthAt < 90 then
-        -- (d'un continent à l'autre : après l'écran de chargement)
-        C_Timer.After(2, LearnInn)
     end
-end)
-pcall(hearth.RegisterEvent, hearth, "HEARTHSTONE_BOUND")
-pcall(hearth.RegisterEvent, hearth, "PLAYER_ENTERING_WORLD")
-if hearth.RegisterUnitEvent then
-    pcall(hearth.RegisterUnitEvent, hearth, "UNIT_SPELLCAST_SUCCEEDED", "player")
-else
-    pcall(hearth.RegisterEvent, hearth, "UNIT_SPELLCAST_SUCCEEDED")
+    return false
+end
+
+local function Carries(item)
+    local count = C_Item and C_Item.GetItemCount or _G.GetItemCount
+    if not count then return false end
+    local ok, n = pcall(count, item)
+    n = ok and Plain(n) or nil
+    return type(n) == "number" and n > 0
+end
+
+-- Ce qu'il reste de la recharge d'un sort (s ; celle de toutes les actions ne compte pas)
+local function SpellWait(id)
+    local start, duration
+    if C_Spell and C_Spell.GetSpellCooldown then
+        local ok, info = pcall(C_Spell.GetSpellCooldown, id)
+        if ok and type(info) == "table" then start, duration = Plain(info.startTime), Plain(info.duration) end
+    elseif GetSpellCooldown then
+        local ok, s, d = pcall(GetSpellCooldown, id)
+        if ok then start, duration = Plain(s), Plain(d) end
+    end
+    if type(start) ~= "number" or type(duration) ~= "number" or start <= 0 or duration <= 1.5 then return 0 end
+    return math.max(0, start + duration - GetTime())
+end
+
+-- Les téléportations possibles depuis `from` : { { spell, name, cont, x, y, zone, secs }, ... }
+function Pl.Teleports(from)
+    local list = {}
+    local Nav = ns.TravelNav
+    local zoneAt = Nav and Nav.ZoneAt
+    local here = zoneAt and zoneAt(from.cont, from.x, from.y)
+    for _, t in ipairs(type(ns.TeleportData) == "table" and ns.TeleportData or {}) do
+        if Knows(t.spell) and (not t.reagent or Carries(t.reagent)) then
+            local zone = zoneAt and zoneAt(t.cont, t.x, t.y)
+            -- (jamais une qui pose là où tu es déjà)
+            if not (t.cont == from.cont and zone and zone == here) then
+                list[#list + 1] = { spell = t.spell, name = Pl.SpellName(t.spell) or ("#" .. t.spell), cont = t.cont,
+                    x = t.x, y = t.y, zone = zone, secs = SpellWait(t.spell) + (t.cast or 10) }
+            end
+        end
+    end
+    return list
 end
 
 ---------------------------------------------------------------------------
@@ -284,44 +284,106 @@ local ACCESS_K = 4           -- les routes voisines d'un point clé
 local ACCESS_NEAR = 600      -- yd : les routes cherchées autour d'un point clé
 local ACCESS_FAR = 2000      -- yd : ... ou la plus proche, si aucune n'est si près
 local ROAD_ID = 100000       -- un nœud de route : continent * ROAD_ID + numéro
+local ZONE_STEP = 100        -- yd : une ligne droite compte les zones trop hautes par morceaux de cette longueur
 
 local Heap = G.Heap          -- (un tas binaire : Travel/Graph.lua)
 
 -- opts : { walkOnly (la marche seule, sans vols ni bateaux), blind (pas de
 -- grille de marche pour préciser le chemin ensuite), speed (yd/s : la vitesse
--- de marche, celle d'un fantôme par exemple) } ; rien : un itinéraire complet
+-- de marche, celle d'un fantôme par exemple), style (le style de marche,
+-- Pl.Style), noTeleport (sans téléportation), assumeKnown (comme si tous les
+-- vols étaient appris), exclude (des clés d'arêtes à ne pas prendre), only
+-- (les seules clés permises, la marche toujours) } ; rien : un itinéraire
+-- complet, au style du réglage. Chaque étape (hors marche) dit ses arêtes :
+-- leg.keys.
 function Pl.Find(from, to, opts)
-    local g = opts and opts.walkOnly and { nodes = {}, edges = {}, known = 0 } or G.Build()
+    opts = opts or {}
+    local g = opts.walkOnly and { nodes = {}, edges = {}, known = 0 } or G.Build(opts.assumeKnown)
     local nodes, edges = g.nodes, g.edges
+    local exclude, only = opts.exclude, opts.only
+    local function Allowed(key)
+        if exclude and exclude[key] then return false end
+        return not only or only[key] == true
+    end
     -- (le départ et l'arrivée sont les points donnés, qui gardent leur carte
     -- et leur place sur la carte)
     from.id, from.kind = "start", "start"
     to.id, to.kind = "goal", "goal"
     nodes.start, nodes.goal = from, to
-    -- (la pierre de foyer prête : son auberge, où l'on arrive depuis le départ)
-    local inn = not (opts and opts.walkOnly) and Pl.Hearth()
-    if inn then
-        nodes.hearth = { id = "hearth", kind = "inn", cont = inn.cont, x = inn.x, y = inn.y, map = inn.map, name = inn.name }
-
+    -- (les téléportations : leur point d'arrivée, où l'on va depuis le départ)
+    local teleports = {}
+    if not (opts.walkOnly or opts.noTeleport) then
+        for _, t in ipairs(Pl.Teleports(from)) do
+            local key = "teleport:" .. t.spell
+            if Allowed(key) then
+                local id = "t" .. t.spell
+                nodes[id] = { id = id, kind = "teleport", cont = t.cont, x = t.x, y = t.y, map = t.zone, name = t.name,
+                    spell = t.spell }
+                teleports[#teleports + 1] = { to = id, secs = t.secs, kind = "teleport", spell = t.spell, key = key }
+            end
+        end
     end
-    local speed = opts and opts.speed or Pl.Speed()
+    local speed = opts.speed or Pl.Speed()
     local Roads = ns.TravelRoads
-    local profile = Pl.PathProfile()
-    -- (à travers champs : les routes ne servent à rien, tout va en ligne droite)
-    local useRoads = Roads and profile.off > 1
-    -- (le coût d'une marche hors route de d yards, pour choisir le chemin)
     local Nav = ns.TravelNav
-    local blind = opts and opts.blind
+    local style = Pl.Style(opts.style)
+    local roadMult = Nav and Nav.STYLES[style] and Nav.STYLES[style].mult[1] or 0.8
+    local useRoads = Roads and true or false
+    -- (le coût d'une marche hors route de d yards, pour choisir le chemin)
+    local nets, access, accessOf, onEdge = {}, nil, nil, nil
+    local blind = opts.blind
         or not (ns.db and ns.db.options.travelTerrain ~= false and Nav and Nav.Available() and Nav.Has(from.cont))
-    local far = blind and math.max(profile.off, OFFROAD_BLIND) or profile.off
+    local far = blind and math.max(WALK_DETOUR, OFFROAD_BLIND) or WALK_DETOUR
     local function Offroad(d)
-        if not useRoads then return d * DETOUR end
-        if d <= OFFROAD_NEAR then return d * profile.off end
-        return OFFROAD_NEAR * profile.off + (d - OFFROAD_NEAR) * far
+        if d <= OFFROAD_NEAR then return d * WALK_DETOUR end
+        return OFFROAD_NEAR * WALK_DETOUR + (d - OFFROAD_NEAR) * far
+    end
+    -- (les zones trop hautes pour toi, comme la grille : Travel/Nav.lua ; celle
+    -- du départ et celle de l'arrivée ne comptent pas)
+    local level = UnitLevel and Plain(UnitLevel("player"))
+    local zoneAt, zoneFactor = Nav and Nav.ZoneAt, Nav and Nav.ZoneFactor
+    local zones = type(level) == "number" and zoneAt and zoneFactor and true or false
+    local exempt = {}
+    if zones then
+        local a, b = zoneAt(from.cont, from.x, from.y), zoneAt(to.cont, to.x, to.y)
+        if a then exempt[a] = true end
+        if b then exempt[b] = true end
+    end
+    local function ZoneAt(cont, x, y, onRoad)
+        local zone = zoneAt(cont, x, y)
+        if not zone or exempt[zone] then return 1 end
+        return zoneFactor(zone, level, onRoad)
+    end
+    -- (une ligne droite : la moyenne de ses morceaux de ZONE_STEP yards)
+    local function LineZone(cont, ax, ay, bx, by, d)
+        if not zones then return 1 end
+        local n = math.max(1, math.ceil(d / ZONE_STEP))
+        local sum = 0
+        for k = 1, n do
+            local f = (k - 0.5) / n
+            sum = sum + ZoneAt(cont, ax + (bx - ax) * f, ay + (by - ay) * f, false)
+        end
+        return sum / n
+    end
+    -- (un tronçon de route : la moyenne des points de son tracé, gardée)
+    local roadZone = {}
+    local function RoadZone(cont, e)
+        if not zones then return 1 end
+        local k = cont * ROAD_ID + e
+        local f = roadZone[k]
+        if not f then
+            local net = nets[cont]
+            local px, py = net.PX[e], net.PY[e]
+            local sum = 0
+            for j = 1, #px do sum = sum + ZoneAt(cont, px[j], py[j], true) end
+            f = sum / math.max(1, #px)
+            roadZone[k] = f
+        end
+        return f
     end
 
     -- (les accès aux routes de chaque point clé)
-    local nets, access, accessOf, onEdge = {}, {}, {}, {}
+    access, accessOf, onEdge = {}, {}, {}
     if useRoads then
         for id, n in pairs(nodes) do
             local net = nets[n.cont]
@@ -347,7 +409,9 @@ function Pl.Find(from, to, opts)
         end
     end
 
-    local dist, prev, via, done = { start = 0 }, {}, {}, {}
+    -- (dist : le coût pour choisir le chemin ; when : le temps réel depuis le
+    -- départ, pour l'horaire d'un bateau au quai où l'on arrive)
+    local dist, when, prev, via, done = { start = 0 }, { start = 0 }, {}, {}, {}
     local heap = Heap()
     heap.Push(0, "start")
     local best, bd
@@ -357,19 +421,30 @@ function Pl.Find(from, to, opts)
         local nd = bd + cost
         if not dist[id] or nd < dist[id] then
             dist[id], prev[id], via[id] = nd, best, edge
+            when[id] = (when[best] or 0) + (edge.secs or 0)
             heap.Push(nd, id)
         end
     end
+    -- (un bateau, un zeppelin : l'attente selon son horaire appris, ou l'attente
+    -- moyenne de sa ligne, Travel/Transit.lua ; sans ligne connue, celle du réseau)
+    local Transit = ns.Transit
+    local function Ship(e)
+        if not (Transit and (e.kind == "boat" or e.kind == "zeppelin")) then return e end
+        local secs, wait, rid, timed = Transit.Leg(nodes[best], nodes[e.to], when[best] or 0)
+        if not secs then return e end
+        return { to = e.to, secs = secs, kind = e.kind, route = e.route, key = e.key, transit = rid, timed = timed, wait = wait }
+    end
 
-    -- Une marche : son coût (la préférence) et son temps réel
-    local function Line(id, ax, ay, bx, by)
+    -- Une marche : son coût (la préférence, les zones trop hautes) et son temps réel
+    local function Line(id, cont, ax, ay, bx, by)
         local dx, dy = bx - ax, by - ay
         local d = math.sqrt(dx * dx + dy * dy)
-        Relax(id, Offroad(d) / speed, { kind = "walk", secs = d * DETOUR / speed, line = { ax, ay, bx, by } })
+        Relax(id, Offroad(d) * LineZone(cont, ax, ay, bx, by, d) / speed,
+            { kind = "walk", secs = d * DETOUR / speed, line = { ax, ay, bx, by } })
     end
     local function Road(id, cont, e, p0, p1)
         local d = math.abs(p1 - p0)
-        Relax(id, d / speed, { kind = "walk", secs = d / speed, road = { cont, e, p0, p1 } })
+        Relax(id, d * roadMult * RoadZone(cont, e) / speed, { kind = "walk", secs = d / speed, road = { cont, e, p0, p1 } })
     end
     -- (depuis la position `pos` du tronçon e : ses deux bouts et les accès posés dessus)
     local function AlongEdge(cont, e, pos, except)
@@ -390,31 +465,35 @@ function Pl.Find(from, to, opts)
             if best == "goal" then break end
             local key, acc = nodes[best], access[best]
             if key then
-                if best == "start" and nodes.hearth then
-                    Relax("hearth", HEARTH_SECS, { kind = "hearth", secs = HEARTH_SECS })
+                -- (depuis le départ : les téléportations, leur marge en plus)
+                if best == "start" then
+                    for _, t in ipairs(teleports) do Relax(t.to, t.secs + TELEPORT_MARGIN, t) end
                 end
                 -- (les vols, les bateaux, les zeppelins ; un vol qui en suit un
                 -- autre continue le même voyage : pas de nouveau décollage)
                 for _, e in ipairs(edges[best] or {}) do
-                    local cost = e.secs
-                    if e.kind == "flight" and not (via[best] and via[best].kind == "flight") then cost = cost + G.TAKEOFF end
-                    Relax(e.to, cost, e)
+                    if Allowed(e.key) then
+                        e = Ship(e)
+                        local cost = e.secs
+                        if e.kind == "flight" and not (via[best] and via[best].kind == "flight") then cost = cost + G.TAKEOFF end
+                        Relax(e.to, cost, e)
+                    end
                 end
                 -- (en ligne droite vers les autres points clés du continent)
                 for id, n in pairs(nodes) do
                     if id ~= best and id ~= "start" and n.cont == key.cont then
-                        Line(id, key.x, key.y, n.x, n.y)
+                        Line(id, key.cont, key.x, key.y, n.x, n.y)
                     end
                 end
                 -- (jusqu'aux routes voisines)
                 for _, aid in ipairs(accessOf[best] or {}) do
                     local a = access[aid]
-                    Line(aid, key.x, key.y, a.x, a.y)
+                    Line(aid, key.cont, key.x, key.y, a.x, a.y)
                 end
             elseif acc then
                 -- (quitter la route vers son point clé, ou la suivre)
                 local k = nodes[acc.key]
-                Line(acc.key, acc.x, acc.y, k.x, k.y)
+                Line(acc.key, acc.cont, acc.x, acc.y, k.x, k.y)
                 AlongEdge(acc.cont, acc.edge, acc.pos, best)
             else
                 -- (un carrefour : ses tronçons)
@@ -472,26 +551,80 @@ function Pl.Find(from, to, opts)
             last.secs = last.secs + e.secs
             last.paths[#last.paths + 1] = e.path
             last.measured = last.measured and e.measured
+            last.keys[#last.keys + 1] = e.key
         else
-            local leg = { kind = e.kind, from = nodes[link.from], to = nodes[link.to], secs = e.secs, route = e.route }
+            local leg = { kind = e.kind, from = nodes[link.from], to = nodes[link.to], secs = e.secs, route = e.route,
+                spell = e.spell, keys = { e.key }, transit = e.transit, timed = e.timed, wait = e.wait }
             if e.kind == "flight" then
-                leg.secs = leg.secs + G.TAKEOFF
                 leg.paths, leg.measured = { e.path }, e.measured
             end
             legs[#legs + 1] = leg
         end
     end
     for _, leg in ipairs(legs) do total = total + leg.secs end
-    return { legs = legs, secs = total, speed = speed, known = g.known, roads = useRoads and true or false }, g
+    return { legs = legs, secs = total, speed = speed, known = g.known, roads = useRoads, style = style }, g
 end
 
--- La marche seule d'un point à un autre, selon le réglage, sans la grille
--- (une longue ligne droite y compte au moins OFFROAD_BLIND) : le secours
--- d'une marche que la grille n'a pas pu préciser. Rend son étape de marche,
--- ou nil.
-function Pl.WalkEstimate(from, to)
+---------------------------------------------------------------------------
+-- Le meilleur itinéraire, avec les règles de Polestar qui demandent un
+-- second calcul :
+--   - une téléportation n'est gardée que si elle fait gagner TELEPORT_SHARE
+--     du trajet sans elle ;
+--   - « Plus rapide si tu avais le vol de… » : un trajet sans vol de plus de
+--     HINT_WALK, refait comme si tous les vols de ta faction étaient appris ;
+--     s'il atterrit chez un maître de vol que tu n'as pas et gagne plus de
+--     HINT_GAIN, plan.hint = { name (ce maître de vol), saves (s) }.
+-- opts comme Pl.Find, et hint = false : sans chercher l'indice.
+---------------------------------------------------------------------------
+local HINT_WALK, HINT_GAIN = 120, 30   -- s
+
+local function With(opts, key, value)
+    local copy = {}
+    for k, v in pairs(opts or {}) do copy[k] = v end
+    copy[key] = value
+    return copy
+end
+
+local function Uses(plan, kind)
+    for _, leg in ipairs(plan.legs) do
+        if leg.kind == kind then return true end
+    end
+    return false
+end
+
+-- (le premier saut d'un plan qui atterrit chez un maître de vol pas appris : son nom)
+local function MissingFlight(plan, g)
+    for _, leg in ipairs(plan.legs) do
+        for _, path in ipairs(leg.kind == "flight" and leg.paths or {}) do
+            local n = g and g.nodes["f" .. tostring(path[2])]
+            if n and n.known == false then return n.name end
+        end
+    end
+end
+
+function Pl.Best(from, to, opts)
+    opts = opts or {}
+    local plan, g = Pl.Find(from, to, opts)
+    if not plan then return plan, g end
+    if not opts.walkOnly and Uses(plan, "teleport") then
+        local without, g2 = Pl.Find(from, to, With(opts, "noTeleport", true))
+        if without and without.secs - plan.secs < TELEPORT_SHARE * without.secs then plan, g = without, g2 end
+    end
+    if not opts.walkOnly and opts.hint ~= false and not Uses(plan, "flight") and plan.secs > HINT_WALK then
+        local alt, ag = Pl.Find(from, to, With(opts, "assumeKnown", true))
+        local name = alt and MissingFlight(alt, ag)
+        if name and alt.secs < plan.secs - HINT_GAIN then plan.hint = { name = name, saves = plan.secs - alt.secs } end
+    end
+    return plan, g
+end
+
+-- La marche seule d'un point à un autre, au style donné (nil : le réglage),
+-- sans la grille (une longue ligne droite y compte au moins OFFROAD_BLIND) :
+-- le secours d'une marche que la grille n'a pas pu préciser. Rend son étape
+-- de marche, ou nil.
+function Pl.WalkEstimate(from, to, style)
     local plan = Pl.Find({ cont = from.cont, x = from.x, y = from.y }, { cont = to.cont, x = to.x, y = to.y },
-        { walkOnly = true, blind = true })
+        { walkOnly = true, blind = true, style = style })
     local leg = plan and plan.legs[1]
     if leg and leg.kind == "walk" and #plan.legs == 1 then return leg end
 end

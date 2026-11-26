@@ -24,7 +24,7 @@ Le [README.md](README.md) décrit les fonctions et la structure, la [CHARTE.md](
 
 - Le reste de Plus atteint la carte **par `ns.Map`** ([Plus/Map/Api.lua](MyMapIsRich/Plus/Map/Api.lua)) et ses données **par `ns.Map.Data`** ([Plus/Map/Data.lua](MyMapIsRich/Plus/Map/Data.lua)), jamais par `root` ou un global.
 - **L'ordre de chargement est celui du `.toc`** ([MyMapIsRich/MyMapIsRich.toc](MyMapIsRich/MyMapIsRich.toc)) : `Plus/Init.lua`, puis les données, puis le reste de Plus. Tout fichier ajouté s'y inscrit à sa place (une nouvelle langue avant `Plus\Locales\Init.lua`, un écran après `UI\Widgets.lua`…). Un fichier ajouté demande de **relancer le jeu** : `/reload` ne le charge pas.
-- Ne pas modifier : `Data/Map/` et `Media/Map/` (générés par les outils d'OpenMap), `Plus/Data/` (généré par `tools/roads`, `tools/nav`, `tools/hazards` et `tools/quests`, voir le README). On régénère, on n'édite pas à la main. La base des quêtes (`Plus/Data/Quests.lua`) se synchronise avec QuestieDB par la commande `/sync-quetes` ; nos corrections vont dans `tools/quests/forever_fixes.json`.
+- Ne pas modifier : `Data/Map/` et `Media/Map/` (générés par les outils d'OpenMap), `Plus/Data/` (généré par `tools/roads`, `tools/nav`, `tools/hazards`, `tools/teleports`, `tools/transit` et `tools/quests`, voir le README). On régénère, on n'édite pas à la main. La base des quêtes (`Plus/Data/Quests.lua`) se synchronise avec QuestieDB par la commande `/sync-quetes` ; nos corrections vont dans `tools/quests/forever_fixes.json`.
 
 ## D'où vient le code (OpenMap, de la 0.5.0 à la 1.0.0)
 
@@ -46,7 +46,7 @@ Aucune chaîne en dur dans le code, même pour un message de discussion ou une i
 - Les clés gardent leur préfixe de rubrique : `HINT_`, `OPT_`, `TRAVEL_`, `HUD_`, `PLACES_`, `SHARE_`, `STATUS_`, `WHATSNEW_`…
 - Les noms du jeu (zones, PNJ, objets) viennent de l'API du jeu, déjà traduits ; on ne les met pas dans les Locales.
 - La longueur compte : l'allemand et le russe sont plus longs, le coréen et le chinois plus courts. Un bouton ou une colonne doit tenir en allemand.
-- **Les 10 langues ont toutes leurs clés** (1040, avec le guide de l'aide et le tutoriel). Pour compter, lire toutes les clés d'une ligne : les 8 langues en rangent souvent plusieurs par ligne. `enUS` et `frFR` ont plusieurs blocs `ns.AddLocale` : une clé redéfinie dans un bloc plus bas remplace la première, alors une clé ne s'écrit qu'une fois. Une clé que le code ne lit plus se retire des 10 fichiers.
+- **Les 10 langues ont toutes leurs clés** (1084, avec le guide de l'aide et le tutoriel). Pour compter, lire toutes les clés d'une ligne : les 8 langues en rangent souvent plusieurs par ligne. `enUS` et `frFR` ont plusieurs blocs `ns.AddLocale` : une clé redéfinie dans un bloc plus bas remplace la première, alors une clé ne s'écrit qu'une fois. Une clé que le code ne lit plus se retire des 10 fichiers.
 
 **Dans le `.toc`** : `## Notes` existe en anglais et en `Notes-xxXX` pour les 10 autres codes (`esMX` compris). Une fonction majeure ajoutée ou retirée se reporte dans les 11.
 
@@ -72,7 +72,7 @@ Tout écran neuf, et tout écran refait, suit [CHARTE.md](CHARTE.md) (la même q
 - **Tout écran se joue à la manette** : ses éléments sont atteignables à la croix (focus de `Pad/Focus.lua`, `ns.Map.Cursor.AddRoot` pour les fenêtres sur la carte), A / B / X ont un sens, et la barre d'aide (`UI/HintBar.lua`) annonce les boutons avec leurs pastilles (`UI/Glyphs.lua`). Le suivi des quêtes (`UI/Tracker.lua`) est l'exception voulue : hors de la carte, il ne fait qu'afficher (la manette est au jeu) ; ses gestes passent à la manette par la liste des quêtes de la carte et l'onglet Quêtes.
 - **La veille** : si OpenMap ou OpenMap On Gamepad est activé, My Map Is Rich n'accroche rien (`ns.Conflict()` dans `Plus/Core.lua`). Tout nouveau point d'accroche passe par ce test.
 - **Les préfixes de messages entre joueurs ne changent pas** (`OpenMap`, `OMGPRoute`) : ils font passer épingles et destinations entre les trois addons (`OpenMapLoc`, les positions d'amis, est parti avec les amis en 0.5.0). Un format de message qui change reste lisible par les versions d'avant. L'avancée des quêtes du groupe (1.2.0, `Plus/Quests/Party.lua`) a son propre préfixe, `MMIRQuest`, entre joueurs de My Map Is Rich seulement.
-- Les dépendances facultatives (Questie, My Gamepad Is Rich, Leatrix_Maps…) se testent avant usage ; l'addon marche sans aucune.
+- Les dépendances facultatives (Questie, My Gamepad Is Rich, Leatrix_Maps, Spoken…) se testent avant usage ; l'addon marche sans aucune. Spoken se prend seulement par sa porte publique (`Spoken/API.lua` : `IsCompatible(1)`, `HasStory` / `PlayStory` / `StopStory`, ses avis `AUDIO_CHANGED`), dans `Plus/UI/QuestPanel.lua`. `HasStory` et `PlayStory` choisissent un instant la quête dans le journal du jeu : sous `ns.Risky("SelectQuest")`, et la réponse de `HasStory` gardée par quête.
 - Une API qui peut manquer sur Forever se teste (`if C_ChatInfo and C_ChatInfo.X then`) ou passe par `pcall`.
 - Les globaux nouveaux sont préfixés `MyMapIsRich` ; tout le reste est `local`.
 
@@ -91,7 +91,7 @@ Commits : seulement quand on le demande, sur le modèle `Version X.Y.Z : résum�
 
 - Pas de Lua ni de luacheck sur ce poste : relire soigneusement les fins de blocs (`end`), les virgules des tables de Locales et les guillemets dans les traductions (une apostrophe typographique ou un `"` non échappé casse tout le fichier, donc toute la langue).
 - [.luacheckrc](.luacheckrc) et [.github/workflows/luacheck.yml](.github/workflows/luacheck.yml) (repris de My Guild Is Rich) : GitHub vérifie la syntaxe à chaque envoi, données générées exclues. Les avertissements (globales, variables inutilisées) sont encore ignorés.
-- Test en jeu par la jonction décrite dans le README (`K:\World of Warcraft\_forever_\Interface\AddOns\MyMapIsRich`). Diagnostics : `/mmir etat`, `/mmir sonde`, `/mmir sonde carte`, `/mmir test`, `/mmir focus`, `/mmir carte status`.
+- Test en jeu par la jonction décrite dans le README (`K:\World of Warcraft\_forever_\Interface\AddOns\MyMapIsRich`). Diagnostics : `/mmir etat`, `/mmir sonde`, `/mmir sonde carte`, `/mmir sonde terrain`, `/mmir test`, `/mmir focus`, `/mmir carte status`.
 - Après un changement, dire au joueur s'il faut `/reload` ou relancer le jeu (fichier ajouté au `.toc`).
 
 ## Fichiers partagés avec les autres addons

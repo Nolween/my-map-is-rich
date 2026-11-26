@@ -20,7 +20,7 @@ Depuis la 0.2.0, M (ou le bouton carte de la manette) ouvre la carte **en plein 
   - **aussi sur la minimap**, **aussi dans les info-bulles** (un monstre, un PNJ, un objet dit sa quête et où tu en es), **des icônes sur les plaques de nom** (une épée, un sac, « ! », « ? ») ;
   - **les boutons de la quête** : l'objet de quête à utiliser et le monstre à cibler, à l'écran (Maj+glisser pour les déplacer) et par deux raccourcis du jeu ;
 - un « ! » dit ce que sa quête a de particulier (de ta classe, de donjon, répétable : un « ! » bleu, « Chaîne 2/5 ») ; sa fiche (A, ou un clic) a **Cacher ce marqueur**, et l'onglet Carte de `/mmir` rend les quêtes cachées. Une quête que la base ne connaît pas est **apprise** quand tu la prends (son « ! » pour tes autres personnages), et un « ! » qu'un PNJ dément s'efface ;
-- à droite, **tes quêtes**, toujours affichées (à la manette, la croix du jeu y amène, et la manette passe alors dans la liste, où la croix va de quête en quête ; B, RT ou la croix gauche reviennent à la carte) : par zone ou les plus proches, une case au début de chaque ligne, d'or quand la quête est suivie (un clic dessus, ou RB : suivre ou ne plus suivre), la fiche d'une quête (A ou un clic : ses objectifs, son histoire, ses récompenses, comme dans le journal du jeu), l'itinéraire, la file, suivre, partager ; Y ou un clic droit sur une quête ouvre **son menu**, sans passer par la fiche : voir la quête, itinéraire, file, suivre, partager, lien dans la discussion, abandonner (après confirmation), et toutes les quêtes grises d'un coup ; la fiche montre aussi **la chaîne** de la quête (les étapes faites, la suivante et qui la donne) ;
+- à droite, **tes quêtes**, toujours affichées (à la manette, la croix du jeu y amène, et la manette passe alors dans la liste, où la croix va de quête en quête ; B, RT ou la croix gauche reviennent à la carte) : par zone ou les plus proches, une case au début de chaque ligne, d'or quand la quête est suivie (un clic dessus, ou RB : suivre ou ne plus suivre), la fiche d'une quête (A ou un clic : ses objectifs, son histoire, ses récompenses, comme dans le journal du jeu), l'itinéraire, la file, suivre, partager ; Y ou un clic droit sur une quête ouvre **son menu**, sans passer par la fiche : voir la quête, itinéraire, file, suivre, partager, lien dans la discussion, abandonner (après confirmation), et toutes les quêtes grises d'un coup ; la fiche montre aussi **la chaîne** de la quête (les étapes faites, la suivante et qui la donne) ; avec **Spoken** (facultatif) et son paquet de voix, une quête qu'il double se **lit à voix haute** : le haut-parleur de sa ligne (doré pendant la lecture, un clic arrête), Écouter dans sa fiche, ou Écouter dans son menu (le chemin de la manette) ;
 - ta flèche, grande et entourée d'un halo doré qui pulse doucement, pour te trouver d'un coup d'œil ;
 - en bas à droite, tes coordonnées et celles du curseur ; au bord, « Toi » quand ta flèche sort de la vue ;
 - en bas, la barre d'aide : les boutons de la manette, ou les clics et les touches à la souris.
@@ -29,7 +29,29 @@ Carte ouverte en plein écran (hors combat), le personnage ne bouge pas : les to
 
 À la souris : clic gauche choisir ou zoomer, clic droit dézoomer, molette zoom, glisser pour déplacer, Maj+clic itinéraire, Ctrl+clic épingle, Alt+clic le menu des actions, clic du milieu me localiser, Échap ou M fermer.
 
-Une icône choisie (A, ou un clic) ouvre **sa fiche**, sous la zone : ce qu'est le point, le temps pour y aller et par où, et quoi faire (itinéraire, file, l'action de l'icône, poser une épingle, envoyer au groupe). Itinéraire (Y) en montre d'abord **l'aperçu** : le temps, l'arrivée, chaque étape ; Partir (A), la file (View), Annuler (B). R3 et Maj+clic partent tout de suite.
+Une icône choisie (A, ou un clic) ouvre **sa fiche**, sous la zone : ce qu'est le point, le temps pour y aller et par où, et quoi faire (itinéraire, file, l'action de l'icône, poser une épingle, envoyer au groupe). Itinéraire (Y) en montre d'abord **l'aperçu** : le temps, l'arrivée, **les trois styles de marche** avec leur durée (Le plus rapide, Équilibré, Routes ; celui du réglage en tête ; A sur un style le choisit, A de nouveau part avec lui), chaque étape ; Partir (A), la file (View), Annuler (B). R3 et Maj+clic partent tout de suite, au style du réglage.
+
+Les styles de marche reprennent les chiffres de [Polestar](https://github.com/fitzforge/polestar) : un pas coûte sa longueur fois le prix du terrain où il entre.
+
+| Terrain | Le plus rapide | Équilibré (le défaut) | Routes |
+|---|---|---|---|
+| Normal | 1 | 1 | 1 |
+| Route | 1 | 0,8 | 0,5 |
+| Pente douce | 1 | 1,3 | 1,6 |
+| Pente raide | 1,2 | 2,5 | 4 |
+| Intérieur (bâtiment, grotte) | 2 | 2 | 2 |
+| Intérieur d'une capitale | 1 | 1 | 1 |
+
+L'eau compte trois fois, en plus de la lenteur de la nage, et une ville de l'autre faction vingt fois (sauf celle du départ ou de l'arrivée). Le style choisi dans l'aperçu reste celui de l'itinéraire, jusqu'après un `/reload`. Changer le réglage (« Chemin à pied », onglet Trajets) recalcule l'itinéraire en cours qui le suit.
+
+Les règles du voyage reprennent aussi celles de Polestar :
+- **les vols** : un vol jamais mesuré compte sa longueur à 30 yards par seconde, plus 2 s par saut ; décoller compte 4 s pour choisir le chemin, pas dans le temps annoncé ;
+- **les téléportations de classe** (mage vers les capitales, avec une rune de téléportation ; Reflet-de-Lune du druide) partent du départ : leur temps est ce qu'il reste de leur recharge plus l'incantation, elles comptent une minute de plus pour choisir le chemin, ne sont gardées que si elles font gagner un cinquième du trajet, et jamais vers la zone où tu es ;
+- **les zones trop hautes pour toi** : un yard y compte trois fois si son plus bas niveau a 4 niveaux de plus que toi, vingt fois au-delà de 10 (trois fois seulement sur une route qui la traverse, jusqu'à 20 niveaux d'écart) ; celle du départ et celle de l'arrivée ne comptent pas, et un niveau de plus refait l'itinéraire ;
+- **la stabilité** : un recalcul en chemin ne change de vols, de bateaux ou de téléportations que s'il fait gagner 20 s ;
+- **« Plus rapide si tu avais le vol de… »** : un trajet sans vol de plus de 2 min, refait comme si tous les vols de ta faction étaient appris ; s'il gagne plus de 30 s par un maître de vol que tu n'as pas, l'aperçu et le panneau de trajet le disent.
+
+La pierre de foyer n'est plus dans les itinéraires depuis la 1.4.0.
 
 La carte du jeu reste ouverte dessous, invisible : c'est elle que M, Échap et B ferment. La carte classique d'OpenMap (dessinée dans la fenêtre de carte du jeu) n'existe plus depuis la 0.5.0.
 
@@ -46,7 +68,7 @@ La carte du jeu reste ouverte dessous, invisible : c'est elle que M, Échap et B
 | Carte | X | Plein écran ou carte réduite, **où que l'on soit sur la carte** (liste des quêtes, fiche d'un point, lieux, rail des calques, plume, donjon). C'est son seul rôle ; seuls le clavier virtuel (effacer) et l'invitation du groupe (plus tard) gardent leur X |
 | Carte | Stick gauche, A, B, croix, L3, stick droit | Ceux du jeu et de la carte : curseur (sur tout l'écran, carte plein écran), appuyer / zoomer, fermer, Carte standard, marqueur, zoom. Sur la carte réduite, la croix bas du jeu met aussi la carte en plein écran (comme X), la croix haut la ramène en carte réduite |
 | Liste des quêtes | R3 | Itinéraire tout de suite jusqu'à la quête choisie ; R3 sur la quête du trajet en cours l'annule ; carte réduite : stick droit pour tourner la caméra |
-| Liste des quêtes | Y | Le menu de la quête choisie (voir, itinéraire, file, suivre, partager, lien, abandonner) : la croix choisit, A valide, B ou Y le ferment |
+| Liste des quêtes | Y | Le menu de la quête choisie (voir, écouter avec Spoken, itinéraire, file, suivre, partager, lien, abandonner) : la croix choisit, A valide, B ou Y le ferment |
 | Liste des quêtes | View | Ajouter la quête choisie à la file |
 | Liste des quêtes | RB | Suivre la quête choisie, ou ne plus la suivre (la case au début de sa ligne, d'or quand elle est suivie) |
 | Fenêtre | Croix, A / B, View, LB / RB | D'un élément à l'autre, valider / retour, clic droit (View sur la carte, X ailleurs), onglets |
@@ -54,7 +76,11 @@ La carte du jeu reste ouverte dessous, invisible : c'est elle que M, Échap et B
 | Rail des calques | View | Les détails du calque choisi |
 | Champ de texte | A | Clavier virtuel |
 
-Pendant un itinéraire, en jeu (la carte plein écran le cache, la carte réduite le laisse), le **panneau de trajet** dit l'étape, le temps restant et l'heure d'arrivée (en vol : la barre de vol et l'alerte d'atterrissage), une **flèche GPS** dessous montre où aller, et la manette **vibre** à chaque étape. Mort ou en fantôme, la pierre tombale du jeu montre ton corps sur la carte, et en fantôme l'itinéraire y mène. Ta **pierre de foyer**, prête, compte dans l'itinéraire quand son auberge fait gagner du temps (onglet Trajets : « Utiliser la pierre de foyer ») ; l'auberge s'apprend là où tu la lies.
+Pendant un itinéraire, en jeu (la carte plein écran le cache, la carte réduite le laisse), le **panneau de trajet** dit l'étape, le temps restant et l'heure d'arrivée (en vol : la barre de vol et l'alerte d'atterrissage), une **flèche GPS** dessous montre où aller, et la manette **vibre** à chaque étape. Mort ou en fantôme, la pierre tombale du jeu montre ton corps sur la carte, et en fantôme l'itinéraire y mène.
+
+**Le bouton de voyage** (réglage « Bouton de voyage », onglet Trajets) apparaît quand une étape demande d'agir : il lance la téléportation de l'étape, ou, chez le maître de vol sa carte ouverte, prend le vol de l'itinéraire. Clic droit (ou `/mmir trajet passer`) : passer l'étape, l'itinéraire est refait sans elle. Son raccourci se pose dans Raccourcis > My Map Is Rich, à la manette aussi. Maj+glisser le déplace. Chez le maître de vol, un panneau à côté de sa carte dit la prochaine étape et le temps du vol, avec « Prendre ce vol », et un anneau doré marque sa destination.
+
+**Les bateaux et les zeppelins** : leurs horaires s'apprennent en les prenant (une traversée suffit, gardée 6 h, pour tous tes personnages). Un itinéraire compte alors l'attente réelle au quai, depuis ton arrivée (un bateau qui part moins de 10 s après est manqué : le suivant) ; sans horaire, l'attente moyenne de sa ligne. Le panneau de trajet dit « Départ dans 1 min 20 ». Les alertes (réglage « Alertes des bateaux », avec « Essayer ») : 30 s avant que ton bateau n'arrive au quai où tu l'attends, et 20 s avant ton arrêt à bord, un bandeau, la cloche du bateau ou la corne du zeppelin du jeu (réglage Sons) et l'icône du jeu qui clignote.
 
 ## Le suivi des quêtes
 
@@ -74,11 +100,11 @@ Il reste en jeu et avec la carte réduite ; la carte plein écran le cache (sa l
 - `/mmir carte` : les réglages de la carte (l'onglet Carte) ; `/mmir carte <…>` : les commandes de la carte (`status` : ce que fait la vue ; `pins` : tes épingles ; `draw` : la plume ; `forgetflights` : oublier les maîtres de vol appris par ce personnage)
 - Les raccourcis du jeu (Raccourcis > My Map Is Rich) : me localiser, poser une épingle, les épingles, la plume, les réglages de la carte, utiliser l'objet de quête, cibler le monstre de la quête
 - `/mmir pourquoi <quête>` (son numéro ou son nom) : pourquoi une quête n'a pas de « ! » sur la carte ; `/mmir quetes export` : les quêtes apprises en jouant, à copier dans `tools/quests/forever_fixes.json`
-- `/mmir etat` : où en est l'addon ; `/mmir trajet` (`trajet stop`) : l'itinéraire en cours
+- `/mmir etat` : où en est l'addon ; `/mmir trajet` (`trajet stop`, `trajet passer`) : l'itinéraire en cours
 - `/mmir suivi` : le suivi des quêtes montré ou coupé (`suivi replacer` : remis en place ; `suivi replier`)
 - `/mmir tuto` : le tutoriel du premier lancement (la carte d'un seul tenant, la base des quêtes, les itinéraires, les premiers réglages, et les addons qui font la même chose, à désactiver d'un bouton), aussi par « Revoir le tutoriel » dans l'onglet Aide ; il répond même en veille
 - `/mmir lieux`, `/mmir file` (`file vider`), `/mmir panneau`, `/mmir news`, `/mmir minimap`, `/mmir on` / `off`, `/mmir reset`
-- Diagnostic : `/mmir sonde`, `/mmir sonde carte` (les coordonnées comparées à celles du dessin de la carte), `/mmir sonde quetes` (tes quêtes du journal dans la base des quêtes, et où tu es sur la carte), `/mmir test`, `/mmir focus`, `/mmir camera sonde`, `/mmir camera trace`
+- Diagnostic : `/mmir sonde`, `/mmir sonde carte` (les coordonnées comparées à celles du dessin de la carte), `/mmir sonde terrain` (le terrain de la grille de marche là où tu es, et ce qu'un yard y coûte dans chaque style), `/mmir sonde quetes` (tes quêtes du journal dans la base des quêtes, et où tu es sur la carte), `/mmir test`, `/mmir focus`, `/mmir camera sonde`, `/mmir camera trace`
 
 ## Avec OpenMap ou OpenMap On Gamepad
 
@@ -124,11 +150,27 @@ python -m venv .venv
 .venv\Scripts\python tools\nav\build_nav.py ["K:\World of Warcraft\_forever_\Interface\AddOns\ShortestPathForever"]
 ```
 
-`Hazards.lua` (les villes et capitales de l'autre faction, que les chemins à pied contournent) est écrit par `tools/hazards/build_hazards.ps1`, à partir des mêmes données de Shortest Path Forever, sans Python :
+Depuis la 1.4.0, `build_nav.py` lit le **format 4** des cartes de marche de Shortest Path Forever (1.45 et après). Les pas permis, dans les huit directions et d'une tuile à l'autre, sont ceux de son maillage de marche. Il en tire aussi le terrain de chaque surface :
+- **pente douce ou raide** : la pente du sol, les hauteurs lissées sur 5 cases, douce à partir de 22°, raide à partir de 35° ;
+- **intérieur** : un plafond à moins de 15 yards, sur un morceau d'au moins 12 cases ;
+- **intérieur de cité** : le même, dans une capitale de `Hazards.lua`.
+
+Ces seuils sont en tête du script, et `/mmir sonde terrain` dit en jeu le terrain de la case où tu es, pour les régler.
+
+`Transit.lua` (les lignes des bateaux et des zeppelins : leur période, leurs arrêts, leur trajet daté) est écrit par `tools/transit/build_transit.py`, en Python sans dépendance, d'après `Data/Routes.lua` de Shortest Path Forever :
+
+```
+py tools\transit\build_transit.py ["K:\World of Warcraft\_forever_\Interface\AddOns\ShortestPathForever"]
+```
+
+`Hazards.lua` (les villes et capitales de l'autre faction, que les chemins à pied contournent ; depuis la 1.4.0, la zone de chaque carré de 64 yards et le niveau de chaque zone) est écrit par `tools/hazards/build_hazards.ps1`, et `Teleports.lua` (les téléportations de classe : le sort, où il pose, sa rune) par `tools/teleports/build_teleports.ps1`, à partir des mêmes données de Shortest Path Forever, sans Python :
 
 ```
 powershell -ExecutionPolicy Bypass -File tools\hazards\build_hazards.ps1 ["K:\World of Warcraft\_forever_\Interface\AddOns\ShortestPathForever"]
+powershell -ExecutionPolicy Bypass -File tools\teleports\build_teleports.ps1 ["K:\World of Warcraft\_forever_\Interface\AddOns\ShortestPathForever"]
 ```
+
+Les deux scripts PowerShell s'enregistrent en UTF-8 **avec BOM** : sans lui, Windows PowerShell 5.1 lit leurs accents de travers.
 
 Les données de la carte (`MyMapIsRich/Data/Map/`) et ses textures (`MyMapIsRich/Media/Map/`) viennent des outils d'OpenMap, dans son dépôt : on les régénère, on ne les édite pas.
 

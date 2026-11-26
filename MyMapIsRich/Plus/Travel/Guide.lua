@@ -18,8 +18,11 @@
 -- En fantôme : un itinéraire à pied jusqu'au corps ; le trajet d'avant
 -- reprend après la résurrection.
 -- La destination et la file sont gardées par personnage
--- (OpenMapOnGamepadDB.travel, travelQueue) : après un /reload, le trajet est
+-- (MyMapIsRichPlusDB.travel, travelQueue) : après un /reload, le trajet est
 -- recalculé depuis où tu es.
+-- Le style de marche (Planner.Style) : celui choisi dans la fiche d'un point
+-- (goal.style) suit l'itinéraire, ses recalculs et le /reload ; sans choix,
+-- l'itinéraire prend le réglage, et le changer le recalcule (T.Restyle).
 local _, root = ...
 local ns = root.Plus
 local L = ns.L
@@ -30,7 +33,7 @@ local R = ns.TravelRoute
 local T = {}
 ns.Travel = T
 
-local REACH = { walk = 30, flight = 90, boat = 70, zeppelin = 70, portal = 40, tram = 40, hearth = 80 }   -- yd : arrivé au bout d'une étape
+local REACH = { walk = 30, flight = 90, boat = 70, zeppelin = 70, portal = 40, tram = 40, teleport = 80 }   -- yd : arrivé au bout d'une étape
 local GOAL_REACH = 25        -- yd : arrivé à la destination
 local CORPSE_REACH = 20      -- yd : arrivé près du corps
 local CURSOR_ON_GOAL = 24    -- px : le curseur sur la destination (R3 l'annule)
@@ -39,6 +42,8 @@ local RESUME_DELAY = 3       -- s après la connexion
 local OFF_ROUTE = 150        -- yd : plus loin du chemin d'une marche, on en est sorti...
 local OFF_TICKS = 3          -- ... pendant autant de secondes de suite : recalculé
 local REPLAN_GAP = 10        -- s entre deux recalculs
+local STAY = 20              -- s : un recalcul ne change de chemin (d'autres vols, bateaux,
+                             -- téléportations) que s'il fait gagner au moins autant (comme Polestar)
 local LAND_WARN = 10         -- s avant l'atterrissage d'un vol : l'alerte
 local NEXT_DELAY = 1.5       -- s entre l'arrivée et la destination suivante de la file
 local QUEUE_MAX = 20
@@ -85,7 +90,7 @@ function T.LegText(leg)
     if leg.kind == "zeppelin" then return L.TRAVEL_LEG_ZEPPELIN:format(Zone(to)) end
     if leg.kind == "portal" then return L.TRAVEL_LEG_PORTAL:format(Zone(to)) end
     if leg.kind == "tram" then return L.TRAVEL_LEG_TRAM:format(Zone(to)) end
-    if leg.kind == "hearth" then return L.TRAVEL_LEG_HEARTH:format(to.name or Zone(to)) end
+    if leg.kind == "teleport" then return L.TRAVEL_LEG_TELEPORT:format(to.name or "?") end
     return L.TRAVEL_LEG_WALK:format(NodeName(to))
 end
 
@@ -138,7 +143,7 @@ end
 -- (une destination sans ses champs de calcul : ce qui se garde)
 local function Copy(goal)
     return { cont = goal.cont, x = goal.x, y = goal.y, map = goal.map, mx = goal.mx, my = goal.my,
-        title = goal.title, questID = goal.questID, name = goal.name, rally = goal.rally }
+        title = goal.title, questID = goal.questID, name = goal.name, rally = goal.rally, style = goal.style }
 end
 T.Copy = Copy
 
@@ -290,7 +295,7 @@ local function FlightLeft()
     local taxi = state and state.taxi
     local leg = state and state.plan.legs[state.index]
     if not (taxi and leg and leg.kind == "flight") then return end
-    local total = math.max(1, leg.secs - G.TAKEOFF)
+    local total = math.max(1, leg.secs)
     return math.max(0, total - (GetTime() - taxi.start)), total
 end
 
@@ -483,13 +488,13 @@ local function Failed(leg, i, from, mine)
                             Failed(leg, i, from, mine)
                         end
                         Refine()
-                    end)
+                    end, state.plan.style)
                 return
             end
         end
     end
     leg.refined = "failed"
-    local est = Pl.WalkEstimate(from, leg.to)
+    local est = Pl.WalkEstimate(from, leg.to, state.plan.style)
     if est and est.points and #est.points > 2 then Replace(leg, i, est.points, est.secs) end
 end
 
@@ -520,9 +525,54 @@ Refine = function()
                         if leg.refined == "retry" then return end
                     end
                     Refine()
-                end)
+                end, state.plan.style)
             return
         end
+    end
+end
+
+-- Les marches d'un plan qui n'est pas lancé (l'aperçu), précisées par la
+-- grille l'une après l'autre au style du plan : leur tracé et leur temps
+-- remplacés, le total refait ; progress(plan) après chacune, done(plan) à la
+-- fin. Rend une fonction qui l'arrête (nil : rien à préciser, done est appelé).
+function T.Measure(p, progress, done)
+    local Nav = ns.TravelNav
+    local usable = Nav and Nav.Available() and ns.db and ns.db.options.travelTerrain ~= false
+    local cancel, stopped = nil, false
+    local function Total()
+        local total = 0
+        for _, l in ipairs(p.legs) do total = total + l.secs end
+        p.secs = total
+    end
+    local function Next(i)
+        if stopped then return end
+        for k = i, #p.legs do
+            local leg = p.legs[k]
+            if usable and leg.kind == "walk" and leg.from.cont == leg.to.cont and Nav.Has(leg.from.cont) then
+                local from = leg.from
+                cancel = Nav.Find(from.cont, { cont = from.cont, x = from.x, y = from.y, layer = from.layer, map = from.map },
+                    leg.to, p.speed, function(path)
+                        cancel = nil
+                        if stopped then return end
+                        if path then
+                            leg.points, leg.secs, leg.nav, leg.refined = path.points, path.secs, path, true
+                            leg.geom, leg.length = nil, nil
+                            Total()
+                            if progress then progress(p) end
+                        end
+                        Next(k + 1)
+                    end, p.style)
+                return
+            end
+        end
+        if done then done(p) end
+    end
+    Next(1)
+    if stopped or not cancel then return nil end
+    return function()
+        stopped = true
+        if cancel then cancel() end
+        cancel = nil
     end
 end
 
@@ -543,7 +593,8 @@ end
 -- mode : nil (un nouvel itinéraire), "resume" (après un /reload), "replan"
 -- (recalculé : le joueur a quitté le chemin), "next" (la destination
 -- suivante de la file), "corpse" (le retour au corps)
-local MESSAGES = { resume = "TRAVEL_RESUMED", replan = "TRAVEL_REPLANNED", next = "TRAVEL_NEXT", corpse = "TRAVEL_CORPSE" }
+local MESSAGES = { resume = "TRAVEL_RESUMED", replan = "TRAVEL_REPLANNED", next = "TRAVEL_NEXT", corpse = "TRAVEL_CORPSE",
+    update = "TRAVEL_UPDATED", skip = "TRAVEL_UPDATED" }
 
 function T.Start(plan, goal, mode)
     local was = state and state.goal
@@ -562,8 +613,28 @@ function T.Start(plan, goal, mode)
     Refine()
 end
 
+-- Par où passe un plan à partir de l'étape i : les clés de ses arêtes hors
+-- marche (vols, bateaux, passages, téléportations), dans l'ordre
+local function Way(plan, i)
+    local keys = {}
+    for k = i or 1, #plan.legs do
+        for _, key in ipairs(plan.legs[k].keys or {}) do keys[#keys + 1] = key end
+    end
+    return keys
+end
+
+local function SameWay(a, b)
+    if #a ~= #b then return false end
+    for i = 1, #a do
+        if a[i] ~= b[i] then return false end
+    end
+    return true
+end
+
 -- Calculer et lancer un trajet du joueur vers `goal` ; faux (et un message)
--- si ce n'est pas possible ; "here" : il y est déjà
+-- si ce n'est pas possible ; "here" : il y est déjà. mode : voir T.Start ;
+-- "update" (le réglage, le niveau ont changé) et "skip" (une étape passée)
+-- recalculent sans dire qu'on a quitté le chemin
 local function Plan(goal, quiet, mode)
     local here = Pl.PlayerPoint()
     if not here then
@@ -575,9 +646,27 @@ local function Plan(goal, quiet, mode)
         if not quiet then ns.Print(L.TRAVEL_ALREADY) end
         return false, "here"
     end
-    -- (un fantôme marche, et plus vite)
-    local opts = goal.corpse and { walkOnly = true, speed = Pl.GHOST_SPEED } or nil
-    local plan, g = Pl.Find(here, goal, opts)
+    -- (un fantôme marche, et plus vite ; le style choisi pour cette destination,
+    -- sinon le réglage ; sans les étapes passées, T.SkipLeg)
+    local opts = goal.corpse and { walkOnly = true, speed = Pl.GHOST_SPEED } or {}
+    opts.style, opts.exclude = goal.style, goal.exclude
+    local plan, g = Pl.Best(here, goal, opts)
+    -- (recalculé en chemin : un autre chemin ne remplace celui en cours que
+    -- s'il fait gagner STAY ; sinon le même chemin, depuis où tu es)
+    if plan and (mode == "replan" or mode == "update") and state and state.goal == goal then
+        local old = Way(state.plan, state.index)
+        if not SameWay(old, Way(plan, 1)) then
+            local set = {}
+            for _, key in ipairs(old) do set[key] = true end
+            local o = {}
+            for k, v in pairs(opts) do o[k] = v end
+            o.only, o.hint = set, false
+            local kept, kg = Pl.Find(here, goal, o)
+            if kept and #kept.legs > 0 and SameWay(old, Way(kept, 1)) and kept.secs <= plan.secs + STAY then
+                plan, g = kept, kg
+            end
+        end
+    end
     lastPlan = { here = here, goal = goal, plan = plan, known = g and g.known or 0 }
     if not plan or #plan.legs == 0 then
         if not quiet then
@@ -592,23 +681,67 @@ end
 
 -- Le trajet vers un point du monde, calculé sans le lancer (la fiche d'un
 -- point, l'aperçu : UI/PointCard.lua) : le plan, sinon nil et la raison
--- ("here" : tu y es ; "nohere" : ta position est inconnue ; "noroute")
-function T.Preview(goal)
+-- ("here" : tu y es ; "nohere" : ta position est inconnue ; "noroute") ;
+-- style : un style de marche (nil : le réglage) ; hint : false, sans chercher
+-- l'indice d'un vol qui manque (Planner.Best)
+function T.Preview(goal, style, hint)
     if not (ns.db and ns.db.options.travel and goal) then return nil, "off" end
     local here = Pl.PlayerPoint()
     if not here then return nil, "nohere" end
     if here.cont == goal.cont and G.Dist(here, goal) <= GOAL_REACH then return nil, "here" end
-    local ok, plan = pcall(Pl.Find, here, goal)
+    local ok, plan = pcall(Pl.Best, here, goal, { style = style, hint = hint })
     if not ok or not plan or #plan.legs == 0 then return nil, "noroute" end
+    plan.here = here
     return plan
 end
 
 -- Un trajet vers un point du monde (le navigateur de lieux, une
--- destination reçue du groupe...) ; vrai s'il est lancé
-function T.Go(goal, quiet)
+-- destination reçue du groupe...) ; vrai s'il est lancé. style : un style
+-- de marche choisi pour lui (l'aperçu à trois choix), qu'il garde
+function T.Go(goal, quiet, style)
     if not (ns.db and ns.db.options.travel and goal) then return false end
+    if style then goal.style = style end
     return Plan(goal, quiet) and true or false
 end
+
+-- Le réglage du style de marche a changé : l'itinéraire en cours qui le
+-- suit (sans style choisi pour lui) est recalculé ; vrai s'il l'est
+function T.Restyle()
+    if not (state and not state.goal.corpse and not state.goal.style) then return false end
+    -- (en vol, on ne recalcule pas depuis le ciel : le prochain recalcul prendra le réglage)
+    if UnitOnTaxi and UnitOnTaxi("player") then return false end
+    return Plan(state.goal, true, "update") and true or false
+end
+
+-- Passer une étape (le bouton de voyage, /mmir trajet passer) : celle en
+-- cours, ou, pendant la marche qui y mène, l'étape qui suit (un vol, un
+-- bateau, une téléportation) ; l'itinéraire est refait sans elle depuis où
+-- tu es, et ne la reprend plus jusqu'à la destination. Faux s'il n'y a rien à passer.
+function T.SkipLeg()
+    if not state or state.goal.corpse then return false end
+    local legs = state.plan.legs
+    local leg = legs[state.index]
+    if leg and leg.kind == "walk" then leg = legs[state.index + 1] end
+    if not (leg and leg.keys and #leg.keys > 0) then
+        T.Say(L.TRAVEL_SKIP_NONE)
+        return false
+    end
+    state.goal.exclude = state.goal.exclude or {}
+    for _, key in ipairs(leg.keys) do state.goal.exclude[key] = true end
+    T.Say(L.TRAVEL_SKIPPED, T.LegText(leg))
+    return Plan(state.goal, true, "skip") and true or false
+end
+
+-- (un niveau de plus : les zones trop hautes ne sont plus les mêmes, le trajet est refait)
+local levelUp = CreateFrame("Frame")
+levelUp:RegisterEvent("PLAYER_LEVEL_UP")
+levelUp:SetScript("OnEvent", function()
+    C_Timer.After(1, function()
+        if state and not state.goal.corpse and not (UnitOnTaxi and UnitOnTaxi("player")) and ns.Ready() then
+            Plan(state.goal, true, "update")
+        end
+    end)
+end)
 
 ---------------------------------------------------------------------------
 -- La file : les destinations suivantes, dans l'ordre le plus court. La
@@ -970,11 +1103,8 @@ ticker:SetScript("OnUpdate", function(_, elapsed)
     end
     FollowWalk(here)
     local p = state.proj
-    -- (la pierre de foyer pas utilisée : parti du départ, l'itinéraire est recalculé sans elle si elle ne sert plus)
-    local now = legs[state.index]
-    local away = now and now.kind == "hearth" and now.from.cont == here.cont and G.Dist(here, now.from) > OFF_ROUTE
     -- (loin du chemin quelques secondes de suite : recalculé depuis où il est)
-    if (p and p.dist > OFF_ROUTE) or away then
+    if p and p.dist > OFF_ROUTE then
 
         state.off = (state.off or 0) + 1
         if state.off >= OFF_TICKS and GetTime() - lastReplan >= REPLAN_GAP then
@@ -1062,6 +1192,11 @@ function T.Report()
     if not shown then
         ns.Print(L.TRAVEL_NONE)
     else
+        -- (le style de marche, et s'il a été choisi pour ce trajet dans l'aperçu)
+        local KEYS = { fastest = "TRAVEL_STYLE_FASTEST", balanced = "TRAVEL_STYLE_BALANCED", roads = "TRAVEL_STYLE_ROADS" }
+        local style = L[KEYS[Pl.Style(shown.style)]]
+        local own = state and state.plan == shown and state.goal.style
+        ns.Print(own and L.TRAVEL_REPORT_STYLE_OWN or L.TRAVEL_REPORT_STYLE, style)
         for i, leg in ipairs(shown.legs) do
             local mark = state and i == state.index and "|cffffd100>|r " or "  "
             ns.Print("%s%d. %s  |cffaaaaaa%s|r", mark, i, T.LegText(leg), R.Clock(leg.secs))

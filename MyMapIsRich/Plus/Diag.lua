@@ -363,3 +363,36 @@ function Diag.ProbeCoords()
     end
     ns.Print(L.PROBE_YARDS, pts, badY, worstY)
 end
+
+---------------------------------------------------------------------------
+-- /mmir sonde terrain : le terrain de la case où tu es, tel que la grille de
+-- marche le lit (Travel/Nav.lua : Nav.Terrain), et ce qu'un yard y coûte dans
+-- chaque style de marche ; pour régler les pentes et l'intérieur
+-- (tools/nav/build_nav.py)
+---------------------------------------------------------------------------
+local GROUND = { [0] = "TRAVEL_GROUND_NORMAL", [2] = "TRAVEL_GROUND_GENTLE", [3] = "TRAVEL_GROUND_STEEP",
+    [4] = "TRAVEL_GROUND_INDOOR", [5] = "TRAVEL_GROUND_CITY" }
+
+function Diag.ProbeTerrain()
+    local Pl, Nav = ns.TravelPlanner, ns.TravelNav
+    local here = Pl and Pl.PlayerPoint()
+    local cell = here and Nav and Nav.Available() and Nav.Terrain(here.cont, here.x, here.y)
+    if not cell or #cell == 0 then
+        ns.Print(L.PROBE_TERRAIN_NONE)
+        return
+    end
+    ns.Print(L.PROBE_TERRAIN_HEAD, cell.gx, cell.gy)
+    for _, s in ipairs(cell) do
+        local what = s.kind == 2 and L.TRAVEL_GROUND_WATER or L[GROUND[s.class] or "TRAVEL_GROUND_NORMAL"]
+        if s.road then what = L.PROBE_TERRAIN_ROAD:format(what) end
+        -- (le prix d'un yard : la route compte hors de l'intérieur, l'eau à part)
+        local prices = {}
+        for i, name in ipairs(Nav.STYLE_ORDER) do
+            local mult = Nav.STYLES[name].mult
+            local class = s.class
+            if s.road and class < 4 then class = 1 end
+            prices[i] = s.kind == 2 and 3 or (mult[class] or 1)
+        end
+        ns.Print(L.PROBE_TERRAIN_LINE, s.layer, what, prices[1], prices[2], prices[3])
+    end
+end

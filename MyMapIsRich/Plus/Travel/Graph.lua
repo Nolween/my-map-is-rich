@@ -18,7 +18,9 @@ local G = {}
 ns.TravelGraph = G
 
 local FLY_SPEED = 30         -- yd/s en vol (l'estimation d'OpenMap, Flights.lua)
-local TAKEOFF = 15           -- s : parler au maître de vol, décoller, atterrir
+local HOP = 2                -- s de plus par saut d'un vol estimé (comme Polestar)
+local TAKEOFF = 4            -- s : parler au maître de vol et décoller ; compté pour choisir le
+                             -- chemin (un vol de plus doit valoir le détour), pas dans le temps annoncé
 local SHIP_SPEED = 20        -- yd/s en bateau ou en zeppelin (environ)
 local SEA_CROSSING = 180     -- s : une traversée d'un continent à l'autre
 local SHIP_WAIT = 120        -- s : l'attente moyenne au quai
@@ -128,7 +130,7 @@ local function FlightSecs(F, path)
     local times = ns.Map.Flights.Times()
     local t = type(times) == "table" and a and b and times[a[1] .. "|" .. b[1]]
     if type(t) == "number" and t > 0 then return t, true end
-    return (path[3] or 0) / FLY_SPEED, false
+    return (path[3] or 0) / FLY_SPEED + HOP, false
 end
 
 -- Le réseau : { nodes = { id -> nœud }, edges = { id -> { arête, ... } },
@@ -136,17 +138,22 @@ end
 -- ("flight" | "dock" | "passage"), name, node (l'id du maître de vol), known
 -- (un vol appris), layer et passage (un bout de passage : sa couche dans la
 -- grille de marche, "portal" | "tram") }. Une arête : { to, secs, kind
--- ("flight" | "boat" | "zeppelin" | "portal" | "tram"), path, measured, route }.
+-- ("flight" | "boat" | "zeppelin" | "portal" | "tram"), path, measured, route, key }.
 -- Tous les maîtres de vol de ta faction sont des nœuds : un vol peut partir
 -- d'un maître de vol pas encore appris (on y va, on lui parle, il est appris
 -- et on s'envole), mais n'atterrit que chez un maître de vol appris, comme
 -- dans le jeu : un saut n'arrive qu'à un nœud appris.
-function G.Build()
+-- assumeKnown : comme si tous les vols de ta faction étaient appris (« plus
+-- rapide si tu avais le vol de… » : Planner.lua) ; chaque nœud garde son vrai known.
+function G.Build(assumeKnown)
     local F, P = Data()
     local g = { nodes = {}, edges = {}, known = 0 }
     local factionBit, faction = FactionBit()
 
+    -- (une arête a sa clé, « genre:départ>arrivée » : un plan dit ainsi par où il
+    -- passe, pour exclure une étape ou garder le même chemin, Planner.lua)
     local function AddEdge(from, edge)
+        edge.key = edge.kind .. ":" .. from .. ">" .. edge.to
         g.edges[from] = g.edges[from] or {}
         local list = g.edges[from]
         list[#list + 1] = edge
@@ -179,7 +186,7 @@ function G.Build()
         end
         for _, path in ipairs(F.paths) do
             local a, b = g.nodes["f" .. tostring(path[1])], g.nodes["f" .. tostring(path[2])]
-            if a and b and b.known then
+            if a and b and (b.known or assumeKnown) then
                 local secs, measured = FlightSecs(F, path)
                 AddEdge(a.id, { to = b.id, secs = secs, kind = "flight", path = path, measured = measured })
             end

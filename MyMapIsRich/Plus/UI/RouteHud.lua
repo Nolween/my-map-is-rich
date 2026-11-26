@@ -69,7 +69,7 @@ end
 
 local KINDS = {
     walk = "KIND_WALK", flight = "KIND_FLIGHT", boat = "KIND_BOAT",
-    zeppelin = "KIND_ZEPPELIN", portal = "KIND_PORTAL", tram = "KIND_TRAM", hearth = "KIND_HEARTH",
+    zeppelin = "KIND_ZEPPELIN", portal = "KIND_PORTAL", tram = "KIND_TRAM", teleport = "KIND_TELEPORT",
 }
 
 local function KindColor(kind)
@@ -251,7 +251,11 @@ function H.UpdateArrow(a, elapsed)
     local target = T() and T().Target()
     local here = target and ns.TravelPlanner.PlayerPoint()
     local facing = here and Facing()
-    if not (facing and here.cont == target.cont) then
+    -- (une téléportation : rien à suivre, le bouton de voyage la lance)
+    local plan, index
+    if T() then plan, index = T().Live() end
+    local leg = plan and plan.legs[index]
+    if not (facing and here.cont == target.cont) or (leg and leg.kind == "teleport") then
         a.tex:SetAlpha(0.25)
         return
     end
@@ -413,9 +417,20 @@ function H.Refresh()
             if stash then foot = L.HUD_RESUME:format(T().GoalName(stash)) end
         elseif flying and legs[st.index + 1] then
             foot = L.HUD_THEN:format(T().LegText(legs[st.index + 1]))
+        elseif leg and (leg.kind == "boat" or leg.kind == "zeppelin") then
+            -- (un bateau : son départ, d'après son horaire appris ; sinon l'attente moyenne, Travel/Transit.lua)
+            local wait = ns.Transit and ns.Transit.Wait(leg)
+            if wait then
+                foot = L.HUD_DEPARTS:format(H.Duration(wait))
+            elseif leg.wait then
+                foot = L.HUD_DEPARTS_ABOUT:format(H.Duration(leg.wait))
+            end
         elseif st.queued > 0 then
             foot = st.queued == 1 and L.HUD_QUEUE_ONE or L.HUD_QUEUE:format(st.queued)
         end
+        -- (« plus rapide si tu avais le vol de… » : Planner.Best)
+        local hint = st.plan and st.plan.hint
+        if not foot and hint then foot = L.TRAVEL_HINT_FLIGHT:format(H.Duration(hint.saves), hint.name) end
         if foot then
             f.rule:ClearAllPoints()
             f.rule:SetPoint("TOPLEFT", f, "TOPLEFT", PAD, y - 10)

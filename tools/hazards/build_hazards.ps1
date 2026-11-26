@@ -1,9 +1,11 @@
 ﻿# Les villes de l'autre faction pour les itinéraires (MyMapIsRich/Plus/Data/Hazards.lua) :
-# le terrain de chaque ville autour d'un maître de vol, et celui des capitales.
+# le terrain de chaque ville autour d'un maître de vol, et celui des capitales ; et depuis la 1.4.0,
+# les zones (la zone de chaque carré de 64 yards, et le niveau de chaque zone), pour éviter celles
+# trop hautes pour toi (les règles de Polestar, Plus/Travel/Nav.lua).
 # Source : Shortest Path Forever de cjber (GPL-3.0-or-later) :
 #   Data/TownAreas.lua : par maître de vol, les morceaux de terrain (33,3 yards) que le
 #     client appelle du nom de la ville ;
-#   Data/Zones.lua : les capitales et leur faction ;
+#   Data/Zones.lua : les capitales et leur faction, les niveaux des zones ;
 #   Data/ZoneCells.lua : la carte de chaque carré de 64 yards des continents.
 # Le jeu (Plus/Travel/Nav.lua) en tire les villes hostiles selon ta faction.
 #   powershell -ExecutionPolicy Bypass -File tools\hazards\build_hazards.ps1 [dossier de ShortestPathForever]
@@ -40,13 +42,27 @@ foreach ($z in [regex]::Matches($zonesText, '\[(\d+)\] = \{\s*city = "(\w+)",.*?
     $capitals[$z.Groups[1].Value] = @{ side = $z.Groups[2].Value; cont = $z.Groups[3].Value; runs = New-Object System.Collections.Generic.List[string] }
 }
 
-# Leurs carrés de 64 yards (ZoneCells.lua) : pour chaque colonne, des suites de « zone nombre » depuis j0
+# Les niveaux des zones (Zones.lua) : le plus bas et le plus haut
+$levels = New-Object System.Collections.Generic.List[string]
+foreach ($z in [regex]::Matches($zonesText, '(?m)^\s*\[(\d+)\] = \{ low = (\d+), high = (\d+), map = (\d+),.*?\}\s*,?\s*(?:--\s*(.*?))?\s*$')) {
+    if (-not $continents.ContainsKey($z.Groups[4].Value)) { continue }
+    $levels.Add(("`t`t[{0}] = {{ {1}, {2} }}, -- {3}" -f $z.Groups[1].Value, $z.Groups[2].Value, $z.Groups[3].Value, $z.Groups[5].Value))
+}
+
+# Leurs carrés de 64 yards (ZoneCells.lua) : pour chaque colonne, des suites de « zone nombre » depuis j0 ;
+# les colonnes sont aussi gardées telles quelles (la zone de chaque carré)
+$zoneCells = New-Object System.Collections.Generic.List[string]
 $cellsText = Read-Text "Data\ZoneCells.lua"
 foreach ($c in [regex]::Matches($cellsText, '\[(\d+)\] = \{ i0 = (-?\d+), j0 = (-?\d+), columns = \{(.*?)\}', "Singleline")) {
     $cont = $c.Groups[1].Value
     if (-not $continents.ContainsKey($cont)) { continue }
     $i = [int]$c.Groups[2].Value
     $j0 = [int]$c.Groups[3].Value
+    $zoneCells.Add(("`t`t[{0}] = {{ {1}, {2}, {{" -f $cont, $i, $j0))
+    foreach ($col in [regex]::Matches($c.Groups[4].Value, '"([^"]*)"')) {
+        $zoneCells.Add(("`t`t`t""{0}""," -f $col.Groups[1].Value))
+    }
+    $zoneCells.Add("`t`t} },")
     foreach ($col in [regex]::Matches($c.Groups[4].Value, '"([^"]*)"')) {
         $nums = @($col.Groups[1].Value -split '\s+' | Where-Object { $_ -ne "" })
         $at = $j0
@@ -73,6 +89,9 @@ $lines.Add("--     [j, j + 1) fois 100/3) ; cases : w x h bits, x d'abord depuis
 $lines.Add("--     base64 (A-Za-z0-9+/), le plus fort d'abord.")
 $lines.Add("--   capitals[carte] = { faction, continent, ""i j n ..."" } : les carrés de 64 yards de la capitale,")
 $lines.Add("--     n carrés de la colonne i (x / 64) à partir de la ligne j (y / 64).")
+$lines.Add("--   zones[carte] = { plus bas niveau, plus haut niveau } : les zones dont on connaît les niveaux.")
+$lines.Add("--   zoneCells[continent] = { i0, j0, colonnes } : la zone de chaque carré de 64 yards ; la colonne k est")
+$lines.Add("--     celle des x / 64 = i0 + k - 1, des suites « zone nombre » depuis la ligne j0 (zone 0 : aucune).")
 $lines.Add("-- x vers le nord, y vers l'ouest (UnitPosition), en yards du monde.")
 $lines.Add("local _, root = ...")
 $lines.Add("local ns = root.Plus")
@@ -88,8 +107,14 @@ foreach ($id in $capitals.Keys) {
     $lines.Add(("`t`t[{0}] = {{ ""{1}"", {2}, ""{3}"" }}, -- {4}" -f $id, $cap.side, $cap.cont, ($cap.runs -join " "), $names[$id]))
 }
 $lines.Add("`t},")
+$lines.Add("`tzones = {")
+foreach ($l in $levels) { $lines.Add($l) }
+$lines.Add("`t},")
+$lines.Add("`tzoneCells = {")
+foreach ($l in $zoneCells) { $lines.Add($l) }
+$lines.Add("`t},")
 $lines.Add("}")
 
 $text = ($lines -join "`n") + "`n"
 [IO.File]::WriteAllText([IO.Path]::GetFullPath($out), $text, (New-Object Text.UTF8Encoding($false)))
-Write-Host ("{0} villes, {1} capitales -> {2}" -f $towns.Count, $capitals.Count, $out)
+Write-Host ("{0} villes, {1} capitales, {2} zones avec leurs niveaux -> {3}" -f $towns.Count, $capitals.Count, $levels.Count, $out)

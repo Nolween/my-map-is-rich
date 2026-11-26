@@ -375,10 +375,14 @@ local function BuildTravel(page)
     y = y - 62
     Option(left, "travelTerrain", L.OPT_TRAVEL_TERRAIN, L.OPT_TRAVEL_TERRAIN_TIP, y, Next)
     y = y - 62
-    -- (le chemin à pied : routes au maximum, routes si possible, à travers champs)
+    -- (le style de marche : le plus rapide, équilibré, les routes ; l'itinéraire
+    -- en cours qui le suit est recalculé)
     Cycle(left, "travelPath", L.OPT_TRAVEL_PATH, {
-        { "roads", L.OPT_PATH_ROADS }, { "mixed", L.OPT_PATH_MIXED }, { "fields", L.OPT_PATH_FIELDS },
-    }, y, Next)
+        { "balanced", L.TRAVEL_STYLE_RECOMMENDED:format(L.TRAVEL_STYLE_BALANCED) },
+        { "roads", L.TRAVEL_STYLE_ROADS }, { "fastest", L.TRAVEL_STYLE_FASTEST },
+    }, y, function()
+        if ns.Travel and ns.Travel.Restyle then ns.Travel.Restyle() end
+    end)
     local pathHelp = UI.DimText(left, L.OPT_TRAVEL_PATH_TIP)
     pathHelp:SetPoint("TOPLEFT", 20, y - 30)
     pathHelp:SetPoint("RIGHT", left, "RIGHT", -16, 0)
@@ -392,7 +396,15 @@ local function BuildTravel(page)
         { "auto", L.OPT_AUTO }, { "walk", L.OPT_SPEED_WALK }, { "slow", L.OPT_SPEED_SLOW }, { "fast", L.OPT_SPEED_FAST },
     }, y)
     y = y - 62
-    Option(left, "travelHearth", L.OPT_TRAVEL_HEARTH, L.OPT_TRAVEL_HEARTH_TIP, y, Next)
+    Option(left, "travelButton", L.OPT_TRAVEL_BUTTON, L.OPT_TRAVEL_BUTTON_TIP, y)
+    y = y - 62
+    -- (les alertes des bateaux : sur la même ligne, les essayer)
+    Option(left, "travelAlerts", L.OPT_TRAVEL_ALERTS, L.OPT_TRAVEL_ALERTS_TIP, y)
+    local try = UI.Button(left, L.OPT_TRAVEL_ALERTS_TRY, 110, 22, "grey")
+    try:SetPoint("TOPRIGHT", -16, y)
+    try:SetScript("OnClick", function()
+        if ns.Transit then ns.Transit.Sample() end
+    end)
 
     UI.Section(right, L.SET_GUIDE, 16, -14)
     y = -46

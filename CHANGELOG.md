@@ -1,5 +1,26 @@
 # Journal des versions — My Map Is Rich
 
+## 1.4.0
+
+**Des itinéraires plus justes : trois styles de marche, des voyages plus malins, un bouton pour l'étape à faire, et les horaires des bateaux.** Les règles des itinéraires s'inspirent de celles de Polestar, et la liste des quêtes sait maintenant écouter Spoken.
+
+Après la mise à jour, **relance le jeu** (un `/reload` ne suffit pas : des fichiers s'ajoutent).
+
+- **Trois styles de marche** : **Le plus rapide** (le chemin le plus court, par les collines et à travers champs), **Équilibré** (les routes quand elles sont à peine plus longues, en contournant les collines ; le réglage par défaut) et **Routes** (sur les routes même plus longues, le plus sûr). Le choix se fait dans l'onglet Trajets (« Chemin à pied »), et l'ancien réglage est repris de lui-même.
+- **Les chemins à pied connaissent le terrain** : les pentes douces et raides, l'intérieur des bâtiments et des grottes (sauf dans les capitales), en plus des routes, de l'eau et des villes de l'autre faction (maintenant vraiment évitées). `/mmir sonde terrain` dit le terrain là où tu es.
+- **L'aperçu d'un itinéraire** (Y sur un point) montre les trois styles avec leur durée, celui du réglage en tête. A sur un style le choisit, A de nouveau part avec lui, et l'itinéraire le garde jusqu'à la destination.
+- **Des voyages plus malins** :
+  - les **téléportations de classe** du mage (vers les capitales, avec une rune de téléportation) et Reflet-de-Lune du druide entrent dans les itinéraires, quand elles font vraiment gagner du temps ;
+  - **les zones trop hautes pour toi sont évitées** : un chemin en fait le tour plutôt que de traverser une zone de 10 niveaux de plus ;
+  - **les vols** jamais pris sont mieux estimés, saut par saut ;
+  - **un itinéraire recalculé en chemin** ne change de vol ou de bateau que pour un vrai gain (20 s) ;
+  - **« plus rapide si tu avais le vol de… »** : l'aperçu et le panneau de trajet disent quand un maître de vol que tu n'as pas encore ferait gagner du temps.
+- **Le bouton de voyage** (onglet Trajets) apparaît quand une étape demande d'agir : il lance la téléportation de l'étape, ou, chez le maître de vol, prend le vol prévu. **Clic droit** (ou `/mmir trajet passer`) : passer l'étape, l'itinéraire est refait sans elle. Son raccourci se pose dans Raccourcis > My Map Is Rich, à la manette aussi ; Maj+glisser le déplace.
+- **Chez le maître de vol**, un panneau à côté de sa carte dit la prochaine étape de l'itinéraire et le temps du vol, avec **Prendre ce vol**, et un anneau doré marque la destination.
+- **Les bateaux et les zeppelins** : leurs horaires s'apprennent en les prenant (une traversée suffit). L'itinéraire compte alors l'attente réelle au quai, et le panneau de trajet dit **« Départ dans 1 min 20 »**. **Les alertes** (onglet Trajets, avec **Essayer**) : avant que ton bateau n'arrive au quai, et avant ton arrêt, un bandeau, la cloche du bateau ou la corne du zeppelin, et l'icône du jeu qui clignote.
+- **La pierre de foyer ne fait plus partie des itinéraires**, et son réglage s'en va.
+- **Écouter avec Spoken** : si Spoken est installé et double une quête, la liste des quêtes de la carte la lit à voix haute (le haut-parleur de sa ligne, Écouter dans sa fiche, ou son menu : Y à la manette). Ses propres boutons de lecture, cachés sous notre liste, ne sont plus nécessaires.
+
 ## 1.3.2
 
 **Des quêtes qu'on suit d'un geste, les manettes PlayStation reconnues, et la carte qui se ferme sans rien bloquer.** Ce sont les premières demandes des joueurs sur CurseForge.

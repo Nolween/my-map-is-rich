@@ -96,6 +96,23 @@ Par lots :
 - 9 : l'export va dans deux entrées neuves de `forever_fixes.json`, `addQuests` et `addNpcs`, que `build_quests.py` lit.
 - Les nouveaux fichiers (`Quests/Learn.lua`, `Layers/QuestMinimap.lua`, `Layers/QuestUnits.lua`, `UI/QuestButtons.lua`) demandent de relancer le jeu.
 
+## Idées venues de Polestar
+
+Fin novembre 2026, on a lu [Polestar](https://github.com/fitzforge/polestar) 0.4.3.1, des guides de montée en niveau pour Forever avec son propre calcul d'itinéraire. On en reprend les chiffres et les règles, pas le code : son routeur (Polestar_Nav) est sous GPL-3.0-or-later, mais le reste de Polestar est sous GPL-3.0-only. Ce que Polestar tient lui-même de Shortest Path Forever (horaires des bateaux, alertes, bouton de voyage) s'étudie à la source, dans Shortest Path Forever. Polestar est crédité dans la fenêtre Crédits et dans `LICENSES/README.txt`.
+
+| Version | Ce que voit le joueur | Où |
+|---|---|---|
+| 1.4.0 · la marche | (publiée, pas encore testée en jeu) **La pierre de foyer sort des itinéraires** (demandé par le joueur : son réglage et son étape s'en vont, l'auberge apprise est oubliée). **Trois styles de marche** : Le plus rapide, Équilibré (le défaut), Routes, aux prix de Polestar par terrain (route, pente douce, pente raide, intérieur, intérieur de cité), dans le réglage « Chemin à pied » et dans l'aperçu d'un itinéraire, qui montre les trois avec leur durée | `tools/nav/build_nav.py` (le format 4 de Shortest Path Forever, le terrain de chaque surface), `Travel/Nav.lua` (`Nav.STYLES`), `Travel/Planner.lua` (`Pl.Style`), `UI/PointCard.lua` ; `/mmir sonde terrain` |
+| 1.4.0 · le voyage | (publiée, pas encore testée en jeu) **Les règles du voyage** de Polestar : vols à `longueur / 30 + 2` s par étape ; les téléportations de mage et de druide ; les zones trop hautes évitées (×3 à 4 niveaux de plus, ×20 au-delà de 10) ; un recalcul ne change de chemin que pour 20 s de gain ; « Plus rapide si tu avais le vol de X ». **Le bouton de voyage** (le sort de téléportation de l'étape, « Passer cette étape »). **Le maître de vol** : la prochaine étape marquée sur la carte des vols, « Prendre ce vol » | `Travel/Graph.lua`, `Planner.lua`, `Guide.lua`, `UI/RouteHud.lua` ; `Data/Teleports.lua` (nouveau, généré) ; `tools/hazards` (la zone de chaque morceau de 33 yd) |
+| 1.4.0 · les bateaux | (publiée, pas encore testée en jeu) **Les bateaux** : les horaires appris en regardant passer bateaux, zeppelins et tram ; l'attente de chaque trajet ; une alerte avec la cloche du jeu à quai et avant ton arrêt | `Travel/Transit.lua` (nouveau), `Graph.lua` |
+
+Plus tard :
+- **Cadavre ou esprit guérisseur** : aller au plus rapide des deux, le mal de résurrection compté, une marge de 5 s.
+- **Le style du tracé** : étapes suivantes plus pâles, vols en tirets, chevrons de sens, tracé qui s'efface derrière toi.
+- **`/way`**, un remplaçant de TomTom, une petite API.
+- **La cible de Polestar sur notre carte** : il dessine par `OpenMapAPI`, retiré chez nous en 0.5.0, ses épingles ne se voient pas sous notre vue.
+- **Une épingle par zone vue de loin**, les rares repérés, Maj+clic sur la minicarte.
+
 ## Dettes et décisions en attente
 
 - **Rien n'est encore testé en jeu, de la 0.5.0 à la 1.2.0.** Chaque version a sa liste « En jeu » dans le plan. Les vérifications de base :

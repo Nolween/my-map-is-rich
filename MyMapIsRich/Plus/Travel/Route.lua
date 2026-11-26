@@ -22,7 +22,7 @@ local COLORS = {
     zeppelin = { 0.90, 0.25, 0.20 },
     portal = { 0.70, 0.40, 0.95 },
     tram = { 0.60, 0.68, 0.78 },
-    hearth = { 0.45, 0.85, 1 },
+    teleport = { 0.45, 0.85, 1 },
 }
 R.COLORS = COLORS            -- (le panneau de trajet : UI/RouteHud.lua)
 local DONE_ALPHA = 0.35      -- une étape déjà faite
@@ -102,8 +102,8 @@ end
 -- plus proche de lui (x, y, sur le segment j), et la partie faite n'est plus
 -- dessinée
 local function DrawLeg(leg, alpha, live)
-    -- (la pierre de foyer : pas de chemin, on y est en un instant)
-    if leg.kind == "hearth" then return end
+    -- (une téléportation : pas de chemin, on y est en un instant)
+    if leg.kind == "teleport" then return end
     local color = COLORS[leg.kind] or COLORS.walk
     local geom = R.Geometry(leg)
     if not geom then

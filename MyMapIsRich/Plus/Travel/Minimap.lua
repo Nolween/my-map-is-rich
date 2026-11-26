@@ -28,7 +28,7 @@ local COLORS = {
     zeppelin = { 1, 0.38, 0.32 },
     portal = { 0.75, 0.45, 1 },
     tram = { 0.65, 0.72, 0.8 },
-    hearth = { 0.45, 0.85, 1 },
+    teleport = { 0.45, 0.85, 1 },
 }
 -- (le diamètre de la vue, en yards, à chaque zoom : HereBeDragons)
 local VIEW = {
@@ -199,7 +199,7 @@ local function Update()
         local geom = R.Geometry(leg)
         -- (un portail, un tram : pas de chemin au sol entre ses deux bouts)
         if geom and leg.from.cont == cont and leg.kind ~= "portal" and leg.kind ~= "tram"
-            and leg.kind ~= "hearth" then
+            and leg.kind ~= "teleport" then
             local color = COLORS[leg.kind] or COLORS.walk
             if i == index and proj and leg.kind == "walk" and proj.j < #geom then
                 -- (l'étape en cours : du joueur au point du tracé le plus proche, puis la suite)

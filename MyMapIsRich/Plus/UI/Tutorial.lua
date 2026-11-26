@@ -123,17 +123,16 @@ end
 local function BuildRoutes(c)
     local y = 0
     for i, d in ipairs({ { "travelHud", "OPT_TRAVEL_HUD" }, { "travelArrow", "OPT_TRAVEL_ARROW" },
-        { "travelRumble", "OPT_TRAVEL_RUMBLE" }, { "travelSound", "OPT_TRAVEL_SOUND" },
-        { "travelHearth", "OPT_TRAVEL_HEARTH" } }) do
+        { "travelRumble", "OPT_TRAVEL_RUMBLE" }, { "travelSound", "OPT_TRAVEL_SOUND" } }) do
         local key = d[1]
-        -- (deux colonnes : trois cases à gauche, deux à droite)
-        local x = i <= 3 and 0 or math.floor(TEXT_W / 2)
-        y = i == 4 and 0 or y
+        -- (deux colonnes de deux cases)
+        local x = i <= 2 and 0 or math.floor(TEXT_W / 2)
+        y = i == 3 and 0 or y
         Check(c, L[d[2]], x, y, function() return Opt()[key] ~= false end, function(on) OptSet(key, on) end,
             L[d[2] .. "_TIP"])
         y = y - ROW
     end
-    return ROW * 3
+    return ROW * 2
 end
 
 -- L'apparence : les couleurs, les icônes des boutons, la barre d'aide
