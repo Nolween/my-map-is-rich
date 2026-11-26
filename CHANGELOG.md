@@ -2,7 +2,7 @@
 
 ## 1.4.0
 
-**Des itinéraires plus justes : trois styles de marche, des voyages plus malins, un bouton pour l'étape à faire, et les horaires des bateaux.** Les règles des itinéraires s'inspirent de celles de Polestar, et la liste des quêtes sait maintenant écouter Spoken.
+**Des itinéraires plus justes : trois styles de marche, des voyages plus malins, un bouton pour l'étape à faire, et les horaires des bateaux.** La liste des quêtes sait aussi écouter Spoken.
 
 Après la mise à jour, **relance le jeu** (un `/reload` ne suffit pas : des fichiers s'ajoutent).
 
