@@ -37,7 +37,7 @@ function _G.MyMapIsRich_Binding(id)
         run()
         return
     end
-    if InCombatLockdown() or not ToggleWorldMap then return end
-    ToggleWorldMap()
+    if InCombatLockdown() or not ToggleWorldMap or not ns.Risky("OpenMap") then return end
+    pcall(ToggleWorldMap)
     C_Timer.After(OPEN_WAIT, function() if ns.MapShown() then run() end end)
 end

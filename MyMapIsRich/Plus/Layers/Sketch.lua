@@ -650,7 +650,7 @@ function SKM.Toggle(on, pin, dock)
     if on and not ns.MapShown() then
         -- (la carte ouverte d'abord, puis la plume quand elle est dessinée)
         waiting = { pin = pin, dock = dock }
-        if not InCombatLockdown() and ToggleWorldMap then pcall(ToggleWorldMap) end
+        if not InCombatLockdown() and ToggleWorldMap and ns.Risky("OpenMap") then pcall(ToggleWorldMap) end
         return
     end
     if on and not (set and ns.Map.View.Frame()) then

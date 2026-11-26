@@ -1,5 +1,19 @@
 # Journal des versions — My Map Is Rich
 
+## 1.3.2
+
+**Des quêtes qu'on suit d'un geste, les manettes PlayStation reconnues, et la carte qui se ferme sans rien bloquer.** Ce sont les premières demandes des joueurs sur CurseForge.
+
+Après la mise à jour, un `/reload` suffit.
+
+- **Dans la liste des quêtes de la carte**, à droite, les onglets ne sont plus coupés à deux lettres : on lit de nouveau **Par zone** et **Les plus proches**.
+- **Chaque quête de la liste a une case** au début de sa ligne, d'or quand la quête est suivie. Un clic sur la case la suit ou ne la suit plus, sans ouvrir sa fiche. À la manette, **RB** fait la même chose sur la quête choisie, et la barre d'aide le dit (« Suivre » ou « Ne plus suivre »).
+- **Les manettes PlayStation sont reconnues d'elles-mêmes** : avec « Icônes des boutons » sur Automatique (onglet Réglages), une manette Sony branchée donne les symboles PlayStation, sans passer par My Gamepad Is Rich.
+- **En PlayStation, View n'a plus l'air d'un bouton « retour »** : il montre le bouton Share / Create, ou, si le jeu n'a pas cette icône, une pastille « Share ». `/mmir focus` dit la manette lue et l'icône trouvée.
+- **M referme la carte par la croix de la carte elle-même** : c'est le jeu qui la ferme, plus l'addon. Le ciblage à la manette n'est plus bloqué ensuite.
+- Le message « le jeu a bloqué… » n'est plus répété : une fois par fonction suffit, le blocage dure jusqu'au `/reload`.
+- Les épingles, la plume et les raccourcis de l'addon qui ouvrent la carte passent par la même garde : si le jeu vient de bloquer l'ouverture, ils n'insistent pas.
+
 ## 1.3.1
 
 **Le ciblage à la manette n'est plus bloqué, et le suivi des quêtes ouvre une quête dans le journal.**

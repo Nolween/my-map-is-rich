@@ -12,7 +12,7 @@
 ## Notes-zhCN: 一张无缝的全屏世界地图，所有区域拼接在一起，鼠标或手柄皆可：图层决定显示内容、任务标记（要击杀或拾取什么、在哪里交接任务；也显示在小地图、鼠标提示和姓名板上）、由近到远的任务追踪、最快路线（道路、飞行、船只）、路线面板与 GPS 箭头、多目的地路线、可搜索的地点浏览器与最近的服务、与队伍共享目的地。/mmir
 ## Notes-zhTW: 一張無縫的全螢幕世界地圖，所有區域拼接成一體，滑鼠或手把皆可：圖層決定顯示內容、任務標記（要擊殺或拾取什麼、在哪裡交接任務；也顯示在小地圖、滑鼠提示和名條上）、由近到遠的任務追蹤、最快路線（道路、飛行、船隻）、路線面板與 GPS 箭頭、多目的地路線、可搜尋的地點瀏覽器與最近的服務、與隊伍分享目的地。/mmir
 ## Author: nolwe
-## Version: 1.3.1
+## Version: 1.3.2
 ## IconTexture: Interface\AddOns\MyMapIsRich\Media\Icon
 ## AddonCompartmentFunc: MyMapIsRich_OnAddonCompartmentClick
 ## AddonCompartmentFuncOnEnter: MyMapIsRich_OnAddonCompartmentEnter

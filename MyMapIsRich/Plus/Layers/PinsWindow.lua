@@ -517,8 +517,8 @@ function PW.ToggleList(show)
     end
     -- (la carte ouverte d'abord, hors combat : c'est le jeu qui l'ouvre)
     if not ns.MapShown() then
-        if InCombatLockdown() or not ToggleWorldMap then return end
-        ToggleWorldMap()
+        if InCombatLockdown() or not ToggleWorldMap or not ns.Risky("OpenMap") then return end
+        pcall(ToggleWorldMap)
         C_Timer.After(0.3, function() if ns.MapShown() then PW.ToggleList(true) end end)
         return
     end

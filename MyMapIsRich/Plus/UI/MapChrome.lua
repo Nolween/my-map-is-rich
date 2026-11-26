@@ -520,11 +520,73 @@ local function Keyboard(key)
     return type(key) == "string" and not key:find("PAD") and not key:find("BUTTON") and not key:find("MOUSEWHEEL")
 end
 
+---------------------------------------------------------------------------
+-- La touche qui ouvre la carte la referme : carte ouverte, hors combat, les
+-- touches du clavier liées à « Ouvrir la carte » (TOGGLEWORLDMAP), celle du
+-- jeu (M) comme celle qu'un autre addon pose (un bouton en plus de la
+-- manette dans My Gamepad Is Rich, que le logiciel de la manette envoie
+-- comme une touche du clavier), cliquent la croix sécurisée de la carte
+-- (MakeClose) : c'est le jeu qui ferme sa carte. Sur cette carte, la
+-- commande du jeu ne la fermait pas.
+-- Jamais en la fermant depuis le code de l'addon (HideUIPanel, de la 1.1.0
+-- à la 1.3.1) : la fermeture de la carte tournait au nom de l'addon,
+-- l'interface manette en prenait son état, et le jeu bloquait ensuite
+-- SetPreferredGamepadInteractTarget jusqu'au /reload. Les boutons de la
+-- manette ne sont pas pris (B ferme la carte, Pad/Bindings.lua).
+---------------------------------------------------------------------------
+local CLOSE_MODS = { "", "SHIFT-", "CTRL-", "ALT-", "CTRL-SHIFT-", "ALT-SHIFT-", "ALT-CTRL-" }
+local closeScan              -- les touches où chercher un raccourci d'un autre addon (fait une fois)
+
+local function CloseScan()
+    if closeScan then return closeScan end
+    local bare = {}
+    for i = 1, 24 do bare[#bare + 1] = "F" .. i end
+    for i = 0, 9 do
+        bare[#bare + 1] = tostring(i)
+        bare[#bare + 1] = "NUMPAD" .. i
+    end
+    for c = ("A"):byte(), ("Z"):byte() do bare[#bare + 1] = string.char(c) end
+    for _, k in ipairs({ "NUMPADPLUS", "NUMPADMINUS", "NUMPADMULTIPLY", "NUMPADDIVIDE", "NUMPADDECIMAL",
+        "INSERT", "DELETE", "HOME", "END", "PAGEUP", "PAGEDOWN", "TAB", "SPACE", "BACKSPACE", "ENTER",
+        "`", "-", "=", "[", "]", "\\", ";", "'", ",", ".", "/" }) do
+        bare[#bare + 1] = k
+    end
+    closeScan = {}
+    for _, mod in ipairs(CLOSE_MODS) do
+        for _, k in ipairs(bare) do closeScan[#closeScan + 1] = mod .. k end
+    end
+    return closeScan
+end
+
+-- Les touches du clavier liées à « Ouvrir la carte » en ce moment : la
+-- liaison du jeu, et celles des autres addons (leurs raccourcis prioritaires,
+-- lus avant que les nôtres soient posés)
+local function CloseKeys()
+    local keys = {}
+    for _, key in ipairs({ GetBindingKey("TOGGLEWORLDMAP") }) do
+        if Keyboard(key) then keys[key] = true end
+    end
+    for _, key in ipairs(CloseScan()) do
+        if not keys[key] then
+            local ok, action = pcall(GetBindingAction, key, true)
+            if ok and action == "TOGGLEWORLDMAP" then keys[key] = true end
+        end
+    end
+    return keys
+end
+
 local function BindKeys()
     if InCombatLockdown() then return end
     ClearOverrideBindings(keyOwner)
     wipe(held)
     if chrome and chrome:IsVisible() and goTo then
+        MakeClose()
+        local close = closeButton and closeButton:GetName()
+        if close then
+            for key in pairs(CloseKeys()) do
+                SetOverrideBindingClick(keyOwner, true, key, close, "LeftButton")
+            end
+        end
         SetOverrideBindingClick(keyOwner, true, "CTRL-F", goTo:GetName(), "LeftButton")
         for action, dir in pairs(ns.MapSmall() and {} or MOVES) do
             for _, key in ipairs({ GetBindingKey(action) }) do
@@ -535,60 +597,6 @@ local function BindKeys()
         end
     end
 end
-
----------------------------------------------------------------------------
--- La touche qui ouvre la carte la referme : carte ouverte, hors combat, un
--- cadre à nous lit chaque touche du clavier avant ses liaisons ; liée à
--- « Ouvrir la carte » (TOGGLEWORLDMAP), celle du jeu (M) comme celle qu'un
--- autre addon pose (un bouton en plus de la manette dans My Gamepad Is Rich,
--- envoyé comme une touche du clavier), elle s'arrête là et la carte se ferme.
--- Sur cette carte, la commande du jeu ne la fermait pas. Les autres touches
--- passent, comme si rien n'était là.
----------------------------------------------------------------------------
-local MODIFIER_KEYS = { LSHIFT = true, RSHIFT = true, LCTRL = true, RCTRL = true, LALT = true, RALT = true }
-
-local function CloseMap()
-    local map = _G.WorldMapFrame
-    if not (map and map:IsShown()) then return end
-    if HideUIPanel then pcall(HideUIPanel, map) end
-    if map:IsShown() then pcall(map.Hide, map) end
-end
-
-local keyCatcher = CreateFrame("Frame", nil, UIParent)
-keyCatcher:SetFrameStrata("FULLSCREEN_DIALOG")      -- (au-dessus : il lit les touches le premier)
-keyCatcher:Hide()
-keyCatcher:SetScript("OnKeyDown", function(self, key)
-    if InCombatLockdown() then return end
-    local swallow = false
-    if not MODIFIER_KEYS[key] then
-        local full = (IsAltKeyDown() and "ALT-" or "") .. (IsControlKeyDown() and "CTRL-" or "")
-            .. (IsShiftKeyDown() and "SHIFT-" or "") .. key
-        local ok, action = pcall(GetBindingAction, full, true)
-        swallow = ok and action == "TOGGLEWORLDMAP"
-    end
-    self:SetPropagateKeyboardInput(not swallow)
-    if swallow then CloseMap() end
-end)
-
-local function CatchKeys(on)
-    if InCombatLockdown() then return end
-    keyCatcher:SetShown(on and true or false)
-    keyCatcher:EnableKeyboard(on and true or false)
-    if on then keyCatcher:SetPropagateKeyboardInput(true) end
-end
-ns.On("MAP_SHOW", function() CatchKeys(true) end)
-ns.On("MAP_HIDE", function() CatchKeys(false) end)
-local keyEvents = CreateFrame("Frame")
-keyEvents:RegisterEvent("PLAYER_REGEN_DISABLED")
-keyEvents:RegisterEvent("PLAYER_REGEN_ENABLED")
-keyEvents:SetScript("OnEvent", function(_, event)
-    -- (en combat, le cadre ne choisit plus ce qu'il laisse passer : écarté)
-    if event == "PLAYER_REGEN_DISABLED" then
-        keyCatcher:EnableKeyboard(false)
-    else
-        CatchKeys(ns.MapShown())
-    end
-end)
 
 local function UnbindKeys()
     wipe(held)

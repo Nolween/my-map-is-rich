@@ -39,9 +39,13 @@ local PS_ATLAS = {
     PADRSHOULDER = { "Gamepad_Shp_RShoulder_64" },
     PADLTRIGGER = { "Gamepad_Shp_LTrigger_64" },
     PADRTRIGGER = { "Gamepad_Shp_RTrigger_64" },
-    PADBACK = { "Gamepad_Shp_Back_64" },
-    PADFORWARD = { "Gamepad_Shp_Forward_64" },
+    -- (View est le bouton Share ou Create : jamais l'icône « Back » du jeu,
+    -- une flèche de retour ; sans icône, la pastille dit « Share »)
+    PADBACK = { "Gamepad_Shp_Share_64", "Gamepad_Shp_Create_64", "Gamepad_Gen_Share_64" },
+    PADFORWARD = { "Gamepad_Shp_Options_64", "Gamepad_Shp_Forward_64" },
 }
+-- (les boutons PlayStation qui ne prennent pas les icônes génériques)
+local PS_ONLY = { PADBACK = true }
 
 -- Couleurs des boutons de façade (pastilles de repli)
 local COLORS = {
@@ -63,8 +67,47 @@ local PS_LABEL = {
     PADBACK = "Share", PADFORWARD = "Options",
 }
 
--- Le style des icônes : le réglage de l'addon ; « auto » : celui de My
--- Gamepad Is Rich s'il est là (la manette qu'on y a choisie), sinon Xbox
+---------------------------------------------------------------------------
+-- La manette branchée : une manette Sony (son fabricant, 0x054C, ou son nom)
+-- prend les icônes PlayStation. Lue une fois, puis quand le jeu dit qu'une
+-- manette est branchée ou changée ; sans réponse (pas encore de manette),
+-- relue au plus toutes les 10 secondes.
+---------------------------------------------------------------------------
+local SONY = 0x054C
+local SONY_NAMES = { "dualsense", "dualshock", "playstation", "ps4", "ps5", "sony" }
+local RETRY = 10
+local device = { style = nil, at = nil, name = nil, vendor = nil }
+
+local function ReadDevice()
+    local api = C_GamePad
+    if not (type(api) == "table" and api.GetActiveDeviceID and api.GetDeviceRawState) then return nil end
+    local okID, id = pcall(api.GetActiveDeviceID)
+    if not okID or id == nil then return nil end
+    local ok, raw = pcall(api.GetDeviceRawState, id)
+    if not (ok and type(raw) == "table") then return nil end
+    device.name, device.vendor = raw.name, raw.vendorID
+    if tonumber(raw.vendorID) == SONY then return "ps" end
+    local name = type(raw.name) == "string" and raw.name:lower() or ""
+    for _, word in ipairs(SONY_NAMES) do
+        if name:find(word, 1, true) then return "ps" end
+    end
+    return "xbox"
+end
+
+local function DeviceStyle()
+    if device.style then return device.style end
+    local now = GetTime()
+    if device.at and now - device.at < RETRY then return nil end
+    device.at = now
+    device.style = ReadDevice()
+    -- (une Sony lue après coup : les icônes déjà dessinées en Xbox sont refaites)
+    if device.style == "ps" and C_Timer then C_Timer.After(0, function() UI.RefreshGlyphs() end) end
+    return device.style
+end
+
+-- Le style des icônes : le réglage de l'addon ; « auto » : PlayStation si
+-- My Gamepad Is Rich le dit (la manette qu'on y a choisie) ou si la manette
+-- branchée est une Sony, sinon Xbox
 function UI.GlyphStyle()
     local choice = ns.db and ns.db.options.glyphs or "auto"
     if choice == "xbox" or choice == "ps" then return choice end
@@ -73,7 +116,13 @@ function UI.GlyphStyle()
         local ok, style = pcall(mgir.UI.GlyphStyle)
         if ok and style == "ps" then return "ps" end
     end
+    if DeviceStyle() == "ps" then return "ps" end
     return "xbox"
+end
+
+-- (pour /mmir focus : la manette lue, son fabricant, le style trouvé)
+function UI.PadDevice()
+    return device.name, device.vendor, device.style
 end
 
 function UI.KeyLabel(key)
@@ -89,7 +138,7 @@ local function FindAtlas(key)
     local candidates = {}
     if style == "ps" then
         for _, name in ipairs(PS_ATLAS[key] or {}) do candidates[#candidates + 1] = name end
-        for _, name in ipairs(ATLAS[key] or {}) do
+        for _, name in ipairs(PS_ONLY[key] and {} or ATLAS[key] or {}) do
             if not (name:find("xbox") or name:find("_Ltr_")) then candidates[#candidates + 1] = name end
         end
     else
@@ -148,8 +197,25 @@ function UI.CreateGlyph(parent, size)
     return f
 end
 
+-- (pour /mmir focus : l'icône trouvée pour un bouton, ou rien : la pastille)
+function UI.GlyphAtlas(key)
+    return FindAtlas(key)
+end
+
 -- (le style change dans les réglages : les icônes sont redessinées)
 ns.On("OPTIONS", function()
     wipe(atlasCache)
     UI.RefreshGlyphs()
+end)
+
+-- (une manette branchée ou changée : relue, et les icônes redessinées si
+-- elle n'a plus le même style ; des événements qui peuvent manquer sur Forever)
+local padEvents = CreateFrame("Frame")
+for _, event in ipairs({ "GAME_PAD_CONNECTED", "GAME_PAD_DISCONNECTED", "GAME_PAD_ACTIVE_CHANGED" }) do
+    pcall(padEvents.RegisterEvent, padEvents, event)
+end
+padEvents:SetScript("OnEvent", function()
+    local before = device.style
+    device.style, device.at = nil, nil
+    if DeviceStyle() ~= before then UI.RefreshGlyphs() end
 end)

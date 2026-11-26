@@ -338,6 +338,7 @@ end
 ---------------------------------------------------------------------------
 local RISKY_WINDOW = 1.0
 local riskyAt, riskyOff = {}, {}
+local blockedSaid = {}       -- les fonctions bloquées déjà dites (le blocage dure jusqu'au /reload : une fois suffit)
 
 -- (vrai : le geste peut se faire, et il est noté ; faux : il a été coupé)
 function ns.Risky(name)
@@ -358,7 +359,8 @@ blockedEvents:SetScript("OnEvent", function(_, _, addon, fn)
     if culprit then
         riskyOff[culprit] = true
         ns.Print(L.BLOCKED_CUT, tostring(fn or "?"), culprit)
-    else
+    elseif not blockedSaid[tostring(fn or "?")] then
+        blockedSaid[tostring(fn or "?")] = true
         ns.Print(L.BLOCKED_SEEN, tostring(fn or "?"))
     end
 end)

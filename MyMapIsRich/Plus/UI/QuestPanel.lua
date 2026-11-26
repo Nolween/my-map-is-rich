@@ -419,6 +419,7 @@ local function FillRow(row, it)
         -- (le nom d'une zone : en grand, sur son bandeau, avec son nombre de quêtes)
         row:EnableMouse(false)
         row.selected:Hide()
+        row.watch:Hide()
         row.level:SetText("")
         row.title:SetText("")
         row.prog:SetText("")
@@ -440,6 +441,10 @@ local function FillRow(row, it)
         row.head:Hide()
         row.count:Hide()
         row.selected:SetShown(q.questID == selected)
+        local watched = Watched(q)
+        row.watch.fill:SetShown(watched)
+        row.watch.edge:SetColor(1, 0.82, 0, watched and 0.9 or 0.45)
+        row.watch:Show()
         row.level:SetText(q.level and ("[" .. q.level .. "]") or "")
         row.level:SetTextColor(LevelColor(q.level))
         row.title:SetFontObject("GameFontHighlightSmall")
@@ -1233,11 +1238,15 @@ local function Button(parent, text, w, h, style, key)
     return b
 end
 
+-- (la place du texte dans un bouton de niveau 2 : 24 px avant, 12 px après,
+-- jusqu'au compte vide ; avec moins, le nom était coupé à deux lettres)
+local TAB_PAD = 24 + 12 + 4
+
 local function Tab(parent, text, key)
     local b = UI.NavButton(parent, 22)
     b:SetLevel(2)
     b.text:SetText(text)
-    b:SetWidth(b.text:GetStringWidth() + 22)
+    b:SetWidth(math.ceil(b.text:GetStringWidth()) + TAB_PAD)
     b:SetScript("OnClick", function() Sort(key) end)
     return b
 end
@@ -1286,9 +1295,39 @@ local function Row(i)
     row.count:SetJustifyH("RIGHT")
     row.count:Hide()
     row.head:SetPoint("RIGHT", row.count, "LEFT", -8, 0)
+    -- (suivie ou non : une case à gauche, d'or quand la quête est suivie ; un
+    -- clic la suit ou ne la suit plus, sans ouvrir sa fiche. La croix de la
+    -- manette ne s'y arrête pas : RB fait la même chose sur la quête choisie)
+    local watch = CreateFrame("Button", nil, row)
+    watch:SetSize(12, 12)
+    watch:SetPoint("LEFT", 5, 0)
+    watch.noGamepad = true
+    watch.edge = UI.Border(watch, 1, 0.82, 0, 0.45, 0, "BORDER")
+    watch.fill = watch:CreateTexture(nil, "ARTWORK")
+    watch.fill:SetPoint("TOPLEFT", 3, -3)
+    watch.fill:SetPoint("BOTTOMRIGHT", -3, 3)
+    watch.fill:SetColorTexture(1, 0.82, 0, 1)
+    watch.fill:Hide()
+    local whl = watch:CreateTexture(nil, "HIGHLIGHT")
+    whl:SetAllPoints()
+    whl:SetColorTexture(1, 0.82, 0, 0.2)
+    watch:SetScript("OnClick", function()
+        local it = row.item
+        if not (it and it.quest) then return end
+        ToggleWatch(it.quest)
+        GameTooltip:Hide()
+        FillList()
+        if view == "quest" then FillPage(false) end
+    end)
+    UI.Tip(watch, function()
+        local it = row.item
+        return it and it.quest and Watched(it.quest) and L.QUESTS_UNTRACK or L.QUESTS_TRACK
+    end)
+    watch:Hide()
+    row.watch = watch
     row.level = UI.Text(row, "GameFontHighlightSmall")
-    row.level:SetPoint("LEFT", 4, 0)
-    row.level:SetWidth(30)
+    row.level:SetPoint("LEFT", 21, 0)
+    row.level:SetWidth(26)
     row.dist = UI.DimText(row, nil, "GameFontHighlightSmall")
     row.dist:SetPoint("RIGHT", -4, 0)
     row.dist:SetWidth(64)
@@ -1747,6 +1786,17 @@ P.SetAction("quests", "PAD4", function()
     Select(q, false)
     ShowQuestMenu(q, F.Current())
 end, "HINT_QUESTS_MENU")
+-- (RB : suivre la quête choisie, ou ne plus la suivre, sans passer par son menu)
+P.SetAction("quests", "PADRSHOULDER", function()
+    local q = Current()
+    if not q then return end
+    ToggleWatch(q)
+    FillList()
+end, function()
+    local q = Current()
+    if not q then return nil end
+    return Watched(q) and "QUESTS_UNTRACK" or "QUESTS_TRACK"
+end)
 -- (R3 : l'itinéraire tout de suite, sans aperçu, comme R3 sur la carte et
 -- Maj+clic ; R3 sur la quête du trajet en cours l'annule)
 P.SetAction("quests", "PADRSTICK", function()

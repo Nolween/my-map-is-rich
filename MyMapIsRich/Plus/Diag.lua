@@ -116,6 +116,14 @@ function Diag.Focus(withApi)
         ns.Print("  %s : %s", key, (ok and action and action ~= "") and Short(action) or L.NONE)
     end
     ns.Print("  pile de l'interface manette (PeekName) : %s", Try(manager, "PeekName"))
+    -- (la manette lue pour les icônes, UI/Glyphs.lua : son nom, son fabricant
+    -- (Sony : 1356), le style choisi, et l'icône trouvée pour View et Menu)
+    if ns.UI and ns.UI.PadDevice then
+        local name, vendor, style = ns.UI.PadDevice()
+        ns.Print("  manette : %s · fabricant %s · lue %s · icônes %s · View %s · Menu %s", tostring(name),
+            tostring(vendor), tostring(style), ns.UI.GlyphStyle(), tostring(ns.UI.GlyphAtlas("PADBACK")),
+            tostring(ns.UI.GlyphAtlas("PADFORWARD")))
+    end
     -- (le bouton qui a le focus de la manette, et la quête qu'il porte :
     -- R3 sur une quête de la liste, Travel/Quests.lua)
     local nav = _G.SmartNavigation
