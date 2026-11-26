@@ -18,6 +18,12 @@
 -- Le temps annoncé reste le temps réel.
 -- La recherche se fait en deux temps : un A* pondéré, rapide, puis un A*
 -- exact dans un couloir autour de son chemin, qui retire ses grands tours.
+-- Une longue marche (plus de LONG yards à vol d'oiseau) passe d'abord par le
+-- graphe des passages entre tuiles (portals, tools/nav/portals.py) : de la
+-- tuile du départ à celle de l'arrivée, par les passages d'un bord à l'autre
+-- et leurs coûts dans chaque tuile ; ses tuiles et leurs huit voisines font
+-- le couloir de l'A* exact. Sans cela, une marche de plusieurs milliers de
+-- yards dépassait MAX_CELLS et retombait sur une ligne droite.
 -- Le tracé est ensuite lissé : un raccourci en ligne droite est pris s'il est
 -- praticable, ne coûte pas plus que le chemin qu'il remplace et ne passe sur
 -- aucun terrain plus cher que le plus cher de ce chemin (il ne quitte pas la
@@ -51,12 +57,15 @@ local TILE = 1600 / 3
 local SQRT2 = math.sqrt(2)
 local SWIM = 4.72            -- yd/s à la nage
 local WATER_PREF = 3         -- un yard nagé compte (en plus de la lenteur) 3 fois : on contourne l'eau
-local TOWN = 20              -- un yard dans une ville de l'autre faction compte 20 fois (comme Polestar) :
-                             -- on en fait le tour, sans la fermer
+local CLOSED = 1000          -- un yard dans une ville, une capitale ou un camp de l'autre faction : fermé
+                             -- en pratique (une destination enfermée dedans reste atteignable)...
+local TOWN = 20              -- ... et dans ses abords (RING yards autour : ses gardes qui patrouillent)
+local RING = 30              -- yd
 local WEIGHT = 1.15          -- A* pondéré (le premier temps) : un peu moins court, bien plus rapide ;
-                             -- multiplié par le plus petit prix du style...
-local WEIGHT_FLOOR = 0.8     -- ... au moins celui-là (le style des routes, à 0,5, explorerait sinon une
-                             -- très grande zone ; le second temps, exact, garde le plus petit prix)
+                             -- sur le prix normal, quel que soit le style (le second temps, exact,
+                             -- garde le plus petit prix du style)
+local LONG = 900             -- yd à vol d'oiseau : au-delà, la marche passe par le graphe des passages
+local PORTAL_YIELD = 300     -- nœuds du graphe des passages examinés entre deux pauses
 local BLOCK = 4              -- cases : les blocs du couloir du second temps...
 local CORRIDOR = 3           -- ... gardés jusqu'à autant de blocs autour du premier chemin
 local BUDGET = 2500          -- nœuds examinés par image (moins en combat)
@@ -137,7 +146,7 @@ local function Map(cont)
             local C = d.cells
             m = { d = d, C = C, nx = d.nx, ny = d.ny, GX = d.nx * C, GY = d.ny * C,
                 x0 = d.cx0 * TILE, y0 = d.cy0 * TILE, cs = TILE / C, tiles = {}, terrain = {}, floors = {}, lift = {},
-                hasTerrain = type(d.terrain) == "table" }
+                hasTerrain = type(d.terrain) == "table", portals = {}, hasPortals = type(d.portals) == "table" }
             -- (les ascenseurs : un saut dans les deux sens)
             for _, row in ipairs(d.lifts or {}) do
                 local a = (row[1] * m.GY + row[2]) * 64 + row[3]
@@ -472,10 +481,24 @@ local function HostileAreas(cont, faction)
                 x0, x1 = math.min(x0, i * CAP_CELL), math.max(x1, (i + 1) * CAP_CELL)
                 y0, y1 = math.min(y0, j * CAP_CELL), math.max(y1, (j + n) * CAP_CELL)
             end
-            local area = { x0 = x0, y0 = y0, x1 = x1, y1 = y1 }
+            local area = { x0 = x0, y0 = y0, x1 = x1, y1 = y1, faction = c[1] }
             function area.In(x, y) return set[Key(floor(x / CAP_CELL), floor(y / CAP_CELL))] == true end
             list[#list + 1] = area
             capitals[#capitals + 1] = area
+        end
+    end
+    -- (les camps : les PNJ d'une seule faction, Data/Camps.lua ; en morceaux de TOWN_CELL, comme les villes)
+    local other = faction == "Horde" and "Alliance" or "Horde"
+    for _, c in ipairs(type(ns.CampData) == "table" and ns.CampData or {}) do
+        if c[1] == other and c[2] == cont and type(c[7]) == "string" then
+            local i0, j0, w, h, cells = c[3], c[4], c[5], c[6], TownCells(c[7])
+            local area = { x0 = i0 * TOWN_CELL, y0 = j0 * TOWN_CELL, x1 = (i0 + w) * TOWN_CELL, y1 = (j0 + h) * TOWN_CELL,
+                faction = other }
+            function area.In(x, y)
+                local i, j = floor(x / TOWN_CELL) - i0, floor(y / TOWN_CELL) - j0
+                return i >= 0 and j >= 0 and i < w and j < h and cells[i * h + j] == true
+            end
+            list[#list + 1] = area
         end
     end
     -- (les villes : un maître de vol de l'autre faction, aucun des tiens à
@@ -505,14 +528,16 @@ local function HostileAreas(cont, faction)
                 local area
                 if type(t) == "table" and t[1] == cont and type(t[6]) == "string" then
                     local i0, j0, w, h, cells = t[2], t[3], t[4], t[5], TownCells(t[6])
-                    area = { x0 = i0 * TOWN_CELL, y0 = j0 * TOWN_CELL, x1 = (i0 + w) * TOWN_CELL, y1 = (j0 + h) * TOWN_CELL }
+                    area = { x0 = i0 * TOWN_CELL, y0 = j0 * TOWN_CELL, x1 = (i0 + w) * TOWN_CELL, y1 = (j0 + h) * TOWN_CELL,
+                        faction = other }
                     function area.In(x, y)
                         local i, j = floor(x / TOWN_CELL) - i0, floor(y / TOWN_CELL) - j0
                         return i >= 0 and j >= 0 and i < w and j < h and cells[i * h + j] == true
                     end
                 else
                     local cx, cy = n[3], n[4]
-                    area = { x0 = cx - TOWN_RADIUS, y0 = cy - TOWN_RADIUS, x1 = cx + TOWN_RADIUS, y1 = cy + TOWN_RADIUS }
+                    area = { x0 = cx - TOWN_RADIUS, y0 = cy - TOWN_RADIUS, x1 = cx + TOWN_RADIUS, y1 = cy + TOWN_RADIUS,
+                        faction = other }
                     function area.In(x, y) return (x - cx) ^ 2 + (y - cy) ^ 2 <= TOWN_RADIUS * TOWN_RADIUS end
                 end
                 list[#list + 1] = area
@@ -604,27 +629,75 @@ function Nav.ZoneFactor(zone, level, onRoad)
     return 1
 end
 
--- Ce qui est à éviter sur le chemin : une fonction (case, sur une route ?) ->
--- facteur (1 : rien), qui compte les villes de l'autre faction et les zones
--- trop hautes ; nil s'il n'y a rien à éviter
-local function Danger(job)
+-- Le terrain de l'autre faction (ses capitales, ses villes, ses camps) pour
+-- un trajet de `from` à `to` sur un continent : une fonction (x, y) ->
+-- facteur (1 hors de lui, TOWN dans ses abords, CLOSED dedans) et sa
+-- faction ; nil s'il n'y en a pas. Celui qui contient le départ ou
+-- l'arrivée ne compte pas, abords compris. (La grille, Danger ; l'estimation,
+-- Travel/Planner.lua.)
+function Nav.Hostile(cont, from, to)
     local faction = UnitFactionGroup and UnitFactionGroup("player")
-    local m, from, to = job.m, job.from, job.to
-    local buckets, towns = {}, false
-    if faction == "Alliance" or faction == "Horde" then
-        for _, a in ipairs(HostileAreas(job.cont, faction)) do
-            if not (a.In(from.x, from.y) or a.In(to.x, to.y)) then
-                towns = true
-                for bx = floor(a.x0 / BUCKET), floor(a.x1 / BUCKET) do
-                    for by = floor(a.y0 / BUCKET), floor(a.y1 / BUCKET) do
-                        local k = Key(bx, by)
-                        buckets[k] = buckets[k] or {}
-                        table.insert(buckets[k], a)
+    if faction ~= "Alliance" and faction ~= "Horde" then return end
+    local function Near(a, x, y)
+        return a.In(x, y) or a.In(x + RING, y) or a.In(x - RING, y) or a.In(x, y + RING) or a.In(x, y - RING)
+    end
+    -- (celui du départ ou de l'arrivée, et ceux qui le touchent : une capitale
+    -- et le camp de ses abords ne font qu'un lieu)
+    local areas, open = HostileAreas(cont, faction), {}
+    for _, a in ipairs(areas) do
+        if Near(a, from.x, from.y) or Near(a, to.x, to.y) then open[a] = true end
+    end
+    local grown = true
+    while grown do
+        grown = false
+        for _, a in ipairs(areas) do
+            if not open[a] then
+                for b in pairs(open) do
+                    if a.x0 < b.x1 + RING and b.x0 < a.x1 + RING and a.y0 < b.y1 + RING and b.y0 < a.y1 + RING then
+                        open[a], grown = true, true
+                        break
                     end
                 end
             end
         end
     end
+    local buckets, any = {}, false
+    for _, a in ipairs(areas) do
+        if not open[a] then
+            any = true
+            for bx = floor((a.x0 - RING) / BUCKET), floor((a.x1 + RING) / BUCKET) do
+                for by = floor((a.y0 - RING) / BUCKET), floor((a.y1 + RING) / BUCKET) do
+                    local k = Key(bx, by)
+                    buckets[k] = buckets[k] or {}
+                    table.insert(buckets[k], a)
+                end
+            end
+        end
+    end
+    if not any then return end
+    return function(x, y)
+        local list = buckets[Key(floor(x / BUCKET), floor(y / BUCKET))]
+        if not list then return 1 end
+        local f, who = 1, nil
+        for _, a in ipairs(list) do
+            if x >= a.x0 - RING and x < a.x1 + RING and y >= a.y0 - RING and y < a.y1 + RING then
+                if a.In(x, y) then return CLOSED, a.faction end
+                if f < TOWN and Near(a, x, y) then f, who = TOWN, a.faction end
+            end
+        end
+        return f, who
+    end
+end
+Nav.CLOSED = CLOSED
+
+-- Ce qui est à éviter sur le chemin : une fonction (case, sur une route ?) ->
+-- facteur (1 : rien), qui compte le terrain de l'autre faction et les zones
+-- trop hautes ; nil s'il n'y a rien à éviter
+local function Danger(job)
+    local m, from, to = job.m, job.from, job.to
+    local hostile = Nav.Hostile(job.cont, from, to)
+    job.hostile = hostile
+    local towns = hostile ~= nil
     -- (les zones : la tienne au départ et celle de l'arrivée ne comptent pas)
     local level = UnitLevel and UnitLevel("player")
     if issecretvalue and issecretvalue(level) then level = nil end
@@ -641,17 +714,7 @@ local function Danger(job)
     return function(cell, onRoad)
         local x, y = Center(m, floor(cell / GY), cell % GY)
         local f = 1
-        if towns then
-            local list = buckets[Key(floor(x / BUCKET), floor(y / BUCKET))]
-            if list then
-                for _, a in ipairs(list) do
-                    if x >= a.x0 and x < a.x1 and y >= a.y0 and y < a.y1 and a.In(x, y) then
-                        f = TOWN
-                        break
-                    end
-                end
-            end
-        end
+        if towns then f = hostile(x, y) end
         if zones then
             local key = Key(floor(x / ZONE_SQUARE), floor(y / ZONE_SQUARE)) * 2 + (onRoad and 1 or 0)
             local z = memo[key]
@@ -821,9 +884,12 @@ local function Clear(job, a, b, limit, cap)
     return false
 end
 
+local Widen, PortalCorridor     -- (plus bas : le graphe des passages)
+
 -- Une recherche A* (un des deux temps de Search). S : ce que Search a
 -- préparé (le départ, l'arrivée) ; p : { hw (le poids de l'heuristique),
--- inside, per (les blocs du couloir permis), goal (le nœud d'arrivée imposé) }.
+-- inside, per (les blocs du couloir permis), tiles (les tuiles permises : le
+-- couloir d'une longue marche), goal (le nœud d'arrivée imposé) }.
 -- Rend goal (le nœud atteint), came, lifted, count ; ou nil, la raison.
 local function Run(job, S, p)
     local m = job.m
@@ -839,6 +905,7 @@ local function Run(job, S, p)
     local goalCell = floor(goal / 64)
     local anyGoal = not p.goal and S.anyGoal
     local inside, per = p.inside, p.per
+    local tiles, C, ny = p.tiles, m.C, m.ny
     local gcost, came, lifted, closed = {}, {}, {}, {}
     local heap = G.Heap()
     -- (le départ : la surface supposée, et les autres de la case un peu plus cher)
@@ -903,7 +970,8 @@ local function Run(job, S, p)
                 if not closed[nid] then
                     local c = floor(nid / 64)
                     local ngx, ngy = floor(c / GY), c % GY
-                    if not inside or inside[floor(ngx / BLOCK) * per + floor(ngy / BLOCK)] then
+                    if (not inside or inside[floor(ngx / BLOCK) * per + floor(ngy / BLOCK)])
+                        and (not tiles or tiles[floor(ngx / C) * ny + floor(ngy / C)]) then
                         local secs = NL[j]
                         local d
                         if secs then
@@ -968,6 +1036,227 @@ local function ToSegment(p, a, b)
     return sqrt(qx * qx + qy * qy)
 end
 
+---------------------------------------------------------------------------
+-- Le graphe des passages entre tuiles (portals, tools/nav/portals.py ; son
+-- format y est décrit) : par tuile, ses nœuds de passage (des nœuds de la
+-- grille), leurs pas vers les tuiles voisines et leurs liaisons dans la tuile,
+-- chacun avec son coût au style Équilibré. Décodé à la demande et gardé.
+---------------------------------------------------------------------------
+local function ParsePortals(m, k, raw)
+    local pos = 1
+    local function U8()
+        pos = pos + 1
+        return byte(raw, pos - 1)
+    end
+    local function U16()
+        local a, b = byte(raw, pos, pos + 1)
+        pos = pos + 2
+        return a * 256 + b
+    end
+    local C, GY = m.C, m.GY
+    local kx, ky = floor(k / m.ny), k % m.ny
+    local function Global(tkx, tky, lc, layer)
+        return ((tkx * C + floor(lc / C)) * GY + tky * C + lc % C) * 64 + layer
+    end
+    local nodes, index, out = {}, {}, {}
+    for i = 1, U16() do
+        local lc = U16()
+        nodes[i] = Global(kx, ky, lc, U8())
+        index[nodes[i]] = i
+        out[i] = {}
+    end
+    for _ = 1, U16() do
+        local from, dir = U8() + 1, U8()
+        local lc = U16()
+        local layer = U8()
+        local o = out[from]
+        o[#o + 1] = Global(kx + floor(dir / 3) - 1, ky + dir % 3 - 1, lc, layer)
+        o[#o + 1] = U16()
+    end
+    for _ = 1, U16() do
+        local a, b = U8() + 1, U8() + 1
+        local o = out[a]
+        o[#o + 1] = nodes[b]
+        o[#o + 1] = U16()
+    end
+    return { nodes = nodes, index = index, out = out }
+end
+
+local function PortalTile(m, k)
+    local t = m.portals[k]
+    if t == nil then
+        t = false
+        local s = m.hasPortals and m.d.portals[k + 1]
+        local raw = s and Unpack(s)
+        if raw then
+            local ok, parsed = pcall(ParsePortals, m, k, raw)
+            if ok then t = parsed end
+        end
+        m.portals[k] = t
+    end
+    return t
+end
+
+local function TileOf(m, id)
+    local cell = floor(id / 64)
+    return floor(floor(cell / m.GY) / m.C) * m.ny + floor(cell % m.GY / m.C)
+end
+
+-- Des tuiles et leurs voisines : les quatre côtés, ou aussi les coins (all)
+function Widen(m, tiles, all)
+    local out, nx, ny = {}, m.nx, m.ny
+    for k in pairs(tiles) do
+        local kx, ky = floor(k / ny), k % ny
+        for dx = -1, 1 do
+            for dy = -1, 1 do
+                if (all or dx == 0 or dy == 0) and kx + dx >= 0 and kx + dx < nx and ky + dy >= 0 and ky + dy < ny then
+                    out[(kx + dx) * ny + ky + dy] = true
+                end
+            end
+        end
+    end
+    return out
+end
+
+-- Du départ aux nœuds de passage de sa tuile : leur coût (un Dijkstra limité
+-- à la tuile, au style et au danger de la marche)
+local function ReachPortals(job, S, k, wanted)
+    local m = job.m
+    local GY = m.GY
+    local gcost, closed, found = {}, {}, {}
+    local heap = G.Heap()
+    for _, layer in ipairs(S.sList) do
+        local id = (S.sx * GY + S.sy) * 64 + layer
+        local g = layer == S.sLayer and 0 or S.other
+        gcost[id] = g
+        heap.Push(g, id)
+    end
+    local left, budget = 0, 0
+    for _ in pairs(wanted) do left = left + 1 end
+    while left > 0 do
+        local g0, id = heap.Pop()
+        if not id then break end
+        if not closed[id] then
+            closed[id] = true
+            if wanted[id] and not found[id] then
+                found[id] = g0
+                left = left - 1
+            end
+            budget = budget + 1
+            if budget >= (InCombatLockdown() and BUDGET / 3 or BUDGET) then
+                budget = 0
+                coroutine.yield()
+                if job.cancelled then return found end
+            end
+            local n = Expand(m, id)
+            for j = 1, n do
+                local nid = NB[j]
+                if not closed[nid] and TileOf(m, nid) == k then
+                    local d = NL[j] and NL[j] * job.speed or Cost(job, nid, ND[j])
+                    local g = g0 + d
+                    if not gcost[nid] or g < gcost[nid] then
+                        gcost[nid] = g
+                        heap.Push(g, nid)
+                    end
+                end
+            end
+        end
+    end
+    return found
+end
+
+-- Le couloir d'une longue marche : un A* sur le graphe des passages, de la
+-- tuile du départ à celle de l'arrivée (rejointe à vol d'oiseau, au prix
+-- normal : l'A* exact du couloir la précise) ; une arête coûte selon le
+-- danger le plus fort de ses deux bouts. Rend les tuiles du chemin et leurs
+-- huit voisines (nil si le graphe ne relie pas les deux), et le nombre de
+-- nœuds de passage examinés. (Hors du jeu, sur les longues marches : le chemin
+-- exact dans ce couloir est celui de toute la grille.)
+function PortalCorridor(job, S)
+    local m = job.m
+    local GY, C, cs = m.GY, m.C, m.cs
+    local ks = floor(S.sx / C) * m.ny + floor(S.sy / C)
+    local kg = floor(S.tx / C) * m.ny + floor(S.ty / C)
+    local first = PortalTile(m, ks)
+    if not first then return end
+    local tx, ty, min = S.tx, S.ty, job.min
+    local function Octile(id)
+        local cell = floor(id / 64)
+        local dx, dy = abs(floor(cell / GY) - tx), abs(cell % GY - ty)
+        local lo, hi = math.min(dx, dy), math.max(dx, dy)
+        return (hi - lo + lo * SQRT2) * cs
+    end
+    local danger = job.danger
+    local function Risk(id) return danger and danger(floor(id / 64), false) or 1 end
+    local wanted = {}
+    for _, id in ipairs(first.nodes) do wanted[id] = true end
+    local start = ReachPortals(job, S, ks, wanted)
+    local GOAL = -1
+    local gcost, came, closed = {}, {}, {}
+    local heap = G.Heap()
+    for id, g in pairs(start) do
+        gcost[id] = g
+        heap.Push(g + Octile(id) * min, id)
+    end
+    local seen = 0
+    while true do
+        local _, id = heap.Pop()
+        if not id or id == GOAL then break end
+        if not closed[id] then
+            closed[id] = true
+            seen = seen + 1
+            if seen % PORTAL_YIELD == 0 then
+                coroutine.yield()
+                if job.cancelled then return end
+            end
+            local g0, k = gcost[id], TileOf(m, id)
+            -- (dans la tuile de l'arrivée : vers elle, à vol d'oiseau)
+            if k == kg then
+                local g = g0 + Octile(id)
+                if not gcost[GOAL] or g < gcost[GOAL] then
+                    gcost[GOAL], came[GOAL] = g, id
+                    heap.Push(g, GOAL)
+                end
+            end
+            local t = PortalTile(m, k)
+            local i = t and t.index[id]
+            if i then
+                local o, r0 = t.out[i], Risk(id)
+                for j = 1, #o, 2 do
+                    local nid = o[j]
+                    if not closed[nid] then
+                        local g = g0 + o[j + 1] * math.max(r0, Risk(nid))
+                        if not gcost[nid] or g < gcost[nid] then
+                            gcost[nid], came[nid] = g, id
+                            heap.Push(g + Octile(nid) * min, nid)
+                        end
+                    end
+                end
+            end
+        end
+    end
+    if not came[GOAL] then return nil, seen end
+    local tiles, id = { [ks] = true, [kg] = true }, came[GOAL]
+    while id do
+        tiles[TileOf(m, id)] = true
+        id = came[id]
+    end
+    return Widen(m, tiles, true), seen
+end
+
+-- Le chemin passe-t-il par le terrain fermé de l'autre faction (quand il n'y
+-- a pas d'autre chemin) ? Sa faction, sinon nil
+local function Through(job, nodes)
+    local hostile, m = job.hostile, job.m
+    if not hostile then return end
+    for i = 1, #nodes, 3 do
+        local cell = floor(nodes[i] / 64)
+        local x, y = Center(m, floor(cell / m.GY), cell % m.GY)
+        local f, who = hostile(x, y)
+        if f >= CLOSED then return who end
+    end
+end
+
 -- La recherche (une coroutine, reprise à chaque image)
 local function Search(job)
     local m = job.m
@@ -985,19 +1274,45 @@ local function Search(job)
         goal = (tx * GY + ty) * 64 + tLayer, goalCell = tx * GY + ty, anyGoal = wantGoal == "ground",
         other = Want(job.from) == "ground" and OTHER_START or OTHER_FAR }
 
-    -- (le premier temps : pondéré, sur le plus petit prix du style ; le second
-    -- compte chaque yard qui reste à ce plus petit prix, pour ne jamais surestimer)
-    local goal, came, lifted, count = Run(job, S, { hw = WEIGHT * math.max(job.min, WEIGHT_FLOOR) })
-    if not goal then return nil, came end
-    local nodes = PathNodes(goal, came)
-    -- (le second temps : exact, dans le couloir du premier chemin ; il en
-    -- retire les grands tours. S'il échoue, le premier chemin reste)
-    local inside, per = Corridor(m, nodes)
-    local goal2, came2, lifted2, count2 = Run(job, S, { hw = job.min, inside = inside, per = per, goal = goal })
-    if job.cancelled then return nil, "cancelled" end
-    if goal2 then
-        came, lifted, count = came2, lifted2, count + count2
-        nodes = PathNodes(goal2, came2)
+    local goal, came, lifted, count, nodes
+    -- (une longue marche : le graphe des passages donne son couloir de tuiles,
+    -- où l'A* est exact ; s'il n'y trouve rien, le couloir s'élargit une fois)
+    local far = sqrt((tx - sx) ^ 2 + (ty - sy) ^ 2) * cs
+    if far > LONG and m.hasPortals then
+        local tiles, seen = PortalCorridor(job, S)
+        if job.cancelled then return nil, "cancelled" end
+        job.portalNodes = seen
+        for wide = 1, 2 do
+            if not tiles then break end
+            local why
+            goal, why, lifted, count = Run(job, S, { hw = job.min, tiles = tiles })
+            if job.cancelled then return nil, "cancelled" end
+            if goal then
+                came = why
+                job.viaPortals = true
+                break
+            end
+            job.portalFail = why
+            tiles = wide == 1 and Widen(m, tiles, true) or nil
+        end
+    end
+    if goal then
+        nodes = PathNodes(goal, came)
+    else
+        -- (une marche courte, ou sans graphe des passages : le premier temps,
+        -- pondéré ; le second, exact, au plus petit prix du style)
+        goal, came, lifted, count = Run(job, S, { hw = WEIGHT })
+        if not goal then return nil, came end
+        nodes = PathNodes(goal, came)
+        -- (le second temps : exact, dans le couloir du premier chemin ; il en
+        -- retire les grands tours. S'il échoue, le premier chemin reste)
+        local inside, per = Corridor(m, nodes)
+        local goal2, came2, lifted2, count2 = Run(job, S, { hw = job.min, inside = inside, per = per, goal = goal })
+        if job.cancelled then return nil, "cancelled" end
+        if goal2 then
+            came, lifted, count = came2, lifted2, count + count2
+            nodes = PathNodes(goal2, came2)
+        end
     end
 
     -- (le coût cumulé du chemin, comme la recherche le compte, et le prix du
@@ -1111,6 +1426,7 @@ local function Search(job)
         end
     end
     return { points = points, secs = secs, length = length, cells = count, floors = floors, lifts = lifts,
+        portals = job.viaPortals or false, portalNodes = job.portalNodes, hostile = Through(job, nodes),
         alt = last ~= S.goalCell or (not S.anyGoal and nodes[N] % 64 ~= tLayer), unreachable = unreachable,
         startLayer = sLayer, goalLayer = nodes[N] % 64 }
 end

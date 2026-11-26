@@ -284,7 +284,8 @@ local ACCESS_K = 4           -- les routes voisines d'un point clé
 local ACCESS_NEAR = 600      -- yd : les routes cherchées autour d'un point clé
 local ACCESS_FAR = 2000      -- yd : ... ou la plus proche, si aucune n'est si près
 local ROAD_ID = 100000       -- un nœud de route : continent * ROAD_ID + numéro
-local ZONE_STEP = 100        -- yd : une ligne droite compte les zones trop hautes par morceaux de cette longueur
+local ZONE_STEP = 50         -- yd : une ligne droite compte les zones trop hautes et le terrain ennemi par
+                             -- morceaux de cette longueur (un petit camp ne passe pas entre deux)
 
 local Heap = G.Heap          -- (un tas binaire : Travel/Graph.lua)
 
@@ -349,34 +350,81 @@ function Pl.Find(from, to, opts)
         if a then exempt[a] = true end
         if b then exempt[b] = true end
     end
+    -- (gardés par carré de ZONE_STEP yards : une ligne de plus repasse souvent par les mêmes)
+    local zoneMemo = {}
     local function ZoneAt(cont, x, y, onRoad)
+        local key = ((cont * 8192 + math.floor(x / ZONE_STEP) + 4096) * 8192 + math.floor(y / ZONE_STEP) + 4096) * 2
+            + (onRoad and 1 or 0)
+        local f = zoneMemo[key]
+        if f then return f end
         local zone = zoneAt(cont, x, y)
-        if not zone or exempt[zone] then return 1 end
-        return zoneFactor(zone, level, onRoad)
+        f = (zone and not exempt[zone]) and zoneFactor(zone, level, onRoad) or 1
+        zoneMemo[key] = f
+        return f
     end
-    -- (une ligne droite : la moyenne de ses morceaux de ZONE_STEP yards)
+    -- (le terrain de l'autre faction, comme la grille : Travel/Nav.lua, Nav.Hostile ; par continent, celui
+    -- du départ ou de l'arrivée ne comptant pas)
+    local hostileOf, nowhere = {}, { x = 1e9, y = 1e9 }
+    local function Hostile(cont)
+        local h = hostileOf[cont]
+        if h == nil then
+            local raw = Nav and Nav.Hostile and Nav.Hostile(cont, from.cont == cont and from or nowhere,
+                to.cont == cont and to or nowhere)
+            h = false
+            if raw then
+                -- (gardé par carré de 10 yards)
+                local memo = {}
+                h = function(x, y)
+                    local key = (math.floor(x / 10) + 65536) * 131072 + math.floor(y / 10) + 65536
+                    local f = memo[key]
+                    if not f then
+                        f = raw(x, y)
+                        memo[key] = f
+                    end
+                    return f
+                end
+            end
+            hostileOf[cont] = h
+        end
+        return h or nil
+    end
+    -- (une ligne droite : la moyenne des zones sur ses morceaux de ZONE_STEP yards, fois le terrain
+    -- ennemi le plus fort qu'elle croise)
     local function LineZone(cont, ax, ay, bx, by, d)
-        if not zones then return 1 end
+        local hostile = Hostile(cont)
+        if not (zones or hostile) then return 1 end
         local n = math.max(1, math.ceil(d / ZONE_STEP))
-        local sum = 0
+        local sum, worst = 0, 1
         for k = 1, n do
             local f = (k - 0.5) / n
-            sum = sum + ZoneAt(cont, ax + (bx - ax) * f, ay + (by - ay) * f, false)
+            local x, y = ax + (bx - ax) * f, ay + (by - ay) * f
+            if zones then sum = sum + ZoneAt(cont, x, y, false) end
+            if hostile then worst = math.max(worst, (hostile(x, y))) end
         end
-        return sum / n
+        return (zones and sum / n or 1) * worst
     end
-    -- (un tronçon de route : la moyenne des points de son tracé, gardée)
+    -- (un tronçon de route : de même le long de son tracé, gardé)
     local roadZone = {}
     local function RoadZone(cont, e)
-        if not zones then return 1 end
+        local hostile = Hostile(cont)
+        if not (zones or hostile) then return 1 end
         local k = cont * ROAD_ID + e
         local f = roadZone[k]
         if not f then
             local net = nets[cont]
             local px, py = net.PX[e], net.PY[e]
-            local sum = 0
-            for j = 1, #px do sum = sum + ZoneAt(cont, px[j], py[j], true) end
-            f = sum / math.max(1, #px)
+            local sum, n, worst = 0, 0, 1
+            for j = 1, #px do
+                local x0, y0 = px[j], py[j]
+                local x1, y1 = px[j + 1] or x0, py[j + 1] or y0
+                local steps = math.max(1, math.ceil(math.sqrt((x1 - x0) ^ 2 + (y1 - y0) ^ 2) / ZONE_STEP))
+                for q = 0, (j < #px) and steps - 1 or 0 do
+                    local x, y = x0 + (x1 - x0) * q / steps, y0 + (y1 - y0) * q / steps
+                    if zones then sum, n = sum + ZoneAt(cont, x, y, true), n + 1 end
+                    if hostile then worst = math.max(worst, (hostile(x, y))) end
+                end
+            end
+            f = (zones and sum / math.max(1, n) or 1) * worst
             roadZone[k] = f
         end
         return f

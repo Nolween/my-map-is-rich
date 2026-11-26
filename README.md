@@ -53,6 +53,10 @@ Les règles du voyage reprennent aussi celles de Polestar :
 
 La pierre de foyer n'est plus dans les itinéraires depuis la 1.4.0.
 
+**Les longues marches** (plus de 900 yd à vol d'oiseau) passent d'abord par un graphe des passages entre tuiles de la grille (533 yd de côté) : il donne les tuiles par où aller, et le chemin exact se cherche dans ces tuiles et leurs voisines. Hors du jeu, sur des marches de 4 000 à 10 000 yd (Marche de l'Ouest → Baie-du-Butin, Hurlevent → Forgefer à pied, le Carrefour → les Pitons-du-Tonnerre), ce chemin est celui de toute la grille, à moins de 1 % près. Avant, une marche aussi longue dépassait la limite de la recherche et retombait sur une ligne droite. Une marche encore estimée, pendant le calcul, se dessine pâle, et le panneau de trajet dit « Calcul du chemin… ».
+
+**Les camps de l'autre faction sont fermés** : ses capitales, ses villes et ses camps, ceux sans maître de vol compris (Bourg-Hurlant, Sabot-de-Sang, Brill, Comté-de-l'Or, Kharanos, Dolanaar…). Un pas dedans compte 1 000 fois, ses abords (30 yd) 20 fois, dans la grille comme dans l'estimation. Seul celui de ton départ ou de ta destination reste ouvert. S'il n'existe vraiment aucun autre chemin, le panneau de trajet le dit en rouge.
+
 La carte du jeu reste ouverte dessous, invisible : c'est elle que M, Échap et B ferment. La carte classique d'OpenMap (dessinée dans la fenêtre de carte du jeu) n'existe plus depuis la 0.5.0.
 
 ## À la manette
@@ -156,6 +160,14 @@ Depuis la 1.4.0, `build_nav.py` lit le **format 4** des cartes de marche de Shor
 - **intérieur de cité** : le même, dans une capitale de `Hazards.lua`.
 
 Ces seuils sont en tête du script, et `/mmir sonde terrain` dit en jeu le terrain de la case où tu es, pour les régler.
+
+`Camps.lua` (les camps de chaque faction) est écrit par `tools/hazards/build_camps.py`, en Python : un camp est un groupe d'au moins 4 PNJ d'une seule faction distants de moins de 40 yd de proche en proche, dont au moins un PNJ de ville (aubergiste, marchand, maître de vol, garde…), d'après la base Forever de QuestieDB déjà copiée par `tools/quests` ; son terrain, les morceaux de 33 yd à moins de 35 yd d'un de ses PNJ.
+
+```
+.venv\Scripts\python tools\hazards\build_camps.py ["K:\World of Warcraft\_forever_\Interface\AddOns\ShortestPathForever"]
+```
+
+`build_nav.py` écrit aussi, dans `Nav0.lua` et `Nav1.lua`, le graphe des passages entre tuiles (`portals`, `tools/nav/portals.py`) : les passages d'un bord à l'autre, groupés en suites de 48 cases au plus, et leurs coûts dans chaque tuile au style Équilibré, sans les liaisons qu'un autre passage fait aussi bien.
 
 `Transit.lua` (les lignes des bateaux et des zeppelins : leur période, leurs arrêts, leur trajet daté) est écrit par `tools/transit/build_transit.py`, en Python sans dépendance, d'après `Data/Routes.lua` de Shortest Path Forever :
 

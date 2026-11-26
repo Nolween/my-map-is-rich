@@ -121,6 +121,7 @@ ns.AddLocale("zhTW", {
     TRAVEL_PORTAL = "傳送門（%s）", TRAVEL_TRAM = "礦道地鐵（%s）", TRAVEL_LEG_PORTAL = "搭傳送門前往%s", TRAVEL_LEG_TRAM = "搭礦道地鐵前往%s",
     TRAVEL_LEG_TELEPORT = "施放%s",
     TRAVEL_REPORT_NAV = "網格：樓層格 %d，升降梯 %d，表面 %d -> %d，替代：%s", TRAVEL_REPORT_NAV_NONE = "網格：無路徑（%s）",
+    TRAVEL_REPORT_PORTALS = "網格：經由通道圖（%d 個通道節點，%d 個格子）", TRAVEL_COMPUTING_PATH = "正在計算地面路線…", TRAVEL_THROUGH_HORDE = "這段路穿過部落營地：沒有其他路", TRAVEL_THROUGH_ALLIANCE = "這段路穿過聯盟營地：沒有其他路",
     SET_TRAVEL = "路線", OPT_TRAVEL_PATH = "步行路線",
     TRAVEL_STYLE_FASTEST = "最快", TRAVEL_STYLE_BALANCED = "均衡", TRAVEL_STYLE_ROADS = "道路", TRAVEL_STYLE_RECOMMENDED = "%s（推薦）",
     TRAVEL_STYLE_FASTEST_DESC = "最短的路線，翻山越嶺，穿越野外。", TRAVEL_STYLE_BALANCED_DESC = "道路只稍遠一點就走道路，並繞開山丘。", TRAVEL_STYLE_ROADS_DESC = "即使更遠也沿道路走：最安全的路，而不是最快的。", TRAVEL_STYLE_COMPUTING = "正在測量路線…",
@@ -983,9 +984,9 @@ ns.AddLocale("zhTW", {
     OPT_TRACKER_LOCK = "鎖定位置",
     OPT_TRACKER_LOCK_TIP = "拖曳標題不再移動它。",
     OPT_TRACKER_UNHIDE = "重新顯示隱藏的任務（%d）",
-    WHATSNEW_MMIR_1_2_0 = "• |cffffd100自己的任務追蹤|r：在螢幕右側取代遊戲內建的追蹤，按由近到遠列出你的任務和距離（最近的目標，或接收任務的人）。你走動時它會自動排序。\n• |cffffd100待交付|r排在最前：誰接收任務，在哪裡。\n• |cffffd100篩選|r：全部、已追蹤、區域、附近；在地城中只顯示它的任務。\n• |cffffd100點擊|r任務：前往最近地點的路線。右鍵：選單（佇列、地圖、追蹤、隱藏、分享）。\n• |cffffd100隊伍進度|r：在共同的任務下，顯示擁有 My Map Is Rich 的隊友的進度。\n• /mmir 中新增|cffffd100任務|r分頁：排序、篩選、背景，以及插件保留原位的其他追蹤（EllesmereUI、Questie）。/mmir suivi 顯示或隱藏它。",
     WHATSNEW_MMIR_1_3_0 = "• |cffffd100首次啟動教學|r：無縫地圖、任務資料庫、路線，接著是你的初始設定，立即生效。它也能一鍵停用功能相同的插件。/mmir tuto，或說明分頁中的重看教學。\n• |cffffd100說明|r分頁現在是 13 步的指南。\n• |cffffd100地圖上的屍體|r：死亡或處於靈魂狀態時，遊戲的墓碑標出你倒下的地方。\n• |cffffd100你的箭頭|r更大了，帶有輕輕脈動的金色光暈。\n• 任務標記的卡片新增|cffffd100查看任務|r，|cffffd100!|r 也有了自己的卡片：等級、還缺什麼、誰給任務、目標、任務鏈。\n• |cffffd100城鎮居民|r來自插件的任務資料庫，無需 Questie：商人、訓練師、靈魂醫者、稀有怪物、郵箱。\n• |cffffd100主題|r用色塊選擇，與同系列插件一致。",
     WHATSNEW_MMIR_1_3_1 = "• |cffffd100手把選擇目標不再被阻擋|r：提示遊戲阻擋了 My Map Is Rich（SetPreferredGamepadInteractTarget()）的訊息不會再出現。遊戲內建的任務追蹤只是在我們的追蹤下設為不可見，插件不會關閉它。\n• |cffffd100任務追蹤|r的右鍵選單以|cffffd100在任務日誌中查看|r開頭：地圖打開並顯示該任務的詳情。",
     WHATSNEW_MMIR_1_4_0 = "• |cffffd100三種步行方式|r：最快、均衡（推薦）和道路，按地形（道路、坡度、室內）計價。路線預覽（在某點上按 Y）會顯示三種方式及其用時。\n• |cffffd100更聰明的旅行|r：職業傳送（法師、德魯伊）、避開等級過高的區域、按段計算飛行時間、只有真正更快時才更換路線，以及「若有X的飛行點會更快」的提示。\n• |cffffd100旅行按鈕|r施放這一段的傳送，或在飛行管理員處搭乘計畫中的航班，其地圖現在會標出下一站。右鍵：跳過這一段。\n• |cffffd100船隻和飛艇|r：在船上學會時刻表，計算真實的等待時間，「1分20秒後出發」，並在靠岸前和到站前用船鐘提醒。\n• |cffffd100用 Spoken 收聽|r：Spoken 配音的任務可在地圖的任務列表中朗讀（該行的喇叭、任務卡、選單）。\n• 爐石不再用於路線。",
+    WHATSNEW_MMIR_1_4_1 = "• |cffffd100步行路線重新貼合地形|r：1.4.0 遺失了步行網格，每段步行都直線越過山地。網格已恢復，傳送門和地鐵也回來了。\n• |cffffd100長距離步行|r現在完整計算，不再退回直線。\n• |cffffd100另一陣營的營地已封閉|r：其城鎮和營地，包括沒有飛行管理員的。只有從那裡出發或前往那裡時路線才會進入；若別無他路，行程面板會以紅色提示。",
     WHATSNEW_MMIR_1_3_2 = "• |cffffd100地圖的任務列表|r中，標籤名稱不再被截斷（|cffffd100依區域|r、|cffffd100最近的|r）。\n• 列表中每個任務的行首都有|cffffd100一個方框|r，任務被追蹤時為金色：點擊它，或按手把的 |cffffd100RB|r，即可追蹤或取消追蹤。\n• |cffffd100PlayStation 手把|r會被自動辨識（按鍵圖示：自動），View 顯示 Share / Create 鍵，而不再是返回箭頭。\n• |cffffd100M 透過地圖自己的關閉按鈕關閉地圖|r：之後手把選擇目標不再被阻擋。",
 })

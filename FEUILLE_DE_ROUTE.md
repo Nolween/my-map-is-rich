@@ -113,6 +113,13 @@ Plus tard :
 - **La cible de Polestar sur notre carte** : il dessine par `OpenMapAPI`, retiré chez nous en 0.5.0, ses épingles ne se voient pas sous notre vue.
 - **Une épingle par zone vue de loin**, les rares repérés, Maj+clic sur la minicarte.
 
+## Des chemins justes, sans camp ennemi (après la 1.4.0)
+
+Le joueur voyait trop de lignes droites par-dessus les montagnes, et des chemins par les camps de l'autre faction.
+- **Les longues marches** : une marche de plus de 4 000 yd dépassait les 400 000 cases de la recherche et retombait sur une ligne droite. Un graphe des passages entre tuiles (`tools/nav/portals.py`, champ `portals` des cartes) donne maintenant un couloir de tuiles, où l'A* est exact. Mesuré hors du jeu sur sept longues marches, le chemin est celui de toute la grille, en 36 000 à 238 000 cases examinées.
+- **Les camps ennemis** : ceux sans maître de vol manquaient. `Plus/Data/Camps.lua` (`tools/hazards/build_camps.py`, d'après QuestieDB) en trouve 106 d'Alliance et 69 de Horde. Le terrain ennemi est fermé (×1 000, ses abords ×20), dans la grille et dans l'estimation.
+- **Pas encore fait** : recalculer à la volée les coûts d'une tuile qui touche un camp. Le couloir de huit voisines laisse la place de le contourner.
+
 ## Dettes et décisions en attente
 
 - **Rien n'est encore testé en jeu, de la 0.5.0 à la 1.2.0.** Chaque version a sa liste « En jeu » dans le plan. Les vérifications de base :

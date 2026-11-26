@@ -74,6 +74,7 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 REPO = os.path.dirname(os.path.dirname(HERE))
 sys.path.insert(0, os.path.join(HERE, "..", "roads"))
 import build_roads  # noqa: E402  (la lecture des routes et de l'en-tête des cartes)
+import portals  # noqa: E402  (le graphe des passages entre tuiles)
 
 DEFAULT_SPF = build_roads.DEFAULT_SPF
 OUT = os.path.join(REPO, "MyMapIsRich", "Plus", "Data", "Nav%d.lua")
@@ -794,6 +795,14 @@ def build(spf, cont, roads):
         buf = bytes((n >> 8, n & 255)) + b"".join(bytes(cols[name]) for name in columns)
         tiles[k] = base64.b64encode(zlib.compress(buf, 9)).decode("ascii")
 
+    # --- Le graphe des passages entre tuiles (les longues marches) -----------
+    kept = {nid for k in by_tile for lst in by_tile[k].values() for nid in lst}
+    portal_tiles, portal_stats, _ = portals.build({
+        "GX": GX, "GY": GY, "C": C, "ny": ny, "cs": cs, "walk": walk, "V": V, "step": step, "road": road,
+        "roadcov": roadcov, "cls": cls, "out": out, "kept": kept, "fval": fval, "node_class": node_class,
+        "lifts": lifts,
+    })
+
     clusters, terrain = {}, {}
     clsbyte = (cls + 8 * diagbits).astype(np.uint8)
     for k in grids:
@@ -827,13 +836,14 @@ def build(spf, cont, roads):
         "diagonales différentes de la règle": int(np.unpackbits(diagbits[..., None], axis=-1).sum()),
         "ascenseurs": len(lifts),
     }
+    stats.update(portal_stats)
     print("  sol sec %d cases : %.1f %% en pente douce, %.1f %% raide" % (
         dry_n, 100 * stats["pentes douces"] / max(1, dry_n), 100 * stats["pentes raides"] / max(1, dry_n)))
     lift_rows = []
     for top, bot, secs in lifts:
         a, b = top // 64, bot // 64
         lift_rows.append((a // GY, a % GY, top % 64, b // GY, b % GY, bot % 64, secs))
-    return head, clusters, terrain, tiles, lift_rows, endpoint, stats
+    return head, clusters, terrain, tiles, lift_rows, endpoint, stats, portal_tiles
 
 
 def main():
@@ -843,7 +853,7 @@ def main():
     endpoints = {}
     for cont, name in CONTINENTS.items():
         print(name)
-        head, clusters, terrain, tiles, lifts, endpoint, stats = build(spf, cont, roads.get(cont, {}))
+        head, clusters, terrain, tiles, lifts, endpoint, stats, portal_tiles = build(spf, cont, roads.get(cont, {}))
         for p in PASSAGES:
             for side in ("a", "b"):
                 c, x, y, z = p[side]
@@ -863,9 +873,11 @@ def main():
             "-- 5 intérieur de cité) + 8 * diagonales à inverser (1 +x+y, 2 +x-y, 4 -x+y, 8 -x-y) : un pas en",
             "-- diagonale de base à base passe si l'un des deux chemins en L passe, sauf si son bit dit l'inverse.",
             "-- floors : les étages et les pas de plus (le format est décrit dans tools/nav/build_nav.py).",
+            "-- portals : le graphe des passages entre tuiles, pour les longues marches (tools/nav/portals.py).",
             "-- lifts : { gx, gy, couche du haut, gx, gy, couche du bas, secondes } (cases de la grille).",
             "-- Chaque tuile est compressée (zlib) puis en base64. x vers le nord, y vers l'ouest (UnitPosition).",
-            "local _, ns = ...",
+            "local _, root = ...",
+            "local ns = root.Plus                 -- (le code de l'addon lit ns.Nav, ns.Passages : root.Plus)",
             "",
             "ns.Nav = ns.Nav or {}",
             "ns.Nav[%d] = {" % cont,
@@ -884,14 +896,18 @@ def main():
         lines += ["\t},", "\tfloors = {"]
         for k in sorted(tiles):
             lines.append('\t\t[%d] = "%s",' % (k + 1, tiles[k]))
+        lines += ["\t},", "\tportals = {"]
+        for k in sorted(portal_tiles):
+            lines.append('\t\t[%d] = "%s",' % (k + 1, portal_tiles[k]))
         lines += ["\t},", "}", ""]
         path = OUT % cont
         with open(path, "w", encoding="utf-8", newline="\n") as f:
             f.write("\n".join(lines))
         floors_kb = sum(len(s) for s in tiles.values()) / 1024
         terrain_kb = sum(len(s) for s in terrain.values()) / 1024
-        print("  %s ; étages : %.0f Ko ; terrain : %.0f Ko ; %s : %.0f Ko" % (
-            ", ".join("%s %s" % (v, k) for k, v in stats.items()), floors_kb, terrain_kb, path,
+        portals_kb = sum(len(s) for s in portal_tiles.values()) / 1024
+        print("  %s ; étages : %.0f Ko ; terrain : %.0f Ko ; passages : %.0f Ko ; %s : %.0f Ko" % (
+            ", ".join("%s %s" % (v, k) for k, v in stats.items()), floors_kb, terrain_kb, portals_kb, path,
             os.path.getsize(path) / 1024))
 
     lines = [
@@ -900,7 +916,8 @@ def main():
         "-- continent. Source : Shortest Path Forever %s de cjber (Data/Portals.lua, Data/Transports.lua)," % version,
         "-- sous licence GPL-3.0-or-later (voir LICENSE).",
         "-- { kind, name, faction, secs, a = { cont, x, y, couche }, b = { ... } } : on va dans les deux sens.",
-        "local _, ns = ...",
+        "local _, root = ...",
+            "local ns = root.Plus                 -- (le code de l'addon lit ns.Nav, ns.Passages : root.Plus)",
         "",
         "ns.Passages = {",
     ]

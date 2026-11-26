@@ -3,7 +3,8 @@
 -- continent. Source : Shortest Path Forever 1.45.13 de cjber (Data/Portals.lua, Data/Transports.lua),
 -- sous licence GPL-3.0-or-later (voir LICENSE).
 -- { kind, name, faction, secs, a = { cont, x, y, couche }, b = { ... } } : on va dans les deux sens.
-local _, ns = ...
+local _, root = ...
+local ns = root.Plus                 -- (le code de l'addon lit ns.Nav, ns.Passages : root.Plus)
 
 ns.Passages = {
 	{ kind = "portal", name = "Darnassus", faction = "Alliance", secs = 10, a = { 1, 8799.4, 969.8, 0 }, b = { 1, 9947.5, 2630.0, 0 } },

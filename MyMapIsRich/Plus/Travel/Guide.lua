@@ -473,9 +473,10 @@ local function Failed(leg, i, from, mine)
                 leg.refined = "retry"
                 local cont = leg.from.cont
                 cancelSearch = Nav.Find(cont, { cont = cont, x = a.x, y = a.y }, { cont = cont, x = b.x, y = b.y },
-                    state.plan.speed, function(path)
+                    state.plan.speed, function(path, why)
                         cancelSearch = nil
                         if state ~= mine then return end
+                        leg.navFail = not path and why or nil
                         if path then
                             local out = {}
                             for k = 1, ai - 1 do out[#out + 1] = pts[k] end
@@ -514,9 +515,10 @@ Refine = function()
             -- (le départ garde sa couche, un bout de passage, ou sa carte, une ville sous terre)
             cancelSearch = Nav.Find(from.cont, { cont = from.cont, x = from.x, y = from.y, layer = from.layer, map = from.map },
                 leg.to, state.plan.speed,
-                function(path)
+                function(path, why)
                     cancelSearch = nil
                     if state ~= mine then return end
+                    leg.navFail = not path and why or nil
                     if path then
                         leg.refined = true
                         Replace(leg, i, path.points, path.secs, path)
@@ -1205,8 +1207,12 @@ function T.Report()
             if nav then
                 ns.Print("     |cff888888%s|r", L.TRAVEL_REPORT_NAV:format(nav.floors or 0, nav.lifts or 0,
                     nav.startLayer or 0, nav.goalLayer or 0, nav.alt and L.YES or L.NO))
+                -- (par le graphe des passages : ses nœuds examinés, les cases de l'A* exact)
+                if nav.portals then
+                    ns.Print("     |cff888888%s|r", L.TRAVEL_REPORT_PORTALS:format(nav.portalNodes or 0, nav.cells or 0))
+                end
             elseif leg.kind == "walk" and leg.refined then
-                ns.Print("     |cff888888%s|r", L.TRAVEL_REPORT_NAV_NONE:format(tostring(leg.refined)))
+                ns.Print("     |cff888888%s|r", L.TRAVEL_REPORT_NAV_NONE:format(tostring(leg.navFail or leg.refined)))
             end
         end
         ns.Print("  %s %s", L.TRAVEL_TOTAL, R.Clock(shown.secs))

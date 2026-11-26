@@ -121,6 +121,7 @@ ns.AddLocale("koKR", {
     TRAVEL_PORTAL = "차원문 (%s)", TRAVEL_TRAM = "깊은굴 지하철 (%s)", TRAVEL_LEG_PORTAL = "%s행 차원문 타기", TRAVEL_LEG_TRAM = "%s행 깊은굴 지하철 타기",
     TRAVEL_LEG_TELEPORT = "%s 시전",
     TRAVEL_REPORT_NAV = "격자: 층 칸 %d, 승강기 %d, 표면 %d -> %d, 대체: %s", TRAVEL_REPORT_NAV_NONE = "격자: 경로 없음 (%s)",
+    TRAVEL_REPORT_PORTALS = "격자: 통로 그래프 경유 (통로 노드 %d개, 칸 %d개)", TRAVEL_COMPUTING_PATH = "지형 위 경로 계산 중…", TRAVEL_THROUGH_HORDE = "이 길은 호드 야영지를 지납니다: 다른 길이 없습니다", TRAVEL_THROUGH_ALLIANCE = "이 길은 얼라이언스 야영지를 지납니다: 다른 길이 없습니다",
     SET_TRAVEL = "경로", OPT_TRAVEL_PATH = "도보 경로",
     TRAVEL_STYLE_FASTEST = "가장 빠르게", TRAVEL_STYLE_BALANCED = "균형", TRAVEL_STYLE_ROADS = "도로", TRAVEL_STYLE_RECOMMENDED = "%s (추천)",
     TRAVEL_STYLE_FASTEST_DESC = "가장 짧은 길로, 언덕을 넘고 들판을 가로지릅니다.", TRAVEL_STYLE_BALANCED_DESC = "조금만 더 길면 도로를 타고, 언덕은 돌아갑니다.", TRAVEL_STYLE_ROADS_DESC = "더 길어도 도로를 따라갑니다: 가장 빠르지는 않지만 가장 안전한 길.", TRAVEL_STYLE_COMPUTING = "경로 측정 중…",
@@ -983,9 +984,9 @@ ns.AddLocale("koKR", {
     OPT_TRACKER_LOCK = "고정",
     OPT_TRACKER_LOCK_TIP = "제목을 끌어도 더는 움직이지 않습니다.",
     OPT_TRACKER_UNHIDE = "숨긴 퀘스트 다시 표시(%d)",
-    WHATSNEW_MMIR_1_2_0 = "• |cffffd100자체 퀘스트 추적기|r: 화면 오른쪽, 게임의 추적기 자리에 퀘스트를 가까운 순서로 거리(가장 가까운 목표, 또는 퀘스트를 받는 NPC)와 함께 보여줍니다. 걷는 동안 스스로 정렬됩니다.\n• |cffffd100완료 보고|r가 맨 위: 퀘스트를 받는 NPC와 위치.\n• |cffffd100필터|r: 전체, 추적 중, 지역, 근처. 던전 안에서는 그 던전의 퀘스트만.\n• 퀘스트를 |cffffd100클릭|r: 가장 가까운 곳까지 경로. 오른쪽 클릭: 메뉴(대기열, 지도, 추적, 숨기기, 공유).\n• |cffffd100파티 진행 상황|r: 함께 가진 퀘스트 아래에 My Map Is Rich가 있는 파티원의 진행 상황.\n• /mmir에 새 |cffffd100퀘스트|r 탭: 정렬, 필터, 배경, 그리고 애드온이 그대로 두는 다른 추적기(EllesmereUI, Questie). /mmir suivi로 보이거나 숨깁니다.",
     WHATSNEW_MMIR_1_3_0 = "• |cffffd100첫 실행 튜토리얼|r: 이어 붙인 지도, 퀘스트 데이터베이스, 경로, 그리고 바로 적용되는 첫 설정. 같은 일을 하는 애드온도 버튼 하나로 끕니다. /mmir tuto, 또는 도움말 탭의 튜토리얼 다시 보기.\n• |cffffd100도움말|r 탭이 13단계 안내가 되었습니다.\n• |cffffd100지도 위의 시체|r: 죽었거나 유령일 때 게임의 묘비가 쓰러진 곳을 표시합니다.\n• |cffffd100내 화살표|r가 더 커지고, 부드럽게 맥동하는 금빛 후광이 생겼습니다.\n• 퀘스트 표시의 카드에 |cffffd100퀘스트 보기|r가 생겼고, |cffffd100!|r에도 카드가 생겼습니다: 레벨, 아직 부족한 것, 퀘스트를 주는 NPC, 목표, 연계.\n• |cffffd100마을 주민|r은 Questie 없이 애드온의 퀘스트 데이터베이스에서 가져옵니다: 상인, 전문가, 영혼의 치유사, 희귀 몬스터, 우체통.\n• |cffffd100테마|r는 같은 계열 애드온처럼 색상 견본으로 고릅니다.",
     WHATSNEW_MMIR_1_3_1 = "• |cffffd100게임패드 대상 지정이 더 이상 차단되지 않습니다|r: 게임이 My Map Is Rich를 차단했다는 메시지(SetPreferredGamepadInteractTarget())가 더 이상 나오지 않습니다. 게임의 퀘스트 추적기는 우리 추적기 아래에서 보이지 않게만 하고, 애드온이 닫지 않습니다.\n• |cffffd100퀘스트 추적기|r의 오른쪽 클릭 메뉴 맨 위에 |cffffd100퀘스트 목록에서 보기|r: 지도가 열리고 퀘스트 정보가 표시됩니다.",
     WHATSNEW_MMIR_1_4_0 = "• |cffffd100세 가지 걷기 방식|r: 가장 빠르게, 균형(추천), 도로. 지형(도로, 경사, 실내)에 따라 비용을 매깁니다. 경로 미리보기(지점에서 Y)에서 세 가지를 소요 시간과 함께 보여 줍니다.\n• |cffffd100더 똑똑한 여행|r: 직업 순간이동(마법사, 드루이드), 레벨이 너무 높은 지역 회피, 구간별 비행 시간, 실제로 이득일 때만 바뀌는 경로, 'X의 비행 경로가 있다면 더 빠름' 안내.\n• |cffffd100이동 버튼|r은 단계의 순간이동을 시전하거나 비행 조련사에게서 예정된 비행을 탑니다. 비행 지도에는 이제 다음 목적지가 표시됩니다. 오른쪽 클릭: 단계 건너뛰기.\n• |cffffd100배와 비행선|r: 배 위에서 시간표를 배우고, 실제 대기 시간을 계산하며, '1분 20초 후 출발', 부두 도착 전과 내릴 곳 도착 전에 배의 종소리로 알립니다.\n• |cffffd100Spoken으로 듣기|r: Spoken이 더빙한 퀘스트를 지도의 퀘스트 목록에서 소리 내어 읽습니다(줄의 스피커, 카드, 메뉴).\n• 귀환석은 더 이상 경로에 쓰이지 않습니다.",
+    WHATSNEW_MMIR_1_4_1 = "• |cffffd100도보 경로가 다시 지형을 따릅니다|r: 1.4.0에서 도보 격자가 빠져 모든 도보 경로가 산 위로 직선을 그렸습니다. 격자가 차원문, 지하철과 함께 돌아왔습니다.\n• |cffffd100긴 도보 경로|r도 직선으로 돌아가지 않고 끝까지 계산합니다.\n• |cffffd100상대 진영의 야영지는 막힙니다|r: 비행 조련사가 없는 곳을 포함해 그 진영의 마을과 야영지. 출발지나 목적지일 때만 경로가 들어가며, 다른 길이 없으면 여정 패널이 빨간색으로 알려 줍니다.",
     WHATSNEW_MMIR_1_3_2 = "• |cffffd100지도의 퀘스트 목록|r에서 탭 이름이 더 이상 잘리지 않습니다 (|cffffd100지역별|r, |cffffd100가까운 순|r).\n• 목록의 각 퀘스트 줄 앞에 |cffffd100상자|r가 있고, 추적 중이면 금색입니다. 클릭하거나 게임패드의 |cffffd100RB|r로 추적하거나 추적을 해제합니다.\n• |cffffd100PlayStation 게임패드|r를 스스로 알아봅니다 (버튼 아이콘: 자동). View는 뒤로 화살표 대신 Share / Create 버튼을 보여 줍니다.\n• |cffffd100M은 지도 자체의 닫기 버튼으로 지도를 닫습니다|r. 그 뒤에도 게임패드 대상 지정이 차단되지 않습니다.",
 })

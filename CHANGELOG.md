@@ -1,5 +1,16 @@
 # Journal des versions — My Map Is Rich
 
+## 1.4.1
+
+**Les chemins à pied suivent de nouveau le terrain, même longs, et ne passent plus par les camps de l'autre faction.**
+
+Après la mise à jour, **relance le jeu** (un `/reload` ne suffit pas : un fichier s'ajoute).
+
+- **La grille de marche revient** : la 1.4.0 l'avait perdue, et chaque marche passait en ligne droite par-dessus les montagnes. Le portail de Darnassus et le tram des Profondeurs reviennent avec elle.
+- **Les longues marches** (Marche de l'Ouest → Baie-du-Butin, le Carrefour → les Pitons-du-Tonnerre…) se calculent en entier, en une seconde environ, au lieu de retomber sur une ligne droite. Tant que le calcul n'est pas fini, la marche se dessine pâle et le panneau de trajet dit « Calcul du chemin… ».
+- **Les camps de l'autre faction sont fermés** : ses capitales, ses villes et ses camps, ceux sans maître de vol compris (Brill, Comté-de-l'Or, Kharanos, Sabot-de-Sang, Dolanaar…), avec leurs abords. Un itinéraire n'y entre que si tu en pars ou t'y rends. S'il n'existe vraiment aucun autre chemin, le panneau de trajet le dit en rouge.
+- `/mmir trajet` dit pour chaque marche comment elle a été calculée, et pourquoi elle aurait échoué.
+
 ## 1.4.0
 
 **Des itinéraires plus justes : trois styles de marche, des voyages plus malins, un bouton pour l'étape à faire, et les horaires des bateaux.** La liste des quêtes sait aussi écouter Spoken.

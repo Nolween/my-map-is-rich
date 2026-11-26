@@ -8,6 +8,8 @@ Parts that come from OpenMap 0.8.11 and keep its MIT licence (OpenMap.txt):
 Data that come from the Forever database of QuestieDB (GPLv3; its notice: QuestieDB.txt):
   Plus/Data/Quests.lua                   quests, their givers and objectives, where to find them
                                          (made by tools/quests/build_quests.py)
+  Plus/Data/Camps.lua                    each faction's camps, from its one-faction NPCs
+                                         (made by tools/hazards/build_camps.py)
 
 Figures and rules taken up from Polestar (GPL-3.0, https://github.com/fitzforge/polestar), no code copied:
   Plus/Travel/Nav.lua                    the walking styles (Fastest, Balanced, Roads): the price of a

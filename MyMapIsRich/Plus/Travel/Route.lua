@@ -26,6 +26,7 @@ local COLORS = {
 }
 R.COLORS = COLORS            -- (le panneau de trajet : UI/RouteHud.lua)
 local DONE_ALPHA = 0.35      -- une étape déjà faite
+local ESTIMATE_ALPHA = 0.4   -- une marche estimée, pas encore suivie sur la grille
 local STOP = { atlas = "WhiteCircle-RaidBlips", texture = "Interface\\Buttons\\WHITE8X8", size = 9 }
 local GOAL = { atlas = "Waypoint-MapPin-Untracked", texture = "Interface\\Minimap\\Ping\\ping5", size = 26 }
 
@@ -104,6 +105,8 @@ end
 local function DrawLeg(leg, alpha, live)
     -- (une téléportation : pas de chemin, on y est en un instant)
     if leg.kind == "teleport" then return end
+    -- (une marche que la grille n'a pas encore précisée, ou pas pu : une estimation, pâle)
+    if leg.kind == "walk" and leg.refined ~= true then alpha = alpha * ESTIMATE_ALPHA end
     local color = COLORS[leg.kind] or COLORS.walk
     local geom = R.Geometry(leg)
     if not geom then

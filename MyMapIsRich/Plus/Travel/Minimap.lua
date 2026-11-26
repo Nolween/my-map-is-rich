@@ -159,6 +159,7 @@ local function Update()
     local count = 0
     local step = radius * SPACING
     local far = radius * 1.5
+    local estimate = false       -- (l'étape tracée : une marche estimée, ses points pâles)
     -- (des points tous les `step` yards le long d'un tracé)
     local function Trail(pts, first, color)
         local carry = 0
@@ -183,7 +184,7 @@ local function Update()
                         d:SetPoint("CENTER", frame, "CENTER", sx * scale, sy * scale)
                         s:ClearAllPoints()
                         s:SetPoint("CENTER", d, "CENTER")
-                        d:SetVertexColor(color[1], color[2], color[3], 1)
+                        d:SetVertexColor(color[1], color[2], color[3], estimate and 0.4 or 1)
                         d:Show()
                         s:Show()
                     end
@@ -201,6 +202,8 @@ local function Update()
         if geom and leg.from.cont == cont and leg.kind ~= "portal" and leg.kind ~= "tram"
             and leg.kind ~= "teleport" then
             local color = COLORS[leg.kind] or COLORS.walk
+            -- (une marche que la grille n'a pas encore précisée : une estimation, pâle)
+            estimate = leg.kind == "walk" and leg.refined ~= true
             if i == index and proj and leg.kind == "walk" and proj.j < #geom then
                 -- (l'étape en cours : du joueur au point du tracé le plus proche, puis la suite)
                 local pts = { { x = px, y = py }, { x = proj.x, y = proj.y } }

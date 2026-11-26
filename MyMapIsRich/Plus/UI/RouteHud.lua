@@ -431,6 +431,16 @@ function H.Refresh()
         -- (« plus rapide si tu avais le vol de… » : Planner.Best)
         local hint = st.plan and st.plan.hint
         if not foot and hint then foot = L.TRAVEL_HINT_FLIGHT:format(H.Duration(hint.saves), hint.name) end
+        -- (la marche en cours : encore estimée, la grille la cherche ; ou elle doit passer par un camp
+        -- de l'autre faction, faute d'autre chemin, en rouge)
+        if leg and leg.kind == "walk" then
+            local through = leg.nav and leg.nav.hostile
+            if through then
+                foot = UI.Hex("bad") .. (through == "Horde" and L.TRAVEL_THROUGH_HORDE or L.TRAVEL_THROUGH_ALLIANCE) .. "|r"
+            elseif not foot and (leg.refined == "searching" or leg.refined == "retry") then
+                foot = L.TRAVEL_COMPUTING_PATH
+            end
+        end
         if foot then
             f.rule:ClearAllPoints()
             f.rule:SetPoint("TOPLEFT", f, "TOPLEFT", PAD, y - 10)
