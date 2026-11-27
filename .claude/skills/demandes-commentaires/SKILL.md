@@ -78,6 +78,17 @@ S'il n'y a aucun commentaire nouveau, dis-le en une ligne, avec la date du derni
 
 Ajoute à [DEMANDES.md](../../../DEMANDES.md) une ligne par commentaire nouveau (y compris les remerciements), en tête du tableau, avec la date du jour dans la colonne « Vu le ». Mets à jour la ligne d'un commentaire déjà vu si une réponse est arrivée ou si son verdict change. Quand une demande est faite plus tard dans une version, sa colonne « Suite » prend le numéro de version.
 
+## 7. Après le commit et la version GitHub
+
+Quand une version qui répond à des commentaires est commitée et publiée (étiquette et version GitHub), même plus tard dans la conversation ou dans une autre séance, termine par **la réponse à poster pour chaque joueur concerné**. Retrouve-les par la colonne « Suite » de [DEMANDES.md](../../../DEMANDES.md), qui porte le numéro de cette version.
+
+Pour chaque joueur : son nom CurseForge, puis une réponse prête à coller, dans la langue de son commentaire. Elle reprend la réponse proposée au rapport, remise à jour :
+- ce qui est fait se dit au présent, avec le numéro de la version (« since version 1.4.2… ») ;
+- elle dit où trouver la fonction, avec les noms exacts que le joueur verra (ceux de `enUS.lua` pour une réponse en anglais : l'onglet, la rubrique, le réglage, le bouton de manette) ;
+- elle dit ce qui n'a pas été fait, s'il y a lieu.
+
+Rappelle d'attendre que la version soit en ligne sur CurseForge avant de poster. Ne poste rien toi-même.
+
 ## Ce qu'on ne fait pas
 
 - Ne pas poster de réponse sur CurseForge, ni écrire à un joueur : c'est le joueur (l'auteur) qui le fait.
