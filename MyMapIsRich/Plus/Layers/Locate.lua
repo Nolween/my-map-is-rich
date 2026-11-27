@@ -3,10 +3,12 @@
 -- Map/Nav.lua, d'OpenMap).
 --   me localiser   la carte glisse jusqu'à toi (le bouton de l'habillage, la
 --                  croix, Places, le raccourci du jeu) ;
---   la réouverture la carte rouvre sur toi, à la taille de ta zone, avec le
+--   la réouverture la carte rouvre au zoom où tu l'avais laissée (gardé par
+--                  personnage, même après un /reload) : sur toi, avec le
 --                  réglage « La carte ouverte : recentrée sur toi » (onglet
---                  Réglages) ; sans lui, là où tu l'avais laissée. Dans un
---                  donjon, où rien ne te place, là où tu l'avais laissée ;
+--                  Réglages) ; sans lui, là où tu l'avais laissée. La toute
+--                  première fois, ta zone entière. Dans un donjon, où rien
+--                  ne te place, là où tu l'avais laissée ;
 --   le mode épingle le prochain appui sur la carte (A à la manette) y pose une
 --                  épingle (la roue, la fiche d'un point).
 -- Les anciens choix d'OpenMap (« garder le zoom », « toute ta zone »,
@@ -65,19 +67,39 @@ local function MaxZoom()
     return ns.Map.Settings.Get("maxZoom") or math.huge
 end
 
-local function OnMapHidden()
-    local u, v, zoom = V.Now()
-    -- (jamais une vue qui n'en est pas une, NaN : la carte rouvrait vide)
-    if u and K.Finite(u, v, zoom) and zoom > 0 then saved = { u, v, zoom } end
+-- (jamais une vue qui n'en est pas une, NaN : la carte rouvrait vide)
+local function Valid(t)
+    return type(t) == "table" and K.Finite(t[1], t[2], t[3]) and t[3] > 0
 end
 
--- La vue où rouvrir : u, v, zoom ; onlySaved : seulement une vue gardée
+-- La vue gardée : celle de la dernière fermeture, gardée par personnage
+-- (ns.char.mapView) pour revenir après un /reload ou à la connexion
+local function Saved()
+    if not saved and ns.char and Valid(ns.char.mapView) then
+        local t = ns.char.mapView
+        saved = { t[1], t[2], t[3] }
+    end
+    return saved
+end
+
+local function OnMapHidden()
+    local u, v, zoom = V.Now()
+    if not (u and Valid({ u, v, zoom })) then return end
+    saved = { u, v, zoom }
+    if ns.char then ns.char.mapView = { u, v, zoom } end
+end
+
+-- La vue où rouvrir : u, v, zoom ; onlySaved : seulement une vue gardée.
+-- Recentrée sur toi, elle garde le zoom que tu avais en la fermant ; la
+-- toute première fois, ta zone entière
 local function SavedView(_, onlySaved)
     local center = ns.db and ns.db.options.centerOnOpen
     local u, v, best = K.UnitWorld("player")
-    if saved and (not center or not u) then return saved[1], saved[2], saved[3] end
+    local s = Saved()
+    if s and (not center or not u) then return s[1], s[2], s[3] end
     if onlySaved then return end
     if u then
+        if s then return u, v, s[3] end
         local fit = V.FitZoom(best) or 1
         return u, v, math.min(fit, MaxZoom())
     end

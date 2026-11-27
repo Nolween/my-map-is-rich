@@ -1,5 +1,15 @@
 # Journal des versions — My Map Is Rich
 
+## 1.4.5
+
+**La carte garde ton zoom.** Jusqu'ici, recentrée sur toi, elle rouvrait toujours sur ta zone entière.
+
+Après la mise à jour, un `/reload` suffit.
+
+- **À chaque ouverture**, la carte reprend le zoom que tu avais en la fermant : centrée sur toi avec le réglage « Centrer sur moi à l'ouverture de la carte » (actif par défaut, onglet Réglages), sinon là où tu l'avais laissée.
+- **Gardé pour chaque personnage**, même après un `/reload` ou à la connexion. La toute première fois, la carte montre ta zone entière.
+- À la manette, le recentrage qui suit l'ouverture ne change plus le zoom.
+
 ## 1.4.4
 
 **Les quêtes élites se voient.** Jusqu'ici, rien ne les distinguait des autres dans les listes de quêtes.

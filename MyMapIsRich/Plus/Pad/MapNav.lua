@@ -271,10 +271,11 @@ end)
 ns.On("MAP_SHOW", function()
     follow:Show()
     if not (ns.db and ns.db.options.centerOnOpen) then return end
-    -- (après que la vue a remis celle qu'elle avait gardée, à l'image suivante : Layers/Locate.lua)
+    -- (après que la vue a remis celle qu'elle avait gardée, à l'image suivante : Layers/Locate.lua ;
+    -- le zoom reste celui qu'elle a remis, celui que tu avais en fermant la carte)
     for _, delay in ipairs(OPEN_DELAYS) do
         C_Timer.After(delay, function()
-            if ns.MapShown() and ns.ViewOn() then CenterNow(true) end
+            if ns.MapShown() and ns.ViewOn() then CenterNow(false) end
         end)
     end
 end)
