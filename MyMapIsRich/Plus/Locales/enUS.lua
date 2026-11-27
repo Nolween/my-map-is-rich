@@ -672,6 +672,8 @@ ns.AddLocale("enUS", {
     QUESTS_NONE = "No quest in your log.",
     QUESTS_NONE_FOUND = "No quest matches.",
     QUESTS_LEVEL = "level %d",
+    QUESTS_ELITE = "Elite",
+    QUESTS_ELITE_TIP = "Elite quest: tough enemies, best done in a group.",
     QUESTS_DONE = "Complete",
     QUESTS_TRACK = "Track",
     QUESTS_UNTRACK = "Untrack",
@@ -1200,5 +1202,6 @@ ns.AddLocale("enUS", {
     WHATSNEW_MMIR_1_4_1 = "• |cffffd100Walks follow the ground again|r: 1.4.0 had lost the walking grid, and every walk was a straight line over the hills. The grid is back, with the portal and the tram.\n• |cffffd100Long walks|r are now worked out in full instead of falling back on a straight line.\n• |cffffd100The other faction's camps are closed|r: its towns and camps, those without a flight master too. A route only goes in when you start or stop there; if there is no other way, the route panel says so in red.",
     WHATSNEW_MMIR_1_4_2 = "• |cffffd100Quest items in the tracker|r: a quest with an item to use (a torch, a vial...) has its button next to its title. One click uses it.\n• |cffffd100On the side you choose|r: Quests tab, Quest items: toward the center of the screen, left or right of the tracker. During a fight, the tracker keeps its order so the buttons stay next to their quests.",
     WHATSNEW_MMIR_1_4_3 = "• |cffffd100The small map moves|r: hold the left button on its quest list and drag, out of combat. It keeps its place; |cffffd100/mmir carte replacer|r puts it back where the game places it.",
+    WHATSNEW_MMIR_1_4_4 = "• |cffffd100Elite quests stand out|r: the word |cffff5ac8Elite|r, in bright pink, follows their title in the quest tracker, the map's quest list, a quest's page and the quest icon tooltips (quests to pick up included).",
     WHATSNEW_MMIR_1_3_2 = "• In |cffffd100the map's quest list|r, the tab names are no longer cut off (|cffffd100By zone|r, |cffffd100Nearest|r).\n• Each quest of the list has |cffffd100a box|r at the start of its line, gold when the quest is tracked: a click on it, or |cffffd100RB|r on the controller, tracks it or stops tracking it.\n• |cffffd100PlayStation controllers|r are recognized by themselves (Button icons on Automatic), and View shows the Share / Create button instead of a back arrow.\n• |cffffd100M closes the map|r with the map's own close button: gamepad targeting is no longer blocked afterwards.",
 })

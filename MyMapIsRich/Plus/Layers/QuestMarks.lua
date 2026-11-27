@@ -104,6 +104,9 @@ local function Title(id)
     title = title or (base and base.title) or (ns.Quests.Learn and ns.Quests.Learn.Title(id)) or ("#" .. id)
     local level = (q and q.level) or (base and base.level)
     if level and level > 0 then title = "[" .. level .. "] " .. title end
+    -- (élite : le mot en rose vif après le titre, dans toutes les info-bulles)
+    local elite = Db.EliteTag(id)
+    if elite then title = title .. "  " .. elite end
     return title, level
 end
 

@@ -672,6 +672,8 @@ ns.AddLocale("frFR", {
     QUESTS_NONE = "Aucune quête dans ton journal.",
     QUESTS_NONE_FOUND = "Aucune quête ne correspond.",
     QUESTS_LEVEL = "niveau %d",
+    QUESTS_ELITE = "Élite",
+    QUESTS_ELITE_TIP = "Quête élite : des ennemis coriaces, mieux vaut un groupe.",
     QUESTS_DONE = "Terminée",
     QUESTS_TRACK = "Suivre",
     QUESTS_UNTRACK = "Ne plus suivre",
@@ -1200,5 +1202,6 @@ ns.AddLocale("frFR", {
     WHATSNEW_MMIR_1_4_1 = "• |cffffd100Les marches suivent de nouveau le terrain|r : la 1.4.0 avait perdu la grille de marche, et chaque marche passait en ligne droite par-dessus le relief. La grille revient, avec le portail et le tram.\n• |cffffd100Les longues marches|r se calculent en entier au lieu de retomber sur une ligne droite.\n• |cffffd100Les camps de l'autre faction sont fermés|r : ses villes et ses camps, ceux sans maître de vol compris. Un itinéraire n'y entre que si tu en pars ou t'y rends ; s'il n'y a pas d'autre chemin, le panneau de trajet le dit en rouge.",
     WHATSNEW_MMIR_1_4_2 = "• |cffffd100Les objets de quête dans le suivi|r : une quête qui a un objet à utiliser (une torche, une fiole...) a sa case en face de son titre. Un clic l'utilise.\n• |cffffd100Du côté que tu veux|r : onglet Quêtes, rubrique Objets de quête : côté du centre de l'écran, à gauche ou à droite du suivi. En combat, le suivi garde son ordre pour que les cases restent en face de leurs quêtes.",
     WHATSNEW_MMIR_1_4_3 = "• |cffffd100La carte réduite se déplace|r : tiens le clic gauche sur sa liste des quêtes et glisse, hors combat. Elle garde sa place ; |cffffd100/mmir carte replacer|r la remet là où le jeu la pose.",
+    WHATSNEW_MMIR_1_4_4 = "• |cffffd100Les quêtes élites se voient|r : le mot |cffff5ac8Élite|r, en rose vif, suit leur titre dans le suivi des quêtes, la liste des quêtes de la carte, la fiche d'une quête et les info-bulles des icônes de quêtes (quêtes à prendre comprises).",
     WHATSNEW_MMIR_1_3_2 = "• Dans |cffffd100la liste des quêtes de la carte|r, les onglets ne sont plus coupés (|cffffd100Par zone|r, |cffffd100Les plus proches|r).\n• Chaque quête de la liste a |cffffd100une case|r au début de sa ligne, d'or quand la quête est suivie : un clic dessus, ou |cffffd100RB|r à la manette, la suit ou ne la suit plus.\n• |cffffd100Les manettes PlayStation|r sont reconnues d'elles-mêmes (Icônes des boutons sur Automatique), et View montre le bouton Share / Create au lieu d'une flèche de retour.\n• |cffffd100M referme la carte|r par la croix de la carte elle-même : le ciblage à la manette n'est plus bloqué ensuite.",
 })

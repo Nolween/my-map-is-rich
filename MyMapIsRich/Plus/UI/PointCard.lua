@@ -849,8 +849,11 @@ local function FillOffer()
     else
         offer.title:SetTextColor(1, 0.82, 0)
     end
-    -- (son niveau, celui où elle se prend, ce qu'elle a de particulier : sa classe, un donjon, répétable, sa chaîne)
+    -- (élite en tête, son niveau, celui où elle se prend, ce qu'elle a de particulier : sa classe, un donjon,
+    -- répétable, sa chaîne)
     local bits = {}
+    local elite = Db.EliteTag(o.id)
+    if elite then bits[#bits + 1] = elite end
     if q and q.level > 0 then bits[#bits + 1] = L.QUESTS_LEVEL:format(q.level) end
     if q and q.minLevel > 0 and q.minLevel ~= q.level then bits[#bits + 1] = L.FICHE_MIN_LEVEL:format(q.minLevel) end
     local tags = QM and QM.Tags and QM.Tags(o.id)

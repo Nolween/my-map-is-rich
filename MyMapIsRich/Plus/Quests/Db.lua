@@ -11,6 +11,8 @@
 --   Db.Name(ref)              son nom dans la langue du joueur, si on l'a
 --   Db.Title(questID)         le titre d'une quête (celui du jeu s'il le sait)
 --   Db.DungeonQuests(mapID)   les quêtes d'un donjon (le mapID de son instance)
+--   Db.Tag(id), Db.IsElite(id) son étiquette (1 élite, 81 donjon...), est-elle élite ?
+--   Db.EliteTag(id)           le mot « Élite » en couleur, à écrire après son titre, ou nil
 --   Db.Services(kind, class)  les PNJ de service (aubergistes, réparateurs...)
 --   Db.SubName(id)            le sous-titre d'un PNJ de service
 --   Db.Rares(), Db.Mailboxes() les monstres rares, les boîtes aux lettres
@@ -70,6 +72,7 @@ function Db.Quest(id)
         parent = r[19] or nil, spell = r[20] or nil, untilDone = r[21] or nil, startWith = r[22] or nil,
         preAny = r[23] or NONE, nextInChain = r[24] or nil, breadcrumbs = r[25] or NONE,
         disabledBy = r[26] or nil, maxRep = r[27] or nil, repeatable = r[28] and true or false,
+        tag = r[29] or nil,
     }
     quests[id] = q
     return q
@@ -109,6 +112,55 @@ function Db.IsDungeonQuest(id)
     end
 
     return dungeonZones[q.zone] or false
+end
+
+-- Son étiquette (1 élite, 41 JcJ, 62 raid, 81 donjon...) : celle de la base là
+-- où Questie corrige le jeu, sinon celle du jeu. Le jeu ne la connaît qu'une
+-- fois la quête chargée (le demander la charge) : une réponse vide n'est pas
+-- gardée, la suivante peut la donner.
+local ELITE = 1
+local gameTag = {}              -- questID -> l'étiquette que le jeu a donnée
+
+local function Plain(v)
+    if issecretvalue and issecretvalue(v) then return nil end
+    return v
+end
+
+local function GameTag(id)
+    if gameTag[id] then return gameTag[id] end
+    local tag
+    if C_QuestLog and C_QuestLog.GetQuestTagInfo then
+        local ok, info = pcall(C_QuestLog.GetQuestTagInfo, id)
+        if ok and type(info) == "table" then
+            tag = Plain(info.tagID)
+            if type(tag) ~= "number" and Plain(info.isElite) then tag = ELITE end
+        end
+    elseif _G.GetQuestTagInfo then
+        local ok, t = pcall(_G.GetQuestTagInfo, id)
+        if ok then tag = Plain(t) end
+    end
+    if type(tag) ~= "number" or tag <= 0 then return end
+    gameTag[id] = tag
+    return tag
+end
+Db.GameTag = GameTag            -- (/mmir focus : ce que le jeu en dit)
+
+function Db.Tag(id)
+    if not id then return end
+    local q = Db.Quest(id)
+    if q and q.tag then return q.tag end
+    return GameTag(id)
+end
+
+-- Une quête élite : à faire en groupe (pas celles de donjon ni de raid, qui ont leur étiquette)
+function Db.IsElite(id) return Db.Tag(id) == ELITE end
+
+-- Le mot « Élite » à écrire après le titre, dans toutes les listes de quêtes,
+-- ou nil. Sa couleur, rose vif (#ff5ac8 ; 1, 0.35, 0.78), a un sens : aucune
+-- difficulté ni qualité d'objet du jeu ne la prend (les titres sont colorés
+-- par leur niveau)
+function Db.EliteTag(id)
+    if Db.IsElite(id) then return "|cffff5ac8" .. ns.L.QUESTS_ELITE .. "|r" end
 end
 
 -- Sa chaîne : { questID, ... } dans l'ordre (elle seule : { id }), et sa place
@@ -330,10 +382,7 @@ function Db.Name(ref)
 end
 
 -- Le nom d'un PNJ croisé (survolé, ciblé, sa barre de nom) : retenu s'il est dans la base
-local function Plain(v)
-    if issecretvalue and issecretvalue(v) then return nil end
-    return v
-end
+-- (Plain : plus haut, avec les étiquettes)
 
 local function Learn(unit)
     if not data or not UnitExists(unit) or UnitIsPlayer(unit) then return end

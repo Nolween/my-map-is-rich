@@ -35,6 +35,7 @@ local L = ns.L
 local UI = ns.UI
 local P = ns.Pad
 local F = ns.Focus
+local Db = ns.Quests.Db
 
 local QP = {}
 ns.QuestPanel = QP
@@ -364,6 +365,11 @@ function QP.Probe()
         line = line .. ("\n  %s : histoire %d car. · résumé %d car. · au choix %d · donnés %d · argent %d · xp %d · sorts %d")
             :format(q.title, #(d.story or ""), #(d.summary or ""), #(d.choices or {}), #(d.rewards or {}),
                 d.money or 0, d.xp or 0, #(d.spells or {}))
+        -- (l'étiquette, 1 élite : celle de la base, celle du jeu)
+        local base = Db.Quest(q.questID)
+        line = line .. ("\n  étiquette : base %s · jeu %s · C_QuestLog.GetQuestTagInfo %s · GetQuestTagInfo %s")
+            :format(tostring(base and base.tag or "-"), tostring(Db.GameTag(q.questID) or "-"),
+                Has(CQ.GetQuestTagInfo), Has(_G.GetQuestTagInfo))
     end
     return line
 end
@@ -502,6 +508,7 @@ local function FillRow(row, it)
         row.voice:Hide()
         row.level:SetText("")
         row.title:SetText("")
+        row.elite:Hide()
         row.prog:SetText("")
         row.dist:SetText("")
         row.head:SetText(it.head)
@@ -537,12 +544,20 @@ local function FillRow(row, it)
         -- (la voix de Spoken, si la quête en a une : le titre s'arrête avant elle)
         local talks = HasVoice(q)
         row.voice:SetShown(talks)
-        if talks then
-            row.title:SetPoint("RIGHT", row.voice, "LEFT", -4, 0)
-            PaintRowVoice(row)
-        else
-            row.title:SetPoint("RIGHT", row.prog, "LEFT", -6, 0)
+        if talks then PaintRowVoice(row) end
+        -- (élite : le mot en rose vif après le titre, qui s'arrête avant lui ;
+        -- un titre trop long est coupé, pas le mot)
+        local right, gap = row.prog, -6
+        if talks then right, gap = row.voice, -4 end
+        local elite = Db.EliteTag(q.questID)
+        row.elite:SetShown(elite ~= nil)
+        if elite then
+            row.elite:SetText(elite)
+            row.elite:ClearAllPoints()
+            row.elite:SetPoint("RIGHT", right, "LEFT", gap, 0)
+            right, gap = row.elite, -6
         end
+        row.title:SetPoint("RIGHT", right, "LEFT", gap, 0)
         row:Show()
     end
 end
@@ -825,6 +840,9 @@ local function ChainText(questID, around)
         else
             lines[#lines + 1] = ("%s• %d. %s|r"):format(UI.Hex("textDim"), i, title)
         end
+        -- (une étape élite : le mot en rose vif, après sa couleur)
+        local elite = not Log.Done(id) and Db.EliteTag(id)
+        if elite then lines[#lines] = lines[#lines] .. " " .. elite end
         -- (l'étape suivante : son donneur, et sa zone)
         if i == at + 1 then
             local q = Db.Quest(id)
@@ -850,7 +868,10 @@ function FillPage(fresh)
     if not (page and q) then return end
     local d = Read1(q, fresh)
     page.title:SetText(q.title)
-    page.level:SetText(q.level and L.QUESTS_LEVEL:format(q.level) or "")
+    -- (élite : le mot en rose vif avant le niveau)
+    local elite = Db.EliteTag(q.questID)
+    local level = q.level and L.QUESTS_LEVEL:format(q.level) or ""
+    page.level:SetText(elite and (elite .. (level ~= "" and "  " or "") .. level) or level)
     page.level:SetTextColor(LevelColor(q.level))
     page.zone:SetText(q.zone)
     page.from:SetText(FromText(q))
@@ -1525,6 +1546,9 @@ local function Row(i)
     row.title:SetPoint("RIGHT", row.prog, "LEFT", -6, 0)
     row.title:SetJustifyH("LEFT")
     row.title:SetWordWrap(false)
+    row.elite = UI.Text(row, "GameFontHighlightSmall")
+    row.elite:SetWordWrap(false)
+    row.elite:Hide()
     Grip(row)
     row:SetScript("OnClick", function(self, button)
         -- (la carte réduite qu'on vient de tirer par cette ligne : pas un clic)

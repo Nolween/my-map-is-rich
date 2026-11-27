@@ -396,6 +396,8 @@ ns.AddLocale("itIT", {
     QUESTS_NONE = "Nessuna missione nel tuo registro.",
     QUESTS_NONE_FOUND = "Nessuna missione corrisponde.",
     QUESTS_LEVEL = "livello %d",
+    QUESTS_ELITE = "Élite",
+    QUESTS_ELITE_TIP = "Missione élite: nemici tosti, meglio in gruppo.",
     QUESTS_DONE = "Completata",
     QUESTS_TRACK = "Segui",
     QUESTS_UNTRACK = "Non seguire",
@@ -998,5 +1000,6 @@ ns.AddLocale("itIT", {
     WHATSNEW_MMIR_1_4_1 = "• |cffffd100I percorsi a piedi seguono di nuovo il terreno|r: la 1.4.0 aveva perso la griglia di marcia, e ogni percorso andava in linea retta sopra i rilievi. La griglia torna, con il portale e la metropolitana.\n• |cffffd100I percorsi lunghi|r si calcolano per intero invece di ripiegare su una linea retta.\n• |cffffd100Gli accampamenti dell'altra fazione sono chiusi|r: le sue città e i suoi accampamenti, anche quelli senza maestro di volo. Un itinerario ci entra solo se parti da lì o ci vai; se non c'è altra strada, il pannello del viaggio lo dice in rosso.",
     WHATSNEW_MMIR_1_4_2 = "• |cffffd100Gli oggetti delle missioni nel tracciamento|r: una missione con un oggetto da usare (una torcia, una fiala...) ha la sua casella accanto al titolo. Un clic lo usa.\n• |cffffd100Dal lato che preferisci|r: scheda Missioni, sezione Oggetti delle missioni: verso il centro dello schermo, a sinistra o a destra del tracciamento. In combattimento, il tracciamento mantiene il suo ordine perché le caselle restino accanto alle loro missioni.",
     WHATSNEW_MMIR_1_4_3 = "• |cffffd100La mappa ridotta si sposta|r: tieni premuto il clic sinistro sulla sua lista delle missioni e trascina, fuori dal combattimento. Mantiene il suo posto; |cffffd100/mmir carte replacer|r la rimette dove la mette il gioco.",
+    WHATSNEW_MMIR_1_4_4 = "• |cffffd100Le missioni élite si vedono|r: la parola |cffff5ac8Élite|r, in rosa acceso, segue il loro titolo nel tracciamento, nella lista delle missioni della mappa, nella scheda di una missione e nei suggerimenti delle icone delle missioni (anche quelle da accettare).",
     WHATSNEW_MMIR_1_3_2 = "• Nella |cffffd100lista delle missioni della mappa|r, le schede non sono più tagliate (|cffffd100Per zona|r, |cffffd100Le più vicine|r).\n• Ogni missione della lista ha |cffffd100una casella|r all'inizio della riga, dorata quando la missione è seguita: un clic, o |cffffd100RB|r col controller, la segue o smette di seguirla.\n• |cffffd100I controller PlayStation|r vengono riconosciuti da soli (Icone dei pulsanti su Automatico), e View mostra il tasto Share / Create invece di una freccia indietro.\n• |cffffd100M chiude la mappa|r con la sua stessa croce: il puntamento col controller non viene più bloccato dopo.",
 })

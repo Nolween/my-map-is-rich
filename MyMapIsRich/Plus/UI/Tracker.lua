@@ -10,8 +10,8 @@
 --   la liste     par distance, la plus proche d'abord (Quests/Where.lua : le
 --                plus proche de ce qu'il reste à faire) ; ou par zone, celle
 --                où tu es d'abord, chaque zone repliable
---   une quête    [niveau] dans la couleur de sa difficulté, son titre, Élite,
---                Donjon..., la distance (un autre continent : sa zone) ; ses
+--   une quête    [niveau] dans la couleur de sa difficulté, son titre, Élite
+--                (en rose vif), Donjon..., la distance (un autre continent : sa zone) ; ses
 --                objectifs (un objectif qui avance s'allume d'or), le temps
 --                qu'il reste à une quête minutée, et l'avancée de ceux du
 --                groupe qui l'ont aussi (Quests/Party.lua). La barre d'or :
@@ -208,7 +208,7 @@ local function Prefix(q)
     return ("|cff%02x%02x%02x%s|r "):format(r * 255, g * 255, b * 255, text)
 end
 
--- « (Élite) », « (Donjon) » : le texte du jeu
+-- « (Donjon) », « (JcJ) » : le texte du jeu (une quête élite a le sien : Db.EliteTag)
 local function Tag(q)
     local QUO = _G.QuestUtilsOverrides
     if QUO and QUO.GetQuestTagText then
@@ -532,6 +532,7 @@ local function QuestTip(self)
     if not q then return end
     GameTooltip:SetOwner(self, OnRight() and "ANCHOR_LEFT" or "ANCHOR_RIGHT")
     GameTooltip:SetText(q.title or "", 1, 0.82, 0, 1, true)
+    if Db.IsElite(q.id) then GameTooltip:AddLine(L.QUESTS_ELITE_TIP, 1, 0.35, 0.78, true) end
     local w = q.where
     if w and w.name and w.kind == "goal" then GameTooltip:AddLine(L.TRACKER_NEAREST:format(w.name), 1, 1, 1, true) end
     local zone = w and Where.Zone(w)
@@ -599,9 +600,12 @@ local function FillQuest(b, q, now, stripe)
     b.dist:SetText(DistText(q))
     local dw = math.min(120, math.max(0, math.ceil(b.dist:GetStringWidth())))
     b.dist:SetWidth(dw + 2)
-    local tag = Tag(q)
+    -- (élite : le mot en rose vif, à la place de « (Élite) » en gris du jeu)
+    local elite = Db.EliteTag(q.id)
+    local tag = not elite and Tag(q)
+    tag = elite or (tag and (UI.Hex("textDim") .. tag .. "|r"))
     b.title:SetWidth(cw - 12 - dw - (dw > 0 and 8 or 0))
-    b.title:SetText(Prefix(q) .. (q.title or "") .. (tag and (" " .. UI.Hex("textDim") .. tag .. "|r") or ""))
+    b.title:SetText(Prefix(q) .. (q.title or "") .. (tag and (" " .. tag) or ""))
     local h = 3 + math.max(12, b.title:GetStringHeight() or 12)
     local k = 0
     b.timer = nil

@@ -396,6 +396,8 @@ ns.AddLocale("esES", {
     QUESTS_NONE = "No hay misiones en tu registro.",
     QUESTS_NONE_FOUND = "Ninguna misión coincide.",
     QUESTS_LEVEL = "nivel %d",
+    QUESTS_ELITE = "Élite",
+    QUESTS_ELITE_TIP = "Misión de élite: enemigos duros, mejor en grupo.",
     QUESTS_DONE = "Completada",
     QUESTS_TRACK = "Seguir",
     QUESTS_UNTRACK = "Dejar de seguir",
@@ -998,5 +1000,6 @@ ns.AddLocale("esES", {
     WHATSNEW_MMIR_1_4_1 = "• |cffffd100Las caminatas vuelven a seguir el terreno|r: la 1.4.0 había perdido la cuadrícula de marcha, y cada caminata iba en línea recta por encima del relieve. La cuadrícula vuelve, con el portal y el tranvía.\n• |cffffd100Las caminatas largas|r se calculan enteras en lugar de volver a una línea recta.\n• |cffffd100Los campamentos de la otra facción están cerrados|r: sus ciudades y campamentos, también los que no tienen maestro de vuelo. Una ruta solo entra si sales de ahí o vas ahí; si no hay otro camino, el panel del trayecto lo dice en rojo.",
     WHATSNEW_MMIR_1_4_2 = "• |cffffd100Los objetos de misión en el seguimiento|r: una misión con un objeto que usar (una antorcha, un vial...) tiene su casilla junto a su título. Un clic lo usa.\n• |cffffd100En el lado que elijas|r: pestaña Misiones, apartado Objetos de misión: hacia el centro de la pantalla, a la izquierda o a la derecha del seguimiento. En combate, el seguimiento mantiene su orden para que las casillas sigan junto a sus misiones.",
     WHATSNEW_MMIR_1_4_3 = "• |cffffd100El mapa reducido se mueve|r: mantén el clic izquierdo en su lista de misiones y arrastra, fuera de combate. Conserva su sitio; |cffffd100/mmir carte replacer|r lo devuelve adonde lo pone el juego.",
+    WHATSNEW_MMIR_1_4_4 = "• |cffffd100Las misiones de élite se distinguen|r: la palabra |cffff5ac8Élite|r, en rosa vivo, sigue a su título en el seguimiento, la lista de misiones del mapa, la ficha de una misión y las descripciones de los iconos de misión (también las misiones por aceptar).",
     WHATSNEW_MMIR_1_3_2 = "• En |cffffd100la lista de misiones del mapa|r, las pestañas ya no salen cortadas (|cffffd100Por zona|r, |cffffd100Las más cercanas|r).\n• Cada misión de la lista tiene |cffffd100una casilla|r al inicio de su línea, dorada si la misión se sigue: un clic en ella, o |cffffd100RB|r con el mando, la sigue o deja de seguirla.\n• |cffffd100Los mandos de PlayStation|r se reconocen solos (Iconos de botones en Automático), y View muestra el botón Share / Create en vez de una flecha de volver.\n• |cffffd100M cierra el mapa|r con la propia cruz del mapa: el apuntado con el mando ya no se bloquea después.",
 })

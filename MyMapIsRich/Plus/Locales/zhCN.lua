@@ -396,6 +396,8 @@ ns.AddLocale("zhCN", {
     QUESTS_NONE = "你的任务日志中没有任务。",
     QUESTS_NONE_FOUND = "没有符合的任务。",
     QUESTS_LEVEL = "等级 %d",
+    QUESTS_ELITE = "精英",
+    QUESTS_ELITE_TIP = "精英任务：敌人强大，最好组队完成。",
     QUESTS_DONE = "已完成",
     QUESTS_TRACK = "追踪",
     QUESTS_UNTRACK = "取消追踪",
@@ -998,5 +1000,6 @@ ns.AddLocale("zhCN", {
     WHATSNEW_MMIR_1_4_1 = "• |cffffd100步行路线重新贴合地形|r：1.4.0 丢失了步行网格，每段步行都直线越过山地。网格已恢复，传送门和地铁也回来了。\n• |cffffd100长距离步行|r现在完整计算，不再退回直线。\n• |cffffd100另一阵营的营地已封闭|r：其城镇和营地，包括没有飞行管理员的。只有从那里出发或前往那里时路线才会进入；若别无他路，行程面板会以红色提示。",
     WHATSNEW_MMIR_1_4_2 = "• |cffffd100追踪栏中的任务物品|r：有可使用物品（火把、药瓶...）的任务，标题旁会显示它的按钮，点击即可使用。\n• |cffffd100放在你选的一侧|r：任务标签页的任务物品一栏，可选靠屏幕中央、追踪栏左侧或右侧。战斗中追踪栏保持原有顺序，按钮始终留在对应任务旁边。",
     WHATSNEW_MMIR_1_4_3 = "• |cffffd100缩小的地图可以移动了|r：非战斗中，在任务列表上按住左键拖动即可。位置会被记住；|cffffd100/mmir carte replacer|r 将其放回游戏默认位置。",
+    WHATSNEW_MMIR_1_4_4 = "• |cffffd100精英任务一目了然|r：在追踪栏、地图的任务列表、任务详情和任务图标的提示中（包括可接的任务），标题后会显示亮粉色的|cffff5ac8精英|r字样。",
     WHATSNEW_MMIR_1_3_2 = "• |cffffd100地图的任务列表|r中，标签名不再被截断（|cffffd100按区域|r、|cffffd100最近的|r）。\n• 列表中每个任务的行首都有|cffffd100一个方框|r，任务被追踪时为金色：点击它，或按手柄的 |cffffd100RB|r，即可追踪或取消追踪。\n• |cffffd100PlayStation 手柄|r会被自动识别（按键图标：自动），View 显示 Share / Create 键，而不再是返回箭头。\n• |cffffd100M 通过地图自己的关闭按钮关闭地图|r：之后手柄选择目标不再被阻止。",
 })

@@ -4,6 +4,9 @@ absentes du jeu, effort de guerre d'Ahn'Qiraj, invasion) et ses quêtes de fête
 (Database/Corrections/Holidays/quests/*.lua). Ces fichiers sont dans l'addon Questie
 (https://github.com/Questie/Questie, même licence que QuestieDB : copie permise sous
 GPLv3), pas dans QuestieDB.
+S'y ajoutent les étiquettes que Questie corrige (Database/Corrections/
+questTagInfoCorrections.lua : élite, donjon, raid, JcJ... là où le jeu se trompe ;
+ailleurs, l'addon demande au jeu).
 
 Rien n'est exécuté : chaque ligne « [id] = valeur, » est lue comme une donnée, et sa
 valeur évaluée par une petite grammaire fermée (true, false, not, and, or, parenthèses,
@@ -12,6 +15,7 @@ la verrait sur Forever (contenu Era, Questie.IsForever). Une valeur hors de cett
 grammaire est laissée de côté et comptée.
 
     hidden, skipped = questie_hidden(dossier)   # { id de quête : raison }, nombre ignoré
+    tags, skipped = questie_tags(dossier)       # { id de quête : étiquette (1 élite, 81 donjon...) }
 """
 
 import json
@@ -25,6 +29,7 @@ RAW = "https://raw.githubusercontent.com/Questie/Questie/%s/%s"
 CONTENTS = "https://api.github.com/repos/Questie/Questie/contents/%s?ref=%s"
 BLACKLIST = "Database/Corrections/QuestieQuestBlacklist.lua"
 HOLIDAYS = "Database/Corrections/Holidays/quests"
+TAGS = "Database/Corrections/questTagInfoCorrections.lua"
 HEADERS = {"User-Agent": "build-quests"}
 
 
@@ -35,17 +40,21 @@ def _get(url, as_json=False):
 
 
 def fetch(source):
-    """La liste noire et les fêtes de la dernière version de Questie, dans source/Questie-<version>/."""
+    """La liste noire, les fêtes et les étiquettes de la dernière version de Questie, dans
+    source/Questie-<version>/."""
     tag = _get(RELEASES, True)["tag_name"]           # (ex. « bundle/v12.14.0+v1.1.6 »)
     version = re.search(r"(\d+\.\d+\.\d+)", tag).group(1)
     ref = urllib.parse.quote(tag, safe="")
     dest = os.path.join(source, "Questie-%s" % version)
     if os.path.exists(os.path.join(dest, *BLACKLIST.split("/"))):
-        print("déjà là : %s" % dest)
-        return dest
-    print("téléchargement de la liste noire de Questie %s" % tag)
-    files = [BLACKLIST, "LICENSE.md"] + [
-        f["path"] for f in _get(CONTENTS % (HOLIDAYS, ref), True) if f["name"].endswith(".lua")]
+        files = [p for p in (TAGS,) if not os.path.exists(os.path.join(dest, *p.split("/")))]
+        if not files:
+            print("déjà là : %s" % dest)
+            return dest
+    else:
+        print("téléchargement de la liste noire de Questie %s" % tag)
+        files = [BLACKLIST, TAGS, "LICENSE.md"] + [
+            f["path"] for f in _get(CONTENTS % (HOLIDAYS, ref), True) if f["name"].endswith(".lua")]
     for path in files:
         out = os.path.join(dest, *path.split("/"))
         os.makedirs(os.path.dirname(out), exist_ok=True)
@@ -204,3 +213,22 @@ def questie_hidden(folder):
             for qid in re.findall(r"tinsert\(\s*eventQuests\s*,\s*\{\s*\"[^\"]*\"\s*,\s*(\d+)", f.read()):
                 hidden.setdefault(int(qid), "fête")
     return hidden, skipped
+
+
+# ---------------------------------------------------------------------------
+# Les étiquettes : { id, l10n("Elite") } lu comme son id, la condition par la grammaire
+# ---------------------------------------------------------------------------
+TAG_VALUE = re.compile(r"\{\s*(\d+)\s*,\s*l10n\(\s*\"[^\"]*\"\s*\)\s*\}")
+
+
+def questie_tags(folder):
+    """{ id de quête : étiquette } telle que Questie la corrige sur Forever (1 élite, 41 JcJ,
+    62 raid, 81 donjon...), et le nombre de valeurs ignorées ; {} sans le fichier."""
+    path = os.path.join(folder, *TAGS.split("/"))
+    if not os.path.exists(path):
+        return {}, 0
+    with open(path, encoding="utf-8") as f:
+        lines = [TAG_VALUE.sub(r"\1", line) for line in f.read().split("\n")]
+    values, skipped = _entries(lines)
+    tags = {qid: v for qid, v in values.items() if isinstance(v, int) and not isinstance(v, bool) and v > 0}
+    return tags, skipped

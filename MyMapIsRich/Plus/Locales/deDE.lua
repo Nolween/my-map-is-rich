@@ -396,6 +396,8 @@ ns.AddLocale("deDE", {
     QUESTS_NONE = "Keine Quest in deinem Log.",
     QUESTS_NONE_FOUND = "Keine Quest passt.",
     QUESTS_LEVEL = "Stufe %d",
+    QUESTS_ELITE = "Elite",
+    QUESTS_ELITE_TIP = "Elitequest: zähe Gegner, besser in einer Gruppe.",
     QUESTS_DONE = "Abgeschlossen",
     QUESTS_TRACK = "Verfolgen",
     QUESTS_UNTRACK = "Nicht verfolgen",
@@ -998,5 +1000,6 @@ ns.AddLocale("deDE", {
     WHATSNEW_MMIR_1_4_1 = "• |cffffd100Fußwege folgen wieder dem Gelände|r: 1.4.0 hatte das Wegenetz verloren, und jeder Fußweg ging in gerader Linie über die Berge. Das Netz ist zurück, samt Portal und Bahn.\n• |cffffd100Lange Fußwege|r werden ganz berechnet, statt auf eine gerade Linie zurückzufallen.\n• |cffffd100Lager der anderen Fraktion sind gesperrt|r: ihre Städte und Lager, auch die ohne Flugmeister. Eine Route führt nur hinein, wenn du dort startest oder hinwillst; gibt es keinen anderen Weg, sagt es das Reisefenster in Rot.",
     WHATSNEW_MMIR_1_4_2 = "• |cffffd100Questgegenstände im Tracker|r: Eine Quest mit einem benutzbaren Gegenstand (eine Fackel, eine Phiole...) hat sein Feld neben ihrem Titel. Ein Klick benutzt ihn.\n• |cffffd100Auf der Seite deiner Wahl|r: Reiter Quests, Bereich Questgegenstände: zur Bildschirmmitte, links oder rechts vom Tracker. Im Kampf behält der Tracker seine Reihenfolge, damit die Felder neben ihren Quests bleiben.",
     WHATSNEW_MMIR_1_4_3 = "• |cffffd100Die kleine Karte lässt sich verschieben|r: Halte die linke Maustaste auf ihrer Questliste gedrückt und ziehe, außerhalb des Kampfes. Sie behält ihren Platz; |cffffd100/mmir carte replacer|r setzt sie dorthin zurück, wo das Spiel sie platziert.",
+    WHATSNEW_MMIR_1_4_4 = "• |cffffd100Elitequests fallen auf|r: Das Wort |cffff5ac8Elite|r folgt in leuchtendem Rosa ihrem Titel, im Tracker, in der Questliste der Karte, auf der Seite einer Quest und in den Tooltips der Questsymbole (auch bei annehmbaren Quests).",
     WHATSNEW_MMIR_1_3_2 = "• In |cffffd100der Questliste der Karte|r sind die Reiter nicht mehr abgeschnitten (|cffffd100Nach Gebiet|r, |cffffd100Die nächsten|r).\n• Jede Quest der Liste hat |cffffd100ein Kästchen|r am Anfang der Zeile, golden, wenn die Quest verfolgt wird: Ein Klick darauf oder |cffffd100RB|r am Gamepad verfolgt sie oder nicht mehr.\n• |cffffd100PlayStation-Gamepads|r werden von selbst erkannt (Tastensymbole auf Automatisch), und View zeigt die Share-/Create-Taste statt eines Zurück-Pfeils.\n• |cffffd100M schließt die Karte|r über ihr eigenes Schließen-Kreuz: Das Anvisieren mit dem Gamepad wird danach nicht mehr blockiert.",
 })

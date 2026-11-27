@@ -396,6 +396,8 @@ ns.AddLocale("ptBR", {
     QUESTS_NONE = "Nenhuma missão no seu registro.",
     QUESTS_NONE_FOUND = "Nenhuma missão corresponde.",
     QUESTS_LEVEL = "nível %d",
+    QUESTS_ELITE = "Elite",
+    QUESTS_ELITE_TIP = "Missão de elite: inimigos fortes, melhor em grupo.",
     QUESTS_DONE = "Concluída",
     QUESTS_TRACK = "Seguir",
     QUESTS_UNTRACK = "Parar de seguir",
@@ -998,5 +1000,6 @@ ns.AddLocale("ptBR", {
     WHATSNEW_MMIR_1_4_1 = "• |cffffd100As caminhadas voltam a seguir o terreno|r: a 1.4.0 tinha perdido a grade de caminhada, e cada caminhada passava em linha reta por cima do relevo. A grade voltou, com o portal e o metrô.\n• |cffffd100As caminhadas longas|r são calculadas por inteiro em vez de cair numa linha reta.\n• |cffffd100Os acampamentos da outra facção estão fechados|r: suas cidades e acampamentos, também os sem mestre de voo. Uma rota só entra se você sai de lá ou vai para lá; se não houver outro caminho, o painel do trajeto diz isso em vermelho.",
     WHATSNEW_MMIR_1_4_2 = "• |cffffd100Os itens de missão no rastreador|r: uma missão com um item a usar (uma tocha, um frasco...) tem o seu botão ao lado do título. Um clique o usa.\n• |cffffd100Do lado que você quiser|r: aba Missões, seção Itens de missão: para o centro da tela, à esquerda ou à direita do rastreador. Em combate, o rastreador mantém a ordem para que os botões fiquem ao lado das suas missões.",
     WHATSNEW_MMIR_1_4_3 = "• |cffffd100O mapa reduzido se move|r: segure o clique esquerdo na lista de missões e arraste, fora de combate. Ele guarda o lugar; |cffffd100/mmir carte replacer|r o devolve para onde o jogo o coloca.",
+    WHATSNEW_MMIR_1_4_4 = "• |cffffd100Missões de elite se destacam|r: a palavra |cffff5ac8Elite|r, em rosa vivo, segue o título no rastreador, na lista de missões do mapa, na ficha de uma missão e nas dicas dos ícones de missão (incluindo as missões a pegar).",
     WHATSNEW_MMIR_1_3_2 = "• Na |cffffd100lista de missões do mapa|r, as abas não aparecem mais cortadas (|cffffd100Por zona|r, |cffffd100As mais próximas|r).\n• Cada missão da lista tem |cffffd100uma caixa|r no início da linha, dourada quando a missão é seguida: um clique nela, ou |cffffd100RB|r no controle, segue a missão ou para de segui-la.\n• |cffffd100Os controles de PlayStation|r são reconhecidos sozinhos (Ícones dos botões em Automático), e View mostra o botão Share / Create em vez de uma seta de voltar.\n• |cffffd100M fecha o mapa|r pelo próprio X do mapa: a mira com o controle não fica mais bloqueada depois.",
 })

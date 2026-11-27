@@ -24,7 +24,8 @@ Ce qui est gardé :
     avec leur sous-titre traduit), les monstres rares et les boîtes aux lettres :
     le calque Citadins (Plus/Layers/Townsfolk.lua) et « Le plus proche ».
 S'y ajoute la liste des quêtes que Questie ne propose jamais sur Forever (sa liste
-noire et ses fêtes, lues comme des données : questie_hidden.py).
+noire et ses fêtes), et les étiquettes qu'il corrige (élite, donjon, raid : là où le
+jeu se trompe), lues comme des données : questie_hidden.py.
 Les corrections à nous sont dans forever_fixes.json (une entrée de l'outil,
 éditée à la main) et s'appliquent à chaque génération.
 
@@ -213,6 +214,12 @@ def main():
     blacklist, skipped = questie_hidden.questie_hidden(qfolder)
     print("liste noire de Questie (%s) : %d quêtes, %d valeurs illisibles"
           % (os.path.basename(qfolder), len(blacklist), skipped))
+    # (les étiquettes que Questie corrige : élite, donjon, raid... ; ailleurs, le jeu le dit)
+    tags, skipped = questie_hidden.questie_tags(qfolder)
+    if not tags:
+        raise SystemExit("pas d'étiquettes de Questie (%s) : lancer avec --fetch" % questie_hidden.TAGS)
+    print("étiquettes de Questie : %d quêtes (%d élites), %d valeurs illisibles"
+          % (len(tags), sum(1 for t in tags.values() if t == 1), skipped))
 
     def react_object(fid):
         eg = db.faction_enemy.get(fid) if fid else None
@@ -265,7 +272,7 @@ def main():
                     ids(r.get(16)) or None, r.get(27) or None, skill or None, lua_list(r.get(19)) or None,
                     never or None, None, r.get(25) or None, r.get(30) or None, r.get(33) or None, r.get(34) or None,
                     ids(r.get(13)) or None, r.get(22) or None, ids(r.get(28)) or None, r.get(36) or None,
-                    lua_list(r.get(20)) or None, bool((r.get(24) or 0) & 1) or None],
+                    lua_list(r.get(20)) or None, bool((r.get(24) or 0) & 1) or None, tags.get(qid)],
             "trigger": trigger,
         }
         for ref in starts + ends + [g for goal in goals for g in goal]:
@@ -278,10 +285,11 @@ def main():
         if qid in quests or qid in hidden:
             continue
         starts, ends = [int(x) for x in a.get("starts", [])], [int(x) for x in a.get("ends", [])]
-        rec = [None] * 28
+        rec = [None] * 29
         rec[0], rec[1], rec[2] = a.get("title") or "?", a.get("level") or 0, a.get("minLevel") or 0
         rec[3], rec[4], rec[5], rec[6] = 0, a.get("races") or 0, a.get("classes") or 0, 0
         rec[7], rec[8] = starts or None, ends or None
+        rec[28] = tags.get(qid)
         quests[qid] = {"rec": rec, "trigger": {}}
         for ref in starts + ends:
             (need_npc if ref > 0 else need_obj).add(abs(ref))
@@ -429,7 +437,8 @@ def main():
     w("--     noire et fêtes de Questie, ou aucun donneur dans le monde), 18 lieux à explorer, 19 quête à avoir en")
     w("--     cours, 20 sort à connaître (< 0 : à ne pas connaître), 21 quête qui la retire une fois faite,")
     w("--     22 quête à avoir prise ou faite, 23 prérequis (une parmi), 24 quête suivante, 25 quêtes qui y mènent,")
-    w("--     26 quête qui la bloque tant qu'elle est en cours, 27 réputation maxi, 28 répétable }")
+    w("--     26 quête qui la bloque tant qu'elle est en cours, 27 réputation maxi, 28 répétable,")
+    w("--     29 étiquette corrigée par Questie (1 élite, 41 JcJ, 62 raid, 81 donjon... ; sans elle, le jeu la dit) }")
 
     w("--     donneurs, preneurs : PNJ (id > 0) et objets du monde (id < 0) ; cibles : { { id, id qui en donne")
     w("--     aussi le crédit, ... } } ; prérequis (toutes) : id < 0, à avoir faite sans regarder ses exclusives ;")

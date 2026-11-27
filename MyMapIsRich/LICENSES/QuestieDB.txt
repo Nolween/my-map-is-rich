@@ -4,7 +4,8 @@ Cheeq, TechnoHunter, Yttrium and everyone who sends data with QuestieTrace. The 
 copying it under the GPLv3 (the LICENSE file next to the toc); its licensing notice is below, as it is.
 The list of quests never offered on Forever (removed, duplicated, holiday and war effort quests) is
 read from Questie's own blacklist (Database/Corrections/QuestieQuestBlacklist.lua and Holidays/,
-https://github.com/Questie/Questie), under the same licensing.
+https://github.com/Questie/Questie), under the same licensing, and so are the quest tags it
+corrects (elite, dungeon, raid: Database/Corrections/questTagInfoCorrections.lua).
 My Map Is Rich takes ids, levels, names, spawn positions and quest relations from it; it is not
 Questie, and does not use its name or logo. Drop chances are not taken (QuestieDB has them from
 Wowhead). The game content (names, titles) belongs to Blizzard Entertainment.

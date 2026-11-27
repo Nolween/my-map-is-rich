@@ -14,7 +14,7 @@ La base des quêtes de My Map Is Rich (`MyMapIsRich/Plus/Data/Quests.lua`) est u
    ```
    py tools/quests/build_quests.py --fetch
    ```
-   L'outil télécharge la dernière archive Forever des versions GitHub de QuestieDB et l'extrait dans `tools/quests/source/QuestieDB-<version>/`, un dossier ignoré par git. Il prend aussi la liste noire et les fêtes de la dernière version de Questie, dans `tools/quests/source/Questie-<version>/`. Ces fichiers sont **lus comme des données par `tools/quests/questie_hidden.py`, jamais exécutés**. Il régénère ensuite le fichier et affiche :
+   L'outil télécharge la dernière archive Forever des versions GitHub de QuestieDB et l'extrait dans `tools/quests/source/QuestieDB-<version>/`, un dossier ignoré par git. Il prend aussi la liste noire, les fêtes et les étiquettes corrigées (élite, donjon, raid : `questTagInfoCorrections.lua`) de la dernière version de Questie, dans `tools/quests/source/Questie-<version>/`. Ces fichiers sont **lus comme des données par `tools/quests/questie_hidden.py`, jamais exécutés**. Il régénère ensuite le fichier et affiche :
    - le nombre de quêtes, de PNJ, d'objets du monde, d'objets de quête et de points ;
    - les points hors des cartes connues ;
    - la taille du fichier ;
@@ -26,6 +26,7 @@ La base des quêtes de My Map Is Rich (`MyMapIsRich/Plus/Data/Quests.lua`) est u
    - La syntaxe Lua 5.1 du fichier généré. Il n'y a pas de Lua sur ce poste : installe `lupa` dans un environnement virtuel du dossier temporaire et compile le fichier avec `loadstring`, sans l'exécuter.
    - Les points « hors des cartes connues » doivent rester à 0 ou presque. Sinon, QuestieDB a ajouté des zones absentes de `support/Forever/Zones/areaIdToUiMapId.lua`, et il faut le signaler.
    - La ligne « liste noire de Questie : N quêtes, M valeurs illisibles ». M doit rester à 0. Sinon, une expression nouvelle est apparue dans `QuestieQuestBlacklist.lua` : montre-la et propose de l'ajouter à la grammaire de `questie_hidden.py`, sans jamais exécuter le fichier.
+   - La ligne « étiquettes de Questie : N quêtes (E élites), M valeurs illisibles ». M doit rester à 0 (même conduite que pour la liste noire, dans `questTagInfoCorrections.lua`), et E autour de 630 pour la 12.15.0.
    - La taille doit rester raisonnable, environ 2,5 Mo pour la 1.1.6. Signale tout saut de plus de 20 %.
    - Si le format de QuestieDB a changé (une erreur du décodeur `tools/quests/questiedb.py`, une clé `X-…` absente, des champs déplacés dans `src/meta/*Meta.lua` de l'archive), arrête-toi, explique ce qui a changé et propose la correction du décodeur, sans rien publier.
 4. **La licence.** Compare le `LICENSE.md` de l'archive avec la fin de `MyMapIsRich/LICENSES/QuestieDB.txt`. S'il a changé, montre ce qui diffère et demande avant de continuer : la copie de leurs données repose sur leur accord sous GPLv3.

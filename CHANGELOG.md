@@ -1,5 +1,15 @@
 # Journal des versions — My Map Is Rich
 
+## 1.4.4
+
+**Les quêtes élites se voient.** Jusqu'ici, rien ne les distinguait des autres dans les listes de quêtes.
+
+Après la mise à jour, un `/reload` suffit.
+
+- **Le mot « Élite », en rose vif**, suit le titre d'une quête élite : dans le suivi des quêtes (à la place du « (Élite) » gris du jeu ; son info-bulle ajoute « des ennemis coriaces, mieux vaut un groupe »), dans la liste des quêtes de la carte (juste avant la progression : un titre trop long se coupe avant lui), dans la fiche d'une quête (avant le niveau, et sur les étapes élites de sa chaîne).
+- **Avant même de la prendre** : les info-bulles des icônes de quêtes sur la carte, la minicarte et les PNJ le disent, comme la fiche d'une quête à prendre.
+- Les quêtes de donjon et de raid gardent leur étiquette. Ce qui est élite vient du jeu, corrigé par la liste de Questie là où le jeu se trompe (333 quêtes de la base).
+
 ## 1.4.3
 
 **La carte réduite se déplace.** Une demande venue d'un commentaire sur CurseForge.
