@@ -19,11 +19,11 @@ ns.WhatsNew = W
 -- ancienne (clé du texte dans les Locales). À chaque version : on l'ajoute en
 -- tête, et au-delà de 5, on retire la dernière.
 local NOTES = {
+    { version = "1.4.2", text = "WHATSNEW_MMIR_1_4_2" },
     { version = "1.4.1", text = "WHATSNEW_MMIR_1_4_1" },
     { version = "1.4.0", text = "WHATSNEW_MMIR_1_4_0" },
     { version = "1.3.2", text = "WHATSNEW_MMIR_1_3_2" },
     { version = "1.3.1", text = "WHATSNEW_MMIR_1_3_1" },
-    { version = "1.3.0", text = "WHATSNEW_MMIR_1_3_0" },
 }
 
 

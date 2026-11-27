@@ -112,6 +112,7 @@ Tout texte passe par `L` et existe dans les **10 langues**.
   - une ligne sur deux rayée (`UI.RowBackground`), la quête de l'itinéraire avec la barre d'or (`UI.MarkBar`), celle que le jeu suit en priorité sur le fond « choisi » ; survol : le voile d'or à 7 % ; une quête masquée qu'on montre : à 50 % ;
   - en bas, « 3 quêtes masquées » en gris, cliquable ; une liste vide dit pourquoi, en gris.
 - **La hauteur suit la liste**, jusqu'à 60 % de l'écran et jamais sous son bas ; au-delà, elle défile.
+- **Les objets de quête** (`UI/TrackerItems.lua`) : des cases d'action de 26 px, **hors du panneau**, à 4 px de son bord (celui tourné vers le centre de l'écran, ou le côté choisi), le haut au niveau du titre de leur quête, à 2 px. Une case n'est montrée que si sa quête est entière dans la partie visible de la liste. Protégées : posées sur `UIParent` par coordonnées, jamais ancrées au panneau (il deviendrait protégé lui aussi).
 - **L'ordre ne bouge pas sous la souris**, ni pour un écart de moins de 30 yd : une liste qui se range toute seule ne doit pas sauter sous le clic.
 - Le menu d'une quête est celui de la charte (`UI.ShowMenu`), posé contre le panneau, du côté de l'écran où il y a la place.
 
@@ -172,7 +173,7 @@ Tout est posé sur la vue de la carte (`UI/MapChrome.lua`, `UI/Layers.lua`), au-
 | Menu contextuel | `UI.ShowMenu(éléments, x, y, titre)`, `UI.HideMenu()` | 250 px, fond `dialog`, une ligne de titre grise, des lignes de 26 px (libellé doré, raccourci gris à droite), un trait doré avant un groupe ; survol en voile doré ; se ferme au clic ailleurs. |
 | Bande sur la carte | `UI.Overlay(parent)`, `UI.PaintOverlay(cadre)` | Fond de la fenêtre, liseré `windowEdge`, trait noir dedans, ombre portée. |
 | Bouton-icône à allumer | `UI.IconToggle(parent, taille, texture, atlas)` + `:SetOn(true / false / nil)` | Allumé : dégradé et liseré dorés, pastille verte (sauf `b.noDot`) ; éteint : icône à 40 % ; `nil` : un simple bouton. |
-| Case d'action | `UI.ActionSlot(parent, taille, nom, protégé, recharge)` | Un carré sur le fond `dialog`, liseré `edgeLight`, l'icône rognée de son bord, survol en voile doré ; protégé (`SecureActionButtonTemplate`) : créé et changé hors combat seulement. Les boutons de la quête choisie (objet, cible). |
+| Case d'action | `UI.ActionSlot(parent, taille, nom, protégé, recharge)` | Un carré sur le fond `dialog`, liseré `edgeLight`, l'icône rognée de son bord, survol en voile doré ; protégé (`SecureActionButtonTemplate`) : créé et changé hors combat seulement. Les boutons de la quête choisie (objet, cible), les objets du suivi des quêtes (26 px). |
 | Icône dans un bouton | `UI.SetIcon(texture, chemin, atlas)` | L'atlas du jeu s'il existe, sinon la texture (une icône d'objet est rognée de son bord). |
 | Choix du thème | `UI.ThemeSwatches(parent, x, y)`, `.onRefresh(clé)` | Comme dans My Guild Is Rich et My Gamepad Is Rich : le libellé « Thème » en blanc, le nom du thème choisi en or à sa droite, ce qu'il change en gris, puis une pastille de 44 × 24 par thème (52 px d'écart), un dégradé de ses couleurs, liseré noir ; la choisie cerclée d'or, les autres de gris ; son nom en info-bulle. |
 | Pastille de coordonnées | `UI.Pill(parent)` + `:Set(libellé, valeur, précision)` | Fond noir à 80 %, liseré `windowInner`, libellé doré, valeur blanche. |

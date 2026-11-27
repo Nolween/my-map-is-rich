@@ -26,6 +26,10 @@
 -- des quêtes, UI/QuestPanel.lua, fait le même travail, et à la manette).
 -- Hors de la carte, il ne prend aucun bouton de la manette. Il ne crée aucun
 -- cadre protégé : il reste là en combat (réglage « Masquer en combat »).
+-- Les objets de quête en face des quêtes sont des boutons protégés posés à
+-- côté de lui, sans ancre vers lui (UI/TrackerItems.lua) : il leur dit où sont
+-- les quêtes (TR.Shown, le message TRACKER_LAYOUT) et, en combat, tant qu'il y
+-- en a, il garde l'ordre de sa liste (ils ne peuvent pas la suivre).
 --
 -- LE SUIVI DU JEU (une exception à « rien n'est écrit dans les cadres de
 -- Blizzard », voulue, comme celle de Map/View.lua) : tant que le nôtre est
@@ -457,6 +461,7 @@ local function SavePos()
     Opt().trackerPos = { "TOPRIGHT", math.floor(right - UIParent:GetRight() + 0.5), math.floor(top - UIParent:GetTop() + 0.5) }
     frame:ClearAllPoints()
     frame:SetPoint("TOPRIGHT", UIParent, "TOPRIGHT", Opt().trackerPos[2], Opt().trackerPos[3])
+    ns.Fire("TRACKER_LAYOUT")
 end
 
 local function Place()
@@ -465,6 +470,7 @@ local function Place()
     local pos = Opt().trackerPos
     if type(pos) ~= "table" then pos = DEFAULT_POS end
     frame:SetPoint("TOPRIGHT", UIParent, "TOPRIGHT", pos[2] or DEFAULT_POS[2], pos[3] or DEFAULT_POS[3])
+    ns.Fire("TRACKER_LAYOUT")
 end
 
 function TR.ResetPosition()
@@ -487,6 +493,7 @@ local function OnRight()
     local x = frame and frame:GetCenter()
     return x and x > UIParent:GetWidth() / 2
 end
+TR.OnRight = OnRight
 
 -- Le menu d'une quête (un clic droit)
 local function Menu(b, q)
@@ -843,7 +850,27 @@ local EMPTY = {
     near = "TRACKER_EMPTY_NEAR", dungeon = "TRACKER_EMPTY_DUNGEON",
 }
 
+-- (l'ordre gardé : la souris sur le panneau ; en combat, tant que des objets
+-- de quête sont en face de leurs quêtes, UI/TrackerItems.lua)
+local function Held()
+    if frame:IsMouseOver() then return true end
+    return InCombatLockdown() and ns.TrackerItems ~= nil and ns.TrackerItems.Any()
+end
+
+-- Ce que montre le suivi, pour les objets de quête (UI/TrackerItems.lua) : le
+-- cadre (s'il est là), sa liste, et les quêtes montrées { q, block }
+function TR.Shown()
+    return frame and frame:IsShown() and frame or nil, scroll, shownQuests
+end
+
+local Draw                   -- (juste dessous)
+
 function TR.Refresh()
+    Draw()
+    ns.Fire("TRACKER_LAYOUT")
+end
+
+Draw = function()
     Mute()
     if not Wanted() then
         if frame then frame:Hide() end
@@ -870,7 +897,7 @@ function TR.Refresh()
     LayoutFilters()
     scroll:Show()
 
-    local frozen = f:IsMouseOver() and next(rank) ~= nil
+    local frozen = Held() and next(rank) ~= nil
     pending = false
     ReadTimers()
     local super = C_SuperTrack and C_SuperTrack.GetSuperTrackedQuestID and Plain(Call(C_SuperTrack.GetSuperTrackedQuestID))
@@ -1000,7 +1027,7 @@ local function Tick()
         end
     end
     if not changed then return end
-    if frame:IsMouseOver() then
+    if Held() then
         pending = true
         return
     end

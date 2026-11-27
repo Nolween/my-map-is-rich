@@ -93,9 +93,10 @@ Depuis la 1.2.0, à droite de l'écran, **le suivi des quêtes de My Map Is Rich
 - **À rendre** en tête : à qui rendre la quête, et où ;
 - **des filtres** : Toutes, Suivies, Zone, Proches (moins de 800 yd) ; dans un donjon, ses quêtes seules ;
 - sous chaque quête, ses objectifs (celui qui avance s'allume d'or), le temps qui reste à une quête minutée, et **l'avancée du groupe** : ceux qui ont My Map Is Rich et la même quête (« Pam : 3/8 ») ;
-- un **clic** : l'itinéraire jusqu'au plus proche (encore un clic : annulé) ; **Maj+clic** : le lien dans la discussion ; **clic droit** : le menu (voir dans le journal, itinéraire, file, suivre, masquer du suivi, partager, lien).
+- un **clic** : l'itinéraire jusqu'au plus proche (encore un clic : annulé) ; **Maj+clic** : le lien dans la discussion ; **clic droit** : le menu (voir dans le journal, itinéraire, file, suivre, masquer du suivi, partager, lien) ;
+- **les objets de quête** : en face d'une quête qui a un objet à utiliser (une torche, une fiole…), sa case, sur le bord du suivi tourné vers le centre de l'écran (ou à gauche, ou à droite, au choix) ; un clic l'utilise. En combat, les cases ne peuvent pas bouger : la liste garde alors son ordre.
 
-Il reste en jeu et avec la carte réduite ; la carte plein écran le cache (sa liste des quêtes fait la même chose, à la manette aussi, et son menu peut masquer une quête du suivi). Ses réglages sont dans **l'onglet Quêtes** de `/mmir` (tri, filtre, opacité du fond, progrès du groupe, masquer en combat, verrouiller). Si le suivi d'**EllesmereUI** ou celui de **Questie** est actif, celui de My Map Is Rich s'efface et l'onglet Quêtes le dit, avec un bouton pour passer au nôtre.
+Il reste en jeu et avec la carte réduite ; la carte plein écran le cache (sa liste des quêtes fait la même chose, à la manette aussi, et son menu peut masquer une quête du suivi). Ses réglages sont dans **l'onglet Quêtes** de `/mmir` (tri, filtre, opacité du fond, progrès du groupe, masquer en combat, verrouiller, les objets de quête et leur côté). Si le suivi d'**EllesmereUI** ou celui de **Questie** est actif, celui de My Map Is Rich s'efface et l'onglet Quêtes le dit, avec un bouton pour passer au nôtre.
 
 
 ## Commandes

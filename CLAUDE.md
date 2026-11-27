@@ -46,7 +46,7 @@ Aucune chaîne en dur dans le code, même pour un message de discussion ou une i
 - Les clés gardent leur préfixe de rubrique : `HINT_`, `OPT_`, `TRAVEL_`, `HUD_`, `PLACES_`, `SHARE_`, `STATUS_`, `WHATSNEW_`…
 - Les noms du jeu (zones, PNJ, objets) viennent de l'API du jeu, déjà traduits ; on ne les met pas dans les Locales.
 - La longueur compte : l'allemand et le russe sont plus longs, le coréen et le chinois plus courts. Un bouton ou une colonne doit tenir en allemand.
-- **Les 10 langues ont toutes leurs clés** (1088, avec le guide de l'aide et le tutoriel). Pour compter, lire toutes les clés d'une ligne : les 8 langues en rangent souvent plusieurs par ligne. `enUS` et `frFR` ont plusieurs blocs `ns.AddLocale` : une clé redéfinie dans un bloc plus bas remplace la première, alors une clé ne s'écrit qu'une fois. Une clé que le code ne lit plus se retire des 10 fichiers.
+- **Les 10 langues ont toutes leurs clés** (1096, avec le guide de l'aide et le tutoriel). Pour compter, lire toutes les clés d'une ligne : les 8 langues en rangent souvent plusieurs par ligne. `enUS` et `frFR` ont plusieurs blocs `ns.AddLocale` : une clé redéfinie dans un bloc plus bas remplace la première, alors une clé ne s'écrit qu'une fois. Une clé que le code ne lit plus se retire des 10 fichiers.
 
 **Dans le `.toc`** : `## Notes` existe en anglais et en `Notes-xxXX` pour les 10 autres codes (`esMX` compris). Une fonction majeure ajoutée ou retirée se reporte dans les 11.
 

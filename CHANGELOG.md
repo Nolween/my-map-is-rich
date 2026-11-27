@@ -1,5 +1,16 @@
 # Journal des versions — My Map Is Rich
 
+## 1.4.2
+
+**Les objets de quête dans le suivi des quêtes, en face de leur quête.** Une idée venue d'un commentaire sur CurseForge.
+
+Après la mise à jour, **relance le jeu** (un `/reload` ne suffit pas : un fichier s'ajoute).
+
+- **Les objets de quête** : dans le suivi des quêtes à droite de l'écran, une quête qui a un objet à utiliser (une torche, une fiole…) a sa case en face de son titre. Un clic l'utilise, le temps de recharge s'y dessine, et le survol montre l'objet et sa quête. Une case n'apparaît que si sa quête est visible dans la liste.
+- **Du côté que tu veux** : dans l'onglet Quêtes de `/mmir`, la rubrique « Objets de quête » les place « Côté du centre » (le bord du suivi tourné vers le centre de l'écran, par défaut), « À gauche du suivi » ou « À droite du suivi ». « Montrer les objets de quête » les coupe.
+- **En combat**, le jeu ne laisse pas déplacer ces cases : tant qu'il y en a, la liste du suivi garde son ordre jusqu'à la fin du combat. Avec « Masquer en combat », elles partent avec le suivi.
+- À la manette, l'objet de la quête de l'itinéraire garde son raccourci (Raccourcis > My Map Is Rich).
+
 ## 1.4.1
 
 **Les chemins à pied suivent de nouveau le terrain, même longs, et ne passent plus par les camps de l'autre faction.**

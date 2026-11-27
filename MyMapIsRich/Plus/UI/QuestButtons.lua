@@ -84,18 +84,25 @@ local function Ordered()
     return list
 end
 
--- L'objet de quête à utiliser : { link, icon, quest }
-local function FindItem(list)
+-- L'objet à utiliser d'une quête du journal : { link, icon, itemID, quest },
+-- ou rien (aussi pour le suivi des quêtes : UI/TrackerItems.lua)
+function QB.ItemOf(id)
     local get = _G.GetQuestLogSpecialItemInfo
     if not get then return end
+    local index = C_QuestLog and C_QuestLog.GetLogIndexForQuestID and Plain(Call(C_QuestLog.GetLogIndexForQuestID, id))
+    index = index or (ns.Quests.Log.Quests()[id] or {}).index
+    if not index then return end
+    local link, icon = Call(get, index)
+    link, icon = Plain(link), Plain(icon)
+    if type(link) ~= "string" then return end
+    return { link = link, icon = icon, itemID = tonumber(link:match("item:(%d+)")), quest = id }
+end
+
+-- L'objet de quête à utiliser : celui de la première quête de la liste qui en a un
+local function FindItem(list)
     for _, id in ipairs(list) do
-        local index = C_QuestLog and C_QuestLog.GetLogIndexForQuestID and Plain(Call(C_QuestLog.GetLogIndexForQuestID, id))
-        index = index or (ns.Quests.Log.Quests()[id] or {}).index
-        if index then
-            local link, icon = Call(get, index)
-            link, icon = Plain(link), Plain(icon)
-            if type(link) == "string" then return { link = link, icon = icon, quest = id } end
-        end
+        local it = QB.ItemOf(id)
+        if it then return it end
     end
 end
 

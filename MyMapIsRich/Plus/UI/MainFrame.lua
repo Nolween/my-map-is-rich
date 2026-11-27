@@ -347,9 +347,16 @@ local function BuildQuests(page)
         use:SetText(TR() and TR().reload and L.TRACKER_RIVAL_RELOAD or L.TRACKER_RIVAL_USE)
     end
 
-    UI.Section(right, L.TRACKER_HELP_TITLE, 16, -150)
+    -- (les objets de quête en face de leurs quêtes : UI/TrackerItems.lua)
+    UI.Section(right, L.SET_TRACKER_ITEMS, 16, -150)
+    Option(right, "trackerItems", L.OPT_TRACKER_ITEMS, L.OPT_TRACKER_ITEMS_TIP, -182)
+    Cycle(right, "trackerItemsSide", L.OPT_TRACKER_ITEMS_SIDE, {
+        { "center", L.TRACKER_ITEMS_CENTER }, { "left", L.TRACKER_ITEMS_LEFT }, { "right", L.TRACKER_ITEMS_RIGHT },
+    }, -244)
+
+    UI.Section(right, L.TRACKER_HELP_TITLE, 16, -290)
     local help = UI.Text(right, "GameFontHighlight", L.TRACKER_HELP)
-    help:SetPoint("TOPLEFT", 20, -184)
+    help:SetPoint("TOPLEFT", 20, -324)
     help:SetPoint("RIGHT", right, "RIGHT", -16, 0)
     help:SetJustifyH("LEFT")
     help:SetJustifyV("TOP")
