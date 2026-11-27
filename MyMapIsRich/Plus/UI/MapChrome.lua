@@ -720,6 +720,10 @@ ns.On("MAP_SIZE", function()
     end)
 end)
 
+-- La carte réduite déplacée (tirée par la liste des quêtes : Map/View.lua) :
+-- la croix sécurisée la suit, hors combat
+ns.On("MAP_MOVED", function() PlaceClose() end)
+
 -- La carte du jeu gardée en fenêtre sous la nôtre (son réglage miniWorldMap,
 -- seulement lui, carte fermée et hors combat) : la carte réduite se pose
 -- dessus et la couvre (Map/PadView.lua) ; en plein écran, elle est couverte

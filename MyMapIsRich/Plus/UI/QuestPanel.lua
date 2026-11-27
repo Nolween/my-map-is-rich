@@ -1385,6 +1385,22 @@ end
 -- jusqu'au compte vide ; avec moins, le nom était coupé à deux lettres)
 local TAB_PAD = 24 + 12 + 4
 
+-- La carte réduite se tire par la liste (son fond, son en-tête, ses lignes) :
+-- tenir le clic gauche et glisser la déplace, hors combat (Map/View.lua). Une
+-- ligne tirée ne s'ouvre pas : dragged, lu par son clic. En plein écran,
+-- rien ne bouge
+local function Grip(f)
+    f:RegisterForDrag("LeftButton")
+    f:HookScript("OnMouseDown", function(self) self.dragged = false end)
+    f:SetScript("OnDragStart", function(self)
+        if ns.MapSmall() and ns.Map.StartMove(panel) then
+            self.dragged = true
+            GameTooltip:Hide()
+        end
+    end)
+    f:SetScript("OnDragStop", function() ns.Map.StopMove() end)
+end
+
 local function Tab(parent, text, key)
     local b = UI.NavButton(parent, 22)
     b:SetLevel(2)
@@ -1509,7 +1525,13 @@ local function Row(i)
     row.title:SetPoint("RIGHT", row.prog, "LEFT", -6, 0)
     row.title:SetJustifyH("LEFT")
     row.title:SetWordWrap(false)
+    Grip(row)
     row:SetScript("OnClick", function(self, button)
+        -- (la carte réduite qu'on vient de tirer par cette ligne : pas un clic)
+        if self.dragged then
+            self.dragged = false
+            return
+        end
         local it = self.item
         if not (it and it.quest) then return end
         local q = it.quest
@@ -1564,6 +1586,7 @@ local function Build(chrome)
     panel:SetWidth(WIDTH)
     panel.chrome = chrome
     panel:EnableMouse(true)
+    Grip(panel)
     panel:SetFrameLevel(chrome:GetFrameLevel() + 20)
     -- (l'en-tête : le titre, le nombre, le tri ; RT, la manette y entre)
     local title = UI.Text(panel, "GameFontNormalLarge", L.QUESTS_TITLE)

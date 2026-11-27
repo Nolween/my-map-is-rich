@@ -80,6 +80,17 @@ function M.Full() return M.On() end
 -- La carte posée réduite (une fenêtre) ou en plein écran
 function M.SetSmall(on) return Run(M.View.SetSmall, on and true or false) end
 
+-- La carte réduite tirée à la souris par grip (la liste des quêtes) : false
+-- si elle ne bouge pas (plein écran, en combat) ; lâchée ; rendue à la place
+-- que le jeu lui donne (Map/View.lua)
+function M.StartMove(grip)
+    if type(M.View.StartMove) ~= "function" then return false end
+    local ok, started = pcall(M.View.StartMove, grip)
+    return ok and started or false
+end
+function M.StopMove() return Run(M.View.StopMove) end
+function M.ResetPlace() return Run(M.View.ResetPlace) end
+
 -- L'interface manette de Forever est active
 function M.PadUI()
     return InputUtil and InputUtil.IsGamepadUIEnabled and InputUtil.IsGamepadUIEnabled() and true or false

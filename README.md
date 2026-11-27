@@ -27,7 +27,7 @@ Depuis la 0.2.0, M (ou le bouton carte de la manette) ouvre la carte **en plein 
 
 Carte ouverte en plein écran (hors combat), le personnage ne bouge pas : les touches de déplacement font glisser la carte. À la manette, le stick gauche non plus : tant que la carte n'a pas son curseur (la croix gauche du jeu le lui donne), la manette est dans tes quêtes, dès l'ouverture, et le stick y va de quête en quête. Carte réduite, il bouge comme d'habitude.
 
-À la souris : clic gauche choisir ou zoomer, clic droit dézoomer, molette zoom, glisser pour déplacer, Maj+clic itinéraire, Ctrl+clic épingle, Alt+clic le menu des actions, clic du milieu me localiser, Échap ou M fermer.
+À la souris : clic gauche choisir ou zoomer, clic droit dézoomer, molette zoom, glisser pour déplacer, Maj+clic itinéraire, Ctrl+clic épingle, Alt+clic le menu des actions, clic du milieu me localiser, Échap ou M fermer. La carte réduite se déplace en tirant sa liste des quêtes (clic gauche tenu, hors combat) ; elle garde sa place, et `/mmir carte replacer` la rend au jeu.
 
 Une icône choisie (A, ou un clic) ouvre **sa fiche**, sous la zone : ce qu'est le point, le temps pour y aller et par où, et quoi faire (itinéraire, file, l'action de l'icône, poser une épingle, envoyer au groupe). Itinéraire (Y) en montre d'abord **l'aperçu** : le temps, l'arrivée, **les trois styles de marche** avec leur durée (Le plus rapide, Équilibré, Routes ; celui du réglage en tête ; A sur un style le choisit, A de nouveau part avec lui), chaque étape ; Partir (A), la file (View), Annuler (B). R3 et Maj+clic partent tout de suite, au style du réglage.
 
@@ -102,7 +102,7 @@ Il reste en jeu et avec la carte réduite ; la carte plein écran le cache (sa l
 ## Commandes
 
 - `/mmir` : la fenêtre de l'addon (Réglages, Carte, Quêtes, Trajets, Aide, Découvrir), aussi par le bouton de la minimap, le menu des addons de la minimap et Titan Panel
-- `/mmir carte` : les réglages de la carte (l'onglet Carte) ; `/mmir carte <…>` : les commandes de la carte (`status` : ce que fait la vue ; `pins` : tes épingles ; `draw` : la plume ; `forgetflights` : oublier les maîtres de vol appris par ce personnage)
+- `/mmir carte` : les réglages de la carte (l'onglet Carte) ; `/mmir carte <…>` : les commandes de la carte (`status` : ce que fait la vue ; `pins` : tes épingles ; `draw` : la plume ; `forgetflights` : oublier les maîtres de vol appris par ce personnage ; `replacer` : la carte réduite remise à la place que lui donne le jeu)
 - Les raccourcis du jeu (Raccourcis > My Map Is Rich) : me localiser, poser une épingle, les épingles, la plume, les réglages de la carte, utiliser l'objet de quête, cibler le monstre de la quête
 - `/mmir pourquoi <quête>` (son numéro ou son nom) : pourquoi une quête n'a pas de « ! » sur la carte ; `/mmir quetes export` : les quêtes apprises en jouant, à copier dans `tools/quests/forever_fixes.json`
 - `/mmir etat` : où en est l'addon ; `/mmir trajet` (`trajet stop`, `trajet passer`) : l'itinéraire en cours

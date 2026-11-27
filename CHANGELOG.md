@@ -1,5 +1,15 @@
 # Journal des versions — My Map Is Rich
 
+## 1.4.3
+
+**La carte réduite se déplace.** Une demande venue d'un commentaire sur CurseForge.
+
+Après la mise à jour, un `/reload` suffit.
+
+- **Tirer la carte réduite** : tiens le clic gauche sur sa liste des quêtes (le fond, l'en-tête ou une ligne) et glisse. La carte et sa liste restent entières à l'écran ; une quête tirée ne s'ouvre pas. Hors combat seulement ; en plein écran, rien ne bouge.
+- **Sa place est gardée** d'une ouverture à l'autre et après un `/reload`. `/mmir carte replacer` la remet là où le jeu la pose.
+- L'info-bulle du bouton Taille et l'aide des commandes le disent.
+
 ## 1.4.2
 
 **Les objets de quête dans le suivi des quêtes, en face de leur quête.** Une idée venue d'un commentaire sur CurseForge.

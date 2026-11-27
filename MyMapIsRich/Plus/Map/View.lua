@@ -9,6 +9,13 @@
 -- (hooksecurefunc). Le code de l'interface manette du jeu (son curseur, B, la
 -- croix, le focus) reste ainsi le sien.
 --
+-- Une seconde exception, depuis la 1.4.3 : la carte réduite qu'on tire par
+-- la liste des quêtes déplace la fenêtre de la carte du jeu, qu'elle couvre.
+-- Seulement sa place (ClearAllPoints / SetPoint), carte réduite et hors
+-- combat ; ni SetMovable, ni script posé sur elle, aucun de ses scripts ne
+-- tourne. La place que le jeu lui donnait lui est rendue par « /mmir carte
+-- replacer » (V.ResetPlace).
+--
 -- Sur la vue : le dessin de la carte (Map/Art.lua, et son zoom rapproché,
 -- Map/Close.lua), ses icônes (Map/PinSets.lua) et celles des calques de Plus, celles des autres addons
 -- (Map/Hbd.lua), ta flèche, la zone d'une quête.
@@ -34,6 +41,7 @@ local A = ns.Map.Art
 local P = ns.Map.Pins
 local LK = ns.Map.Look
 local HB = ns.Map.Hbd        -- (pas « H » : c'est la hauteur du dessin, dans plusieurs fonctions)
+local S = ns.Map.Settings
 
 local ART_RANGE = 80            -- les niveaux de cadre que prend le dessin
 local GLIDE_TIME = 0.4          -- la glissade de A et X, comme celle d'un clic
@@ -551,9 +559,121 @@ function Press(pin)
 end
 
 ---------------------------------------------------------------------------
+-- La carte réduite déplacée, tirée par la liste des quêtes (UI/QuestPanel.lua :
+-- V.StartMove). Elle couvre la fenêtre de la carte du jeu : c'est cette
+-- fenêtre qui change de place (voir en tête du fichier), hors combat. Sa place
+-- est gardée (le réglage « smallAt » : son centre, et les bords de ce qui doit
+-- rester à l'écran, la carte et la liste, en unités de l'écran) ; le jeu qui
+-- la replace (à l'ouverture, une autre fenêtre ouverte) est repris à l'image
+-- d'après. « MAP_MOVED » prévient l'habillage (sa croix sécurisée la suit)
+---------------------------------------------------------------------------
+S.Own("smallAt", false)
+
+local moving             -- la carte tirée : { x, y (le curseur au départ), cx, cy (le centre au départ), at }
+local home               -- la place que le jeu donnait à sa fenêtre : { point, cadre, point, x, y }
+local placedX, placedY   -- le centre que nous lui avons donné en dernier
+
+local function Movable()
+    return small and map ~= nil and map:IsShown() and not InCombatLockdown()
+        and not (map.IsMaximized and map:IsMaximized())
+end
+
+-- Le rectangle d'un cadre, en unités de l'écran (UIParent)
+local function Rect(f)
+    local l, r, b, t = f:GetLeft(), f:GetRight(), f:GetBottom(), f:GetTop()
+    if not (l and r and b and t) then return end
+    local k = f:GetEffectiveScale() / UIParent:GetEffectiveScale()
+    return l * k, r * k, b * k, t * k
+end
+
+local function WindowCenter()
+    local l, r, b, t = Rect(map)
+    if not l then return end
+    return (l + r) / 2, (b + t) / 2
+end
+
+-- Le centre voulu, gardé dans l'écran : la carte et la liste n'en sortent pas
+local function OnScreen(at)
+    local W, H = UIParent:GetWidth(), UIParent:GetHeight()
+    local x = math.max(at.l, math.min(at.x, W - at.r))
+    local y = math.max(at.b, math.min(at.y, H - at.t))
+    return x, y
+end
+
+local function Near(a, b) return a and b and math.abs(a - b) < 0.5 end
+
+local function KeepWindow()
+    local at = S.Get("smallAt")
+    if type(at) ~= "table" or type(at.x) ~= "number" or type(at.y) ~= "number" or not Movable() then return end
+    at.l, at.r, at.b, at.t = tonumber(at.l) or 0, tonumber(at.r) or 0, tonumber(at.b) or 0, tonumber(at.t) or 0
+    local x, y = OnScreen(at)
+    local cx, cy = WindowCenter()
+    if not cx or (Near(cx, x) and Near(cy, y)) then return end
+    if not (Near(cx, placedX) and Near(cy, placedY)) then
+        -- (le jeu l'a posée là : sa place, pour la lui rendre)
+        local p, rel, rp, ox, oy = map:GetPoint(1)
+        home = p and { p, rel, rp, ox, oy } or nil
+    end
+    local k = UIParent:GetEffectiveScale() / map:GetEffectiveScale()
+    map:ClearAllPoints()
+    map:SetPoint("CENTER", UIParent, "BOTTOMLEFT", x * k, y * k)
+    placedX, placedY = x, y
+    ns.Fire("MAP_MOVED")
+end
+
+-- La carte réduite prise à la souris par grip (la liste des quêtes) : rend
+-- false si elle ne peut pas bouger (plein écran, en combat)
+function V.StartMove(grip)
+    moving = nil
+    if not (view and Movable()) then return false end
+    local cx, cy = WindowCenter()
+    local l, r, b, t = Rect(view)
+    if not (cx and l) then return false end
+    if grip and grip:IsVisible() then
+        local gl, gr, gb, gt = Rect(grip)
+        if gl then l, r, b, t = math.min(l, gl), math.max(r, gr), math.min(b, gb), math.max(t, gt) end
+    end
+    local mx, my = GetCursorPosition()
+    moving = { x = mx, y = my, cx = cx, cy = cy,
+        at = { x = cx, y = cy, l = cx - l, r = r - cx, b = cy - b, t = t - cy } }
+    return true
+end
+
+function V.StopMove() moving = nil end
+
+-- Chaque image : la carte qui suit la souris, et sa place reprise au jeu
+local function Move()
+    local m = moving
+    if m then
+        if not (IsMouseButtonDown("LeftButton") and Movable()) then
+            moving = nil
+        else
+            local mx, my = GetCursorPosition()
+            local es = UIParent:GetEffectiveScale()
+            m.at.x, m.at.y = m.cx + (mx - m.x) / es, m.cy + (my - m.y) / es
+            S.Set("smallAt", m.at)
+        end
+    end
+    if small then KeepWindow() end
+end
+
+-- Sa place rendue au jeu (/mmir carte replacer) ; plus rien n'est repris
+function V.ResetPlace()
+    moving = nil
+    S.Set("smallAt", nil)
+    if home and map and not InCombatLockdown() then
+        map:ClearAllPoints()
+        map:SetPoint(home[1], home[2], home[3], home[4], home[5])
+        ns.Fire("MAP_MOVED")
+    end
+    home, placedX, placedY = nil, nil, nil
+end
+
+---------------------------------------------------------------------------
 -- Chaque image
 ---------------------------------------------------------------------------
 local function OnUpdate(_, elapsed)
+    Move()
     -- (la souris qui tire la vue : elle suit le curseur, passé quelques px)
     if drag then
         local mx, my = GetCursorPosition()
@@ -872,7 +992,7 @@ local function Hide()
     area.hoverQ, area.hoverM = nil, nil
     ShowArea()
     if built then pcall(GameLabel, 1) end
-    glide, lastX, lastY, drag = nil, nil, nil, nil
+    glide, lastX, lastY, drag, moving = nil, nil, nil, nil, nil
     if sc and sc.Child then sc.Child:SetAlpha(1) end
 end
 
@@ -1007,6 +1127,9 @@ local function Setup()
     map:HookScript("OnShow", function()
         PlaceView()
         if small then C_Timer.After(0, PlaceView) end   -- (la fenêtre mise en page d'ici là)
+        -- (la place où le joueur l'a tirée : après que le jeu a posé sa fenêtre,
+        -- jamais pendant qu'il le fait)
+        if small then C_Timer.After(0, KeepWindow) end
     end)
     map:HookScript("OnShow", Show)
     map:HookScript("OnHide", Hide)

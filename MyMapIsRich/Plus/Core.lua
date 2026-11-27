@@ -465,12 +465,19 @@ end)
 ---------------------------------------------------------------------------
 -- (status : ce que fait la vue ; pins : tes épingles montrées ou cachées ;
 -- draw : la plume ; forgetflights : les maîtres de vol appris par ce
--- personnage, oubliés. padview : l'ancien nom de status)
+-- personnage, oubliés. padview : l'ancien nom de status ; replacer : la
+-- carte réduite rendue à la place que le jeu lui donne, Map/View.lua)
+local function PlaceAgain()
+    ns.Map.ResetPlace()
+    ns.Print(L.MAP_PLACE_RESET)
+end
 local MAP_COMMANDS = {
     status = function() ns.Map.View.Diag() end,
     padview = function() ns.Map.View.Diag() end,
     pins = function() ns.Map.MyPins.Toggle() end,
     draw = function() ns.Map.Sketch.Toggle() end,
+    replacer = PlaceAgain,
+    reset = PlaceAgain,
 }
 SLASH_MYMAPISRICH1 = "/mmir"
 SLASH_MYMAPISRICH2 = "/mymapisrich"
